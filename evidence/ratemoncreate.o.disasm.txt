@@ -1,5 +1,5 @@
 
-/private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/wt-mb/build-o2/microblaze/kcu105_qemu/cpukit/rtems/src/ratemoncreate.c.59.o:     file format elf32-microblazeel
+ratemoncreate.c.59.o:     file format elf32-microblazeel
 
 
 Disassembly of section .text._Rate_monotonic_Manager_initialization:
