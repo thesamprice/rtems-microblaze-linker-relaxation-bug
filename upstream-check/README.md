@@ -109,30 +109,52 @@ Both routes are the same defect: `microblaze_elf_relax_section()` indexing a
 locals-only symbol buffer with a global symbol's index. Only the thing that installs
 the buffer differs.
 
-## Is this a wider BFD problem?
+## The two loops, side by side
 
-**No — MicroBlaze looks like the outlier.** Checked, so that a maintainer does not have
-to.
+The clearest statement of the bug needs nothing but `elf32-microblaze.c` itself.
+`microblaze_elf_relax_section()` contains two relocation scans that index the same
+`isymbuf` for the same purpose.
 
-The guarded idiom is standard elsewhere. `elf32-avr.c:2028` and `elf-m10200.c:642` both
-do exactly what MicroBlaze fails to do:
+The scan over the section being relaxed, at line 2021, guards the index:
 
 ```c
-  if (ELF32_R_SYM (irel->r_info) < symtab_hdr->sh_info)
-    {
-      /* A local symbol.  */
-      isym = isymbuf + ELF32_R_SYM (irel->r_info);
+	      if (ELF32_R_SYM (irel->r_info) < symtab_hdr->sh_info)
+		{
+		  isym = isymbuf + ELF32_R_SYM (irel->r_info);
+		  if (isym->st_shndx == shndx
+		      && ELF32_ST_TYPE (isym->st_info) == STT_SECTION)
+		    irel->r_addend -= calc_fixup (irel->r_addend, 0, sec);
+		}
 ```
 
-MicroBlaze itself gets this right for the section being relaxed —
-`elf32-microblaze.c:2021` has the same guard. What is unguarded is the *other-sections*
-loop, at lines 2090 and 2122, which walks the relocations of every other section in the
-same BFD.
+The scan over every *other* section of the same BFD, at line 2090, does not:
 
-Only three files in `bfd/` have such a loop at all — `coff-sh.c`, `elf32-sh.c` and
-`elf32-microblaze.c` — and the two SH ones do not index `isymbuf` by relocation symbol
-inside it; they match on relocation type and offset. So this is a MicroBlaze-specific
-defect, not a class, and the fix does not need to grow.
+```c
+		  isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
+
+		  /* Look at the reloc only if the value has been resolved.  */
+		  if (isym->st_shndx == shndx
+		      && (ELF32_ST_TYPE (isym->st_info) == STT_SECTION))
+```
+
+Same file, same buffer, same test on the result, same intent — one bounds-checks the
+index against `symtab_hdr->sh_info` and the other does not. `isymbuf` holds at most
+`sh_info` entries, so the second form reads out of bounds for any relocation against a
+global symbol. The unguarded form appears four times, at lines 2090, 2122, 2159 and
+2205.
+
+That is the entire defect, and it can be confirmed from these two excerpts without
+running anything.
+
+## Is this a wider BFD problem?
+
+No — MicroBlaze is the outlier, checked so that a maintainer does not have to.
+
+Only three files in `bfd/` scan the relocations of other sections this way at all —
+`coff-sh.c`, `elf32-sh.c` and `elf32-microblaze.c` — and the two SH ones do not index
+`isymbuf` by relocation symbol inside that scan; they match on relocation type and
+offset. Elsewhere the guarded form is simply the house style, e.g. `elf32-avr.c:2028`
+and `elf-m10200.c:642`. So the fix does not need to grow beyond this one file.
 
 ## Reproducing the comparison
 

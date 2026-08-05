@@ -66,7 +66,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
 | [`testcase-upstream/`](testcase-upstream/) | **reproducer for current binutils master** — via `.eh_frame`, plus `make check-ld` results |
-| [`testcase/`](testcase/) | reproducer for 2.36-era — via `--gc-sections`, plus a dejagnu test |
+| [`testcase/`](testcase/) | reproducer for 2.36-era — via `--gc-sections`, plus an unexecuted dejagnu stub |
 | [`repro/`](repro/) | BSP config, QEMU test runner, reference scanner, `ld` instrumentation |
 | [`results/`](results/) | per-test verdicts for the three runs |
 

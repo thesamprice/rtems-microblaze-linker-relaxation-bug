@@ -10,7 +10,7 @@ no compiler — just `as` and `ld`.
 |---|---|
 | `relax-addend.s` | the object under test: a relaxing section and a victim section |
 | `relax-addend-support.s` | the branch target and `gvar`, laid out after |
-| `relax-addend.d` | dejagnu `run_dump_test` for `ld/testsuite/ld-microblaze/` |
+| `relax-addend.d` | dejagnu `run_dump_test` stub for `ld/testsuite/ld-microblaze/` — **never executed**, see below |
 | `asan-before-fix.log` | ASan report from the unfixed linker |
 | `asan-after-fix.log` | same link with the fix — clean |
 
@@ -59,6 +59,12 @@ So:
 - **`relax-addend.d`** is a regression test. It pins the correct output and will
   catch a future linker that corrupts the addend deterministically. It will not
   reliably fail on today's unfixed linker.
+
+  **It has never been executed.** There is no `ld/testsuite/ld-microblaze/` directory
+  in binutils and no `.exp` driver for this target, so nothing runs it. It is included
+  as a starting point for someone adding linker tests to MicroBlaze, not as a working
+  test, and not as coverage for this bug — it pins correct output rather than detecting
+  the defect.
 - **ASan** is the reliable detector, and is what the report below is based on.
 
 ## ASan
