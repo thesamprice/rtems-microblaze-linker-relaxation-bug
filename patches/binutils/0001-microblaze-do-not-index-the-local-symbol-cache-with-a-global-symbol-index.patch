@@ -6,11 +6,13 @@
  	    {
 +	      /* All the adjustments below apply only to references made
 +		 through the local section symbol of the section being
-+		 relaxed.  isymbuf holds at most symtab_hdr->sh_info
-+		 entries -- with --gc-sections it is the locals-only cache
-+		 installed by init_reloc_cookie -- so indexing it with the
-+		 symbol index of a global symbol reads out of bounds and
-+		 can spuriously satisfy the tests below.  */
++		 relaxed.  isymbuf comes from symtab_hdr->contents, which
++		 by convention holds only the symtab_hdr->sh_info local
++		 symbols; _bfd_elf_discard_section_eh_frame installs such
++		 a cache before relaxation runs.  Indexing it with the
++		 symbol index of a global symbol therefore reads out of
++		 bounds, and the out-of-bounds bytes can spuriously
++		 satisfy the tests below.  */
 +	      if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
 +		continue;
 +
