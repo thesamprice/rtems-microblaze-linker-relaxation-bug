@@ -1,0 +1,72 @@
+From 0cafa3ca9163885a2b85eae5914921d75732efc5 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 5 Aug 2026 13:58:22 -0400
+Subject: [PATCH] microblaze: don't index the local symbol cache with a global
+ symbol index
+
+microblaze_elf_relax_section walks the relocations of every other section
+of the BFD it is relaxing, and for R_MICROBLAZE_32, R_MICROBLAZE_32_NONE,
+R_MICROBLAZE_32_LO, R_MICROBLAZE_64, R_MICROBLAZE_TEXTREL_64 and
+R_MICROBLAZE_64_PCREL it does
+
+	isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
+	if (isym->st_shndx == shndx
+	    && ELF32_ST_TYPE (isym->st_info) == STT_SECTION)
+	  ...
+	  irelscan->r_addend -= calc_fixup (irelscan->r_addend, 0, sec);
+
+without checking the symbol index against symtab_hdr->sh_info.  isymbuf
+comes from symtab_hdr->contents, which by convention holds only the
+sh_info local symbols, so a relocation against a global symbol indexes
+past the end of the allocation.
+
+The adjustment is only ever meaningful for a reference made through the
+local section symbol of the section being relaxed, so relocations against
+global symbols can be skipped outright.  The same guard is already applied
+to the relocations of the section being relaxed.
+
+Besides being an out-of-bounds read, it silently miscompiles.  If the
+bytes past the buffer happen to satisfy the two tests above, the addend of
+a relocation against a global symbol loses four bytes for every IMM the
+relaxation pass deleted below it.  Relocations with a zero addend are
+unaffected, so there is no link error; a structure member reference such as
+
+	lwi rD, r0, sym + offsetof (struct s, member)
+
+simply reads a neighbouring member.  This was found as a miscompilation of
+RTEMS built at -O2, where Per_CPU_Control::executing was fetched as
+Per_CPU_Control::dispatch_necessary and the operating system handed out
+the wrong executing thread.
+
+symtab_hdr->contents is populated before relaxation by
+_bfd_elf_discard_section_eh_frame, via bfd_elf_discard_info; in the
+generic ELF emulation both run from the same after_allocation call, so
+the buffer is installed and read out of bounds within one call.  Older
+binutils also populated it from init_reloc_cookie under --gc-sections.
+
+ld/testsuite results for microblaze-xilinx-rtems7 are unchanged.
+
+	* elf32-microblaze.c (microblaze_elf_relax_section): Skip
+	relocations against global symbols when scanning the relocations
+	of other sections.
+---
+ bfd/elf32-microblaze.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index a52358a9..06cfb42c 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -2084,6 +2084,9 @@ microblaze_elf_relax_section (bfd *abfd,
+ 	  irelscanend = irelocs + o->reloc_count;
+ 	  for (irelscan = irelocs; irelscan < irelscanend; irelscan++)
+ 	    {
++	      if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
++		continue;
++
+ 	      if ((ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32)
+ 		  || (ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32_NONE))
+ 		{
+-- 
+2.39.5 (Apple Git-154)
+
