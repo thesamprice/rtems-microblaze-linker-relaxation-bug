@@ -1,0 +1,10 @@
+UP-CACHE bfd=relax-addend.o sec=.text.aaa_relaxed contents=NULL(full read) sh_info=6 symcount=10
+UP-CACHE bfd=relax-addend.o sec=.text.zzz_victim contents=CACHED(locals-only) sh_info=6 symcount=10
+UP-CACHE bfd=support.o sec=.text.zz_support contents=NULL(full read) sh_info=5 symcount=10
+UP-CACHE bfd=relax-addend.o sec=.text.aaa_relaxed contents=CACHED(locals-only) sh_info=6 symcount=10
+UP-CACHE bfd=relax-addend.o sec=.text.zzz_victim contents=CACHED(locals-only) sh_info=6 symcount=10
+UP-CACHE bfd=support.o sec=.text.zz_support contents=CACHED(locals-only) sh_info=5 symcount=10
+UP-CACHE bfd=relax-addend.o sec=.text.aaa_relaxed contents=CACHED(locals-only) sh_info=6 symcount=10
+UP-CACHE bfd=relax-addend.o sec=.text.zzz_victim contents=CACHED(locals-only) sh_info=6 symcount=10
+UP-CACHE bfd=support.o sec=.text.zz_support contents=CACHED(locals-only) sh_info=5 symcount=10
+(no diagnostics: link succeeded cleanly)

@@ -10,9 +10,11 @@ There is no error and no warning — the program simply loads from the wrong add
 GCC's MicroBlaze `LINK_SPEC` passes `-relax` unconditionally, so every MicroBlaze link
 is exposed by default.
 
-The defect is in **binutils** (`bfd/elf32-microblaze.c`). It is present both in the
-Xilinx binutils 2.36 snapshot used by the RTEMS MicroBlaze toolchain **and in current
-upstream binutils master**. Neither GCC nor RTEMS is at fault, but both need to react:
+The defect is in **binutils** (`bfd/elf32-microblaze.c`). It bites the Xilinx binutils
+2.36 snapshot used by the RTEMS MicroBlaze toolchain. It does **not** reproduce on
+current upstream binutils master (2.47.50) — see "Upstream status" below; the
+unchecked index survives there but an unrelated refactor removed what made it
+reachable. Neither GCC nor RTEMS is at fault, but both need to react:
 GCC because it enables the pass by default, RTEMS because it needs a workaround until
 binutils is fixed.
 
@@ -207,12 +209,32 @@ Belt and braces, `microblaze_elf_relax_section()` should also stop taking
 about what the buffer contains. Relax only ever legitimately needs local symbols, so
 reading `sh_info` entries would be correct and would make the bounds check redundant.
 
+## Upstream status
+
+Identical objects, identical command line, both linkers built with ASan:
+
+| linker | ASan | verdict |
+|---|---|---|
+| Xilinx snapshot, 2.36.1.20210409 | heap-buffer-overflow, 5/5 | affected |
+| upstream master, 2.47.50.20260805 | clean, 0/3 | not reproducible |
+
+Cause: `init_reloc_cookie()` in `bfd/elflink.c` used to read the local symbols and,
+under `info->keep_memory`, cache them in `symtab_hdr->contents`. That block is gone in
+current master, so `--gc-sections` no longer leaves a locals-only buffer, relaxation
+reads the full symbol table itself, and the unchecked index lands in bounds on the real
+global symbol. The guard then fails and the addend survives. Fixed upstream by
+accident, in other words.
+
+The unchecked index is nevertheless still present in master, and
+`bfd/elf-eh-frame.c:1638` still installs a locals-only `symtab_hdr->contents`. I could
+not construct a trigger through that path, so treat it as latent rather than live.
+
 ## Who needs to change
 
-**binutils** — the actual defect, patch above. Present in the Xilinx 2.36 snapshot and
-in upstream master (`bfd/elf32-microblaze.c`, the `for (irelscan = irelocs; ...)` loop).
-Worth a Sourceware Bugzilla entry against `ld` / MicroBlaze plus a patch to
-binutils@sourceware.org.
+**binutils** — the actual defect, patch above. Live in the Xilinx 2.36 snapshot;
+latent but still unchecked in upstream master (`bfd/elf32-microblaze.c`, the
+`for (irelscan = irelocs; ...)` loop). Worth submitting as hardening of an
+out-of-bounds read rather than as a fix for a live regression.
 
 **GCC** — not a bug, but complicit: `gcc/config/microblaze/microblaze.h`
 

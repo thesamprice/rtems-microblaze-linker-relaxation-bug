@@ -7,9 +7,12 @@ loads from the wrong address.
 GCC's MicroBlaze `LINK_SPEC` passes `-relax` unconditionally, so **every MicroBlaze
 link is exposed by default**.
 
-The defect is in **binutils**, `bfd/elf32-microblaze.c`. It is present both in the
-Xilinx binutils 2.36 snapshot used by the RTEMS MicroBlaze toolchain **and in current
-upstream binutils master**.
+The defect is in **binutils**, `bfd/elf32-microblaze.c`, and it bites the Xilinx
+binutils 2.36 snapshot used by the RTEMS MicroBlaze toolchain.
+
+**It does not reproduce on current upstream binutils** (2.47.50, master of
+2026-08-05) — see [Upstream status](#upstream-status). The unchecked array index is
+still there, but an unrelated refactor removed the thing that made it reachable.
 
 This repository holds the root-cause analysis, the evidence, and the patches.
 
@@ -136,14 +139,73 @@ Verified: with this applied and relaxation still **enabled**, the same objects l
 the correct address and the failing test gets past its assertion — identical outcome
 to `-Wl,--no-relax`.
 
+## Upstream status
+
+Measured, not inferred. Identical object files, identical command line, both linkers
+built with ASan:
+
+| linker | ASan | linked address | verdict |
+|---|---|---|---|
+| Xilinx snapshot, binutils 2.36.1 | heap-buffer-overflow, 5/5 runs | corrupt in a large link | **affected** |
+| upstream master, 2.47.50.20260805 | clean, 0/3 runs | correct | **not reproducible** |
+
+The reason is not a fix to `elf32-microblaze.c`. It is `init_reloc_cookie()` in
+`bfd/elflink.c`. In 2.36 it read the symbol table and cached it:
+
+```c
+  cookie->locsymcount = symtab_hdr->sh_info;      /* locals only */
+  cookie->locsyms = (Elf_Internal_Sym *) symtab_hdr->contents;
+  if (cookie->locsyms == NULL && cookie->locsymcount != 0)
+    {
+      cookie->locsyms = bfd_elf_get_elf_syms (abfd, symtab_hdr,
+					      cookie->locsymcount, 0, ...);
+      if (info->keep_memory)
+	symtab_hdr->contents = (bfd_byte *) cookie->locsyms;   /* sh_info entries */
+    }
+```
+
+In current master that whole block is gone — `init_reloc_cookie()` only computes
+counts. So `--gc-sections` no longer leaves a locals-only buffer in
+`symtab_hdr->contents`, relaxation reads the **full** symbol table itself, and the
+unchecked index lands in bounds on the genuine global symbol (`SHN_UNDEF`,
+`STT_NOTYPE`). The guard then fails deterministically and no addend is touched.
+Traced directly:
+
+```
+XIL-CACHE bfd=relax-addend.o sec=.text.aaa_relaxed contents=CACHED(locals-only) sh_info=6 symcount=10
+UP-CACHE  bfd=relax-addend.o sec=.text.aaa_relaxed contents=NULL(full read)     sh_info=6 symcount=11
+```
+
+So this reads as **fixed upstream by accident**, as a side effect of a refactor that
+had nothing to do with MicroBlaze.
+
+Two caveats, so nobody over-reads that:
+
+1. The **unchecked index is still in upstream master** (`bfd/elf32-microblaze.c`, the
+   `for (irelscan = irelocs; ...)` loop, all four relocation arms). Nothing stops it
+   reading out of bounds the moment anything else populates `symtab_hdr->contents`
+   with a locals-only buffer.
+2. Something else still does exactly that: `bfd/elf-eh-frame.c:1638`,
+   `symtab_hdr->contents = (unsigned char *) locsyms;`, on the `.eh_frame` editing
+   path. I tried and **failed** to build a trigger through it, so this is a
+   theoretical concern rather than a demonstrated one — but it is why the patch is
+   still worth applying.
+
+The patch is therefore offered as **hardening of a latent out-of-bounds read**, not as
+a fix for a live upstream regression. That is the honest framing.
+
 ## Who needs to change
 
-- **binutils** — the actual defect. Unfixed in upstream master. Patch in
-  [`patches/binutils/`](patches/binutils/).
+- **binutils** — the actual defect. Live in 2.36-era; latent but unchecked in master.
+  Patch in [`patches/binutils/`](patches/binutils/).
 - **GCC** — not a bug, but `gcc/config/microblaze/microblaze.h` `LINK_SPEC` has
   `-relax` unconditionally, which is why everyone is exposed. Worth asking whether that
   should still be the default.
-- **RTEMS** — needs the workaround now, since it cannot dictate the toolchain.
+- **RTEMS** — needs the workaround now. The MicroBlaze toolchain is pinned to the
+  Xilinx binutils 2.36 snapshot by `config/7/rtems-microblaze.bset`, which is squarely
+  in the affected range. Moving that pin to a modern binutils would also resolve it,
+  and is the better long-term answer, but that is a much larger change than
+  `-Wl,--no-relax`.
 
 ## Environment
 
