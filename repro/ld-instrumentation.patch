@@ -1,0 +1,34 @@
+Diagnostic used to catch the out-of-bounds symbol read in the act.
+
+Apply to bfd/elf32-microblaze.c of binutils-gdb-7af075d with the 13 meta-xilinx
+rel-v2021.1 patches applied, rebuild ld, and relink any large MicroBlaze image
+with -relax (the gcc default) and --gc-sections.  Every line printed is an
+out-of-bounds read of the local-symbol cache; the ones marked
+"GUARD PASSED - CORRUPTING" with a non-zero fixup are relocations whose addend
+was silently damaged.
+
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@
+ 		  isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
++		  if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
++		    fprintf (stderr, "MBDBG oob bfd=%s relaxsec=%s victimsec=%s "
++			     "rtype=%lu symidx=%lu sh_info=%lu addend=0x%lx "
++			     "oob_shndx=%u oob_type=%u shndx=%d fixup=%lu%s\n",
++			     abfd->filename, sec->name, o->name,
++			     (unsigned long) ELF32_R_TYPE (irelscan->r_info),
++			     (unsigned long) ELF32_R_SYM (irelscan->r_info),
++			     (unsigned long) symtab_hdr->sh_info,
++			     (unsigned long) irelscan->r_addend,
++			     (unsigned) isym->st_shndx,
++			     (unsigned) ELF32_ST_TYPE (isym->st_info), shndx,
++			     (unsigned long) calc_fixup (irelscan->r_addend, 0, sec),
++			     (isym->st_shndx == shndx
++			      && ELF32_ST_TYPE (isym->st_info) == STT_SECTION)
++			     ? "  <<< GUARD PASSED - CORRUPTING" : "");
+ 
+ 		  /* Look at the reloc only if the value has been resolved.  */
+ 		  if (isym->st_shndx == shndx
+
+(apply at each of the three `isym = isymbuf + ELF32_R_SYM (irelscan->r_info);`
+sites inside the "Look through all other sections" loop)

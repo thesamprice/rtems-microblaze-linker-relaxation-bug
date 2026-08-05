@@ -1,0 +1,32 @@
+From af62c9e43d70766c96c4745d5cf89796b021fd52 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 5 Aug 2026 11:24:54 -0400
+Subject: [PATCH] bsps/microblaze: Fix build without
+ BSP_MICROBLAZE_FPGA_USE_FDT
+
+try_get_prop_from_device_tree() only uses its compatible and prop_name
+parameters when BSP_MICROBLAZE_FPGA_USE_FDT is defined.  Without it the
+build fails with -Werror=unused-parameter.
+
+Cast both parameters to void in the non-FDT case.
+---
+ bsps/microblaze/shared/fdt/microblaze-fdt-support.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/bsps/microblaze/shared/fdt/microblaze-fdt-support.c b/bsps/microblaze/shared/fdt/microblaze-fdt-support.c
+index 63e76ac084..d1160c0c12 100644
+--- a/bsps/microblaze/shared/fdt/microblaze-fdt-support.c
++++ b/bsps/microblaze/shared/fdt/microblaze-fdt-support.c
+@@ -102,6 +102,9 @@ uint32_t try_get_prop_from_device_tree(
+   }
+ 
+   value = fdt32_to_cpu( prop[0] );
++#else /* BSP_MICROBLAZE_FPGA_USE_FDT */
++  (void) compatible;
++  (void) prop_name;
+ #endif /* BSP_MICROBLAZE_FPGA_USE_FDT */
+ 
+    return value;
+-- 
+2.39.5 (Apple Git-154)
+

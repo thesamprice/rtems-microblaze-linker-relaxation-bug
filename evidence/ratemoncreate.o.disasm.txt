@@ -1,0 +1,114 @@
+
+/private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/wt-mb/build-o2/microblaze/kcu105_qemu/cpukit/rtems/src/ratemoncreate.c.59.o:     file format elf32-microblazeel
+
+
+Disassembly of section .text._Rate_monotonic_Manager_initialization:
+
+00000000 <_Rate_monotonic_Manager_initialization>:
+   0:	imm	0
+			0: R_MICROBLAZE_64	_Rate_monotonic_Information
+   4:	addik	r5, r0, 0
+   8:	addik	r1, r1, -28
+   c:	swi	r15, r1, 0
+  10:	imm	0
+			10: R_MICROBLAZE_64_PCREL	_Objects_Initialize_information
+  14:	brlid	r15, 0
+  18:	or	r0, r0, r0
+  1c:	lwi	r15, r1, 0
+  20:	rtsd	r15, 8
+  24:	addik	r1, r1, 28
+
+Disassembly of section .text.rtems_rate_monotonic_create:
+
+00000000 <rtems_rate_monotonic_create>:
+   0:	beqi	r5, 260		// 104
+			0: R_MICROBLAZE_NONE	*ABS*+0x104
+   4:	addik	r1, r1, -40
+   8:	swi	r23, r1, 36
+   c:	swi	r15, r1, 0
+  10:	swi	r19, r1, 28
+  14:	swi	r22, r1, 32
+  18:	beqid	r6, 244		// 10c
+			18: R_MICROBLAZE_NONE	*ABS*+0xf4
+  1c:	addk	r23, r6, r0
+  20:	addk	r22, r5, r0
+  24:	imm	0
+			24: R_MICROBLAZE_64	_Rate_monotonic_Information
+  28:	addik	r5, r0, 0
+  2c:	imm	0
+			2c: R_MICROBLAZE_64_PCREL	_Objects_Allocate
+  30:	brlid	r15, 0
+  34:	or	r0, r0, r0
+  38:	beqid	r3, 240		// 128
+			38: R_MICROBLAZE_NONE	*ABS*+0xf0
+  3c:	addk	r19, r3, r0
+  40:	imm	0
+			40: R_MICROBLAZE_64	_Per_CPU_Information+0x18
+  44:	lwi	r8, r0, 0
+  48:	addik	r3, r0, -1
+  4c:	swi	r3, r19, 60
+  50:	imm	0
+			50: R_MICROBLAZE_64	_Rate_monotonic_Timeout
+  54:	addik	r3, r0, 0
+  58:	addik	r9, r0, 2
+  5c:	addk	r6, r0, r0
+  60:	swi	r8, r19, 76
+  64:	swi	r9, r19, 28
+  68:	addik	r9, r0, 0
+  6c:	addik	r8, r0, 0
+  70:	addik	r7, r0, 56
+  74:	addik	r5, r19, 96
+  78:	swi	r6, r19, 44
+  7c:	swi	r6, r19, 152
+  80:	swi	r8, r19, 64
+  84:	swi	r9, r19, 68
+  88:	imm	0
+			88: R_MICROBLAZE_64_PCREL	memset
+  8c:	brlid	r15, 0
+  90:	swi	r3, r19, 32
+  94:	lwi	r4, r19, 8
+  98:	imm	0
+			98: R_MICROBLAZE_64	_Rate_monotonic_Information+0x4
+  9c:	lwi	r5, r0, 0
+  a0:	imm	32767
+  a4:	addik	r7, r0, -1
+  a8:	imm	9665
+  ac:	addik	r6, r0, 32001
+  b0:	imm	0
+  b4:	andi	r3, r4, -1
+  b8:	imm	16383
+  bc:	addik	r3, r3, -1
+  c0:	swi	r6, r19, 128
+  c4:	swi	r7, r19, 132
+  c8:	swi	r6, r19, 104
+  cc:	swi	r7, r19, 108
+  d0:	swi	r22, r19, 12
+  d4:	muli	r3, r3, 4
+  d8:	sw	r19, r3, r5
+  dc:	imm	0
+			dc: R_MICROBLAZE_64_PCREL	_RTEMS_Unlock_allocator
+  e0:	brlid	r15, 0
+  e4:	swi	r4, r23, 0
+  e8:	addk	r3, r0, r0
+  ec:	lwi	r15, r1, 0
+  f0:	lwi	r19, r1, 28
+  f4:	lwi	r22, r1, 32
+  f8:	lwi	r23, r1, 36
+  fc:	rtsd	r15, 8
+ 100:	addik	r1, r1, 40
+ 104:	rtsd	r15, 8
+ 108:	addik	r3, r0, 3
+ 10c:	lwi	r15, r1, 0
+ 110:	lwi	r19, r1, 28
+ 114:	lwi	r22, r1, 32
+ 118:	lwi	r23, r1, 36
+ 11c:	addik	r3, r0, 9
+ 120:	rtsd	r15, 8
+ 124:	addik	r1, r1, 40
+ 128:	imm	0
+			128: R_MICROBLAZE_64_PCREL	_RTEMS_Unlock_allocator
+ 12c:	brlid	r15, 0
+ 130:	or	r0, r0, r0
+ 134:	brid	-72		// ec
+			134: R_MICROBLAZE_NONE	*ABS*-0x48
+ 138:	addik	r3, r0, 5

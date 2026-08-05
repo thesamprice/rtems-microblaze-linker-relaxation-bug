@@ -1,0 +1,106 @@
+From 33dbdc48ec20311c446d43268df19990587b2dd6 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 5 Aug 2026 11:47:09 -0400
+Subject: [PATCH] bsps/microblaze: Disable linker relaxation
+
+The MicroBlaze GCC link spec passes -relax unconditionally.  With binutils
+2.36.1 that relaxation pass corrupts the addend of R_MICROBLAZE_64
+relocations which have a non-zero addend.  The addend loses four bytes for
+each IMM instruction the pass deleted ahead of the relocation.  Relocations
+with a zero addend resolve correctly, so nothing warns and nothing fails to
+link; the program just loads from the wrong address.
+
+In rtems_rate_monotonic_create(), ratemoncreate.c.o contains
+
+  40: imm 0
+        40: R_MICROBLAZE_64  _Per_CPU_Information+0x18
+  44: lwi r8, r0, 0
+  60: swi r8, r19, 76            <- the_period->owner
+
+that is, the_period->owner = _Thread_Get_executing().  With
+_Per_CPU_Information at 0x900195f4 the load should be from 0x9001960c,
+which is Per_CPU_Control::executing.  After relaxation the linked image
+contains
+
+  90005040: b0009001  imm   -28671
+  90005044: e9009608  lwi   r8, r0, -27128     <- 0x90019608
+
+0x90019608 is _Per_CPU_Information + 20, Per_CPU_Control::dispatch_necessary.
+Every rate monotonic period is therefore created with an owner of 0 or 1 and
+rtems_rate_monotonic_period() answers RTEMS_NOT_OWNER_OF_RESOURCE for its
+own owner.  _Thread_Self_id() in the same image resolves the identical
+relocation correctly, and the zero-addend relocations in the same function
+(_Rate_monotonic_Information, _Rate_monotonic_Timeout) are also correct, so
+the failure is specific to the non-zero addend.
+
+The defect is only reached when the compiler emits a relaxable IMM ahead of
+an absolute reference, which is rare at -O0 and common at -O2.  That is why
+these BSPs have been built at -O0 since RTEMS 6.
+
+-Wl,--no-relax overrides the -relax from the link spec.  Placing it in
+ABI_FLAGS covers the BSP, cpukit and the installed pkg-config files, so
+applications linked against an installed BSP are covered too.
+
+Building microblaze/kcu105_qemu at -O2 and running the testsuite on QEMU
+petalogix-s3adsp1800:
+
+                      -O2       -O2 + this patch
+  PASS                605               618
+  FAIL                 35                22
+  XFAIL                27                27
+  SKIP                  8                 8
+
+15 of the 16 tests that -O2 regressed against -O0 now pass: psxcleanup,
+psxcond01, psxkey07, rtmonuse, sp32, sp46, sp60, spedfsched02,
+spintrcritical08, spratemon_err01 and tm29, plus regulator01 and
+sprmsched02 which -O0 also failed.  sp69 gets past the ownership assertion
+and now fails a 0.06 percent timer accuracy check, which is an artifact of
+the emulated timer frequency.
+
+Disabling relaxation costs 520 bytes of text in minimum.norun.exe, 32017 to
+32537, against 69148 for the -O0 build the BSPs ship today.  It also removes
+the intermittent "ld terminated with signal 11" failures seen when linking
+the testsuite: four per build with relaxation, none without.
+---
+ .../bsps/microblaze/microblaze_fpga/abi.yml   | 24 ++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/spec/build/bsps/microblaze/microblaze_fpga/abi.yml b/spec/build/bsps/microblaze/microblaze_fpga/abi.yml
+index 7d78c9842d..34c476a609 100644
+--- a/spec/build/bsps/microblaze/microblaze_fpga/abi.yml
++++ b/spec/build/bsps/microblaze/microblaze_fpga/abi.yml
+@@ -13,8 +13,30 @@ default:
+   - -mno-xl-soft-div
+   - -mno-xl-soft-mul
+   - -Wl,-EL
++  - -Wl,--no-relax
+ description: |
+-  ABI flags
++  ABI flags.
++
++  The MicroBlaze GCC link spec passes -relax unconditionally.  Linker
++  relaxation deletes redundant IMM instructions, and while doing so it
++  corrupts the addend of R_MICROBLAZE_64 relocations which have a non-zero
++  addend: the addend loses four bytes for each IMM deleted ahead of the
++  relocation.  Relocations with a zero addend in the same section resolve
++  correctly, so this is silent - there is no link error, just a load from
++  the wrong address.
++
++  A structure member reference such as
++
++    lwi rD, r0, _Per_CPU_Information + offsetof(Per_CPU_Control, executing)
++
++  therefore reads the preceding member instead.  RTEMS then hands out the
++  wrong executing thread, which breaks resource ownership and thread
++  identity throughout the system.  It shows up with optimization enabled
++  and is largely hidden at -O0, which is why these BSPs were built at -O0.
++
++  -Wl,--no-relax overrides the -relax from the link spec.  Observed with
++  binutils 2.36.1; it also removes the intermittent ld segmentation faults
++  seen when linking the testsuite.
+ enabled-by: true
+ links: []
+ name: ABI_FLAGS
+-- 
+2.39.5 (Apple Git-154)
+
