@@ -62,6 +62,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | path | what |
 |---|---|
 | [`ANALYSIS.md`](ANALYSIS.md) | full root-cause writeup: mechanism, evidence, controls, reproduction |
+| [`ASAN-GUIDE.md`](ASAN-GUIDE.md) | how to build and use an ASan linker, and what can and cannot be sanitized on the target |
 | [`patches/binutils/`](patches/binutils/) | the real fix — 2 lines in `bfd/elf32-microblaze.c` |
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
