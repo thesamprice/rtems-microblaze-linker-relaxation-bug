@@ -7,12 +7,10 @@ loads from the wrong address.
 GCC's MicroBlaze `LINK_SPEC` passes `-relax` unconditionally, so **every MicroBlaze
 link is exposed by default**.
 
-The defect is in **binutils**, `bfd/elf32-microblaze.c`, and it bites the Xilinx
-binutils 2.36 snapshot used by the RTEMS MicroBlaze toolchain.
-
-**It does not reproduce on current upstream binutils** (2.47.50, master of
-2026-08-05) — see [Upstream status](#upstream-status). The unchecked array index is
-still there, but an unrelated refactor removed the thing that made it reachable.
+The defect is in **binutils**, `bfd/elf32-microblaze.c`. It affects the Xilinx
+binutils 2.36 snapshot used by the RTEMS MicroBlaze toolchain **and current upstream
+binutils master** (2.47.50.20260805), demonstrated in both cases with an ASan-built
+linker and a self-contained reproducer — see [Upstream status](#upstream-status).
 
 This repository holds the root-cause analysis, the evidence, and the patches.
 
@@ -67,7 +65,8 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`patches/binutils/`](patches/binutils/) | the real fix — 2 lines in `bfd/elf32-microblaze.c` |
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
-| [`testcase/`](testcase/) | **minimal deterministic reproducer** — two `.s` files, an ASan report, and a dejagnu test |
+| [`testcase-upstream/`](testcase-upstream/) | **reproducer for current binutils master** — via `.eh_frame`, plus `make check-ld` results |
+| [`testcase/`](testcase/) | reproducer for 2.36-era — via `--gc-sections`, plus a dejagnu test |
 | [`repro/`](repro/) | BSP config, QEMU test runner, reference scanner, `ld` instrumentation |
 | [`results/`](results/) | per-test verdicts for the three runs |
 
@@ -103,10 +102,12 @@ is `NULL` at relax time, relax reads the whole symbol table itself, the genuine 
 symbol is `SHN_UNDEF`/`STT_NOTYPE`, the guard fails deterministically, and nothing is
 corrupted.
 
-## Minimal reproducer
+## Minimal reproducers
 
-Two assembly files, no RTEMS, no compiler — see [`testcase/`](testcase/). Under an
-ASan-built `ld` the unfixed linker reports, on every run:
+Two of them, both self-contained — no RTEMS, no C library, no compiler.
+[`testcase-upstream/`](testcase-upstream/) is the one to use against current binutils;
+[`testcase/`](testcase/) reaches the same defect via `--gc-sections` and works on
+2.36-era. Under an ASan-built `ld` the unfixed linker reports, on every run:
 
 ```
 ERROR: AddressSanitizer: heap-buffer-overflow
@@ -141,63 +142,71 @@ to `-Wl,--no-relax`.
 
 ## Upstream status
 
-Measured, not inferred. Identical object files, identical command line, both linkers
-built with ASan:
+Measured, not inferred. ASan-built linkers, deterministic, 5 runs out of 5 each:
 
-| linker | ASan | linked address | verdict |
+| linker | reproducer | ASan | verdict |
 |---|---|---|---|
-| Xilinx snapshot, binutils 2.36.1 | heap-buffer-overflow, 5/5 runs | corrupt in a large link | **affected** |
-| upstream master, 2.47.50.20260805 | clean, 0/3 runs | correct | **not reproducible** |
+| Xilinx snapshot, 2.36.1.20210409 | [`testcase/`](testcase/), via `--gc-sections` | heap-buffer-overflow | **affected** |
+| upstream master, 2.47.50.20260805 | [`testcase-upstream/`](testcase-upstream/), via `.eh_frame` | heap-buffer-overflow | **affected** |
 
-The reason is not a fix to `elf32-microblaze.c`. It is `init_reloc_cookie()` in
-`bfd/elflink.c`. In 2.36 it read the symbol table and cached it:
+Same defect, two ways in. What changed between the versions is only *which* code
+installs the locals-only symbol buffer that relaxation then reads out of bounds:
+
+- **2.36**: `init_reloc_cookie()` in `bfd/elflink.c` cached it under `--gc-sections`.
+  That block is gone in master, which is why the first reproducer goes quiet there —
+  and why an earlier draft of this repository wrongly concluded upstream was unaffected.
+- **master**: `_bfd_elf_discard_section_eh_frame()` still installs it, at
+  `bfd/elf-eh-frame.c:1638`, from `bfd_elf_discard_info()`.
+
+And it is installed in exactly the wrong place. `ld/emultempl/elf.em`, the generic ELF
+emulation every non-Linux MicroBlaze target uses:
 
 ```c
-  cookie->locsymcount = symtab_hdr->sh_info;      /* locals only */
-  cookie->locsyms = (Elf_Internal_Sym *) symtab_hdr->contents;
-  if (cookie->locsyms == NULL && cookie->locsymcount != 0)
-    {
-      cookie->locsyms = bfd_elf_get_elf_syms (abfd, symtab_hdr,
-					      cookie->locsymcount, 0, ...);
-      if (info->keep_memory)
-	symtab_hdr->contents = (bfd_byte *) cookie->locsyms;   /* sh_info entries */
-    }
+static void
+gld${EMULATION_NAME}_after_allocation (void)
+{
+  int need_layout = bfd_elf_discard_info (&link_info);   /* installs the cache */
+  ...
+    ldelf_map_segments (need_layout);                    /* calls lang_relax_sections */
+}
 ```
 
-In current master that whole block is gone — `init_reloc_cookie()` only computes
-counts. So `--gc-sections` no longer leaves a locals-only buffer in
-`symtab_hdr->contents`, relaxation reads the **full** symbol table itself, and the
-unchecked index lands in bounds on the genuine global symbol (`SHN_UNDEF`,
-`STT_NOTYPE`). The guard then fails deterministically and no addend is touched.
-Traced directly:
+One ASan trace catches both halves:
 
 ```
-XIL-CACHE bfd=relax-addend.o sec=.text.aaa_relaxed contents=CACHED(locals-only) sh_info=6 symcount=10
-UP-CACHE  bfd=relax-addend.o sec=.text.aaa_relaxed contents=NULL(full read)     sh_info=6 symcount=11
+    #0 microblaze_elf_relax_section elf32-microblaze.c:2208
+    #5 lang_relax_sections ldlang.c:8286
+    #6 ldelf_map_segments ldelfgen.c:266
+
+allocated by thread T0 here:
+    #3 _bfd_elf_discard_section_eh_frame elf-eh-frame.c:1634
+    #4 bfd_elf_discard_info elflink.c:15239
+    #5 gldelf32microblaze_after_allocation eelf32microblaze.c:113
 ```
 
-So this reads as **fixed upstream by accident**, as a side effect of a refactor that
-had nothing to do with MicroBlaze.
+**This is not a wider BFD problem.** The guarded idiom is standard elsewhere —
+`elf32-avr.c:2028`, `elf-m10200.c:642` — and MicroBlaze gets it right for the section
+being relaxed (`elf32-microblaze.c:2021`). Only its *other-sections* loop is unguarded.
+Just three files in `bfd/` have such a loop, and the two SH ones do not index `isymbuf`
+by relocation symbol inside it. MicroBlaze is the outlier; the fix does not need to grow.
 
-Two caveats, so nobody over-reads that:
+### ld testsuite
 
-1. The **unchecked index is still in upstream master** (`bfd/elf32-microblaze.c`, the
-   `for (irelscan = irelocs; ...)` loop, all four relocation arms). Nothing stops it
-   reading out of bounds the moment anything else populates `symtab_hdr->contents`
-   with a locals-only buffer.
-2. Something else still does exactly that: `bfd/elf-eh-frame.c:1638`,
-   `symtab_hdr->contents = (unsigned char *) locsyms;`, on the `.eh_frame` editing
-   path. I tried and **failed** to build a trigger through it, so this is a
-   theoretical concern rather than a demonstrated one — but it is why the patch is
-   still worth applying.
+`make check-ld`, target `microblaze-xilinx-rtems7`, upstream master: **476 expected
+passes, 13 unexpected failures, baseline and patched byte-identical.** The patch changes
+no test outcome. The 13 are pre-existing and unrelated — 8 `sysroot-prefix` variants
+(host environment), plus `ld-discard/zero-range`, `ld-discard/zero-rel`,
+`ld-elf/linkonce1`, `ld-elf/linkonce2`, `ld-elf/pr24511`. Both `.sum` files are in
+[`testcase-upstream/`](testcase-upstream/).
 
-The patch is therefore offered as **hardening of a latent out-of-bounds read**, not as
-a fix for a live upstream regression. That is the honest framing.
+There is no `ld/testsuite/ld-microblaze` directory in binutils — MicroBlaze has no
+target-specific linker tests at all, which is some of the reason a defect this old went
+unnoticed.
 
 ## Who needs to change
 
-- **binutils** — the actual defect. Live in 2.36-era; latent but unchecked in master.
-  Patch in [`patches/binutils/`](patches/binutils/).
+- **binutils** — the actual defect, live in both 2.36-era and current master. Patch in
+  [`patches/binutils/`](patches/binutils/); two lines, no test-outcome change.
 - **GCC** — not a bug, but `gcc/config/microblaze/microblaze.h` `LINK_SPEC` has
   `-relax` unconditionally, which is why everyone is exposed. Worth asking whether that
   should still be the default.

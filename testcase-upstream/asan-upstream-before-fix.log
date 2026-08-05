@@ -1,0 +1,59 @@
+=================================================================
+==93679==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x6120000007fc at pc 0x000104cc7830 bp 0x00016b1f16b0 sp 0x00016b1f16a8
+READ of size 4 at 0x6120000007fc thread T0
+    #0 0x000104cc782c in microblaze_elf_relax_section elf32-microblaze.c:2208
+    #1 0x000104c2e594 in lang_size_sections_1 ldlang.c:6560
+    #2 0x000104c2e6fc in lang_size_sections_1 ldlang.c
+    #3 0x000104c2f8bc in lang_size_sections_1 ldlang.c:6302
+    #4 0x000104c3134c in lang_size_sections ldlang.c:6866
+    #5 0x000104c33e64 in lang_relax_sections ldlang.c:8286
+    #6 0x000104c779a4 in ldelf_map_segments ldelfgen.c:266
+    #7 0x000104c379d0 in lang_process ldlang.c:8930
+    #8 0x000104c506ac in main ldmain.c:971
+    #9 0x000185beab94 in start+0x17b8 (dyld:arm64e+0xfffffffffff3ab94)
+
+0x6120000007fc is located 156 bytes after 288-byte region [0x612000000640,0x612000000760)
+allocated by thread T0 here:
+    #0 0x00010588538c in malloc+0x78 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x3d38c)
+    #1 0x000104c958d4 in bfd_malloc libbfd.c:291
+    #2 0x000104cdc1b0 in bfd_elf_get_elf_syms elf.c:565
+    #3 0x000104d57d90 in _bfd_elf_discard_section_eh_frame elf-eh-frame.c:1634
+    #4 0x000104d40fd0 in bfd_elf_discard_info elflink.c:15239
+    #5 0x000104c6d944 in gldelf32microblaze_after_allocation eelf32microblaze.c:113
+    #6 0x000104c379d0 in lang_process ldlang.c:8930
+    #7 0x000104c506ac in main ldmain.c:971
+    #8 0x000185beab94 in start+0x17b8 (dyld:arm64e+0xfffffffffff3ab94)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow elf32-microblaze.c:2208 in microblaze_elf_relax_section
+Shadow bytes around the buggy address:
+  0x612000000500: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x612000000580: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x612000000600: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x612000000680: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x612000000700: 00 00 00 00 00 00 00 00 00 00 00 00 fa fa fa fa
+=>0x612000000780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa[fa]
+  0x612000000800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x612000000880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x612000000900: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x612000000980: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x612000000a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==93679==ABORTING

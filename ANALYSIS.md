@@ -10,11 +10,10 @@ There is no error and no warning — the program simply loads from the wrong add
 GCC's MicroBlaze `LINK_SPEC` passes `-relax` unconditionally, so every MicroBlaze link
 is exposed by default.
 
-The defect is in **binutils** (`bfd/elf32-microblaze.c`). It bites the Xilinx binutils
-2.36 snapshot used by the RTEMS MicroBlaze toolchain. It does **not** reproduce on
-current upstream binutils master (2.47.50) — see "Upstream status" below; the
-unchecked index survives there but an unrelated refactor removed what made it
-reachable. Neither GCC nor RTEMS is at fault, but both need to react:
+The defect is in **binutils** (`bfd/elf32-microblaze.c`). It affects the Xilinx
+binutils 2.36 snapshot used by the RTEMS MicroBlaze toolchain **and current upstream
+binutils master** (2.47.50.20260805) — see "Upstream status" below. Neither GCC nor
+RTEMS is at fault, but both need to react:
 GCC because it enables the pass by default, RTEMS because it needs a workaround until
 binutils is fixed.
 
@@ -211,30 +210,79 @@ reading `sh_info` entries would be correct and would make the bounds check redun
 
 ## Upstream status
 
-Identical objects, identical command line, both linkers built with ASan:
+ASan-built linkers, self-contained reproducers, deterministic 5 runs out of 5:
 
-| linker | ASan | verdict |
+| linker | route | ASan |
 |---|---|---|
-| Xilinx snapshot, 2.36.1.20210409 | heap-buffer-overflow, 5/5 | affected |
-| upstream master, 2.47.50.20260805 | clean, 0/3 | not reproducible |
+| Xilinx snapshot, 2.36.1.20210409 | `--gc-sections` | heap-buffer-overflow |
+| upstream master, 2.47.50.20260805 | `.eh_frame` | heap-buffer-overflow |
 
-Cause: `init_reloc_cookie()` in `bfd/elflink.c` used to read the local symbols and,
-under `info->keep_memory`, cache them in `symtab_hdr->contents`. That block is gone in
-current master, so `--gc-sections` no longer leaves a locals-only buffer, relaxation
-reads the full symbol table itself, and the unchecked index lands in bounds on the real
-global symbol. The guard then fails and the addend survives. Fixed upstream by
-accident, in other words.
+One defect, two ways to install the locals-only symbol buffer that relaxation then
+reads out of bounds. In 2.36 it was `init_reloc_cookie()` in `bfd/elflink.c`, under
+`--gc-sections`; that block no longer exists in master, which is why the
+`--gc-sections` reproducer goes quiet there. In master it is
+`_bfd_elf_discard_section_eh_frame()` at `bfd/elf-eh-frame.c:1638`, reached from
+`bfd_elf_discard_info()`.
 
-The unchecked index is nevertheless still present in master, and
-`bfd/elf-eh-frame.c:1638` still installs a locals-only `symtab_hdr->contents`. I could
-not construct a trigger through that path, so treat it as latent rather than live.
+The ordering is what makes it reachable. `ld/emultempl/elf.em`, the generic ELF
+emulation every non-Linux MicroBlaze target uses:
 
-## Who needs to change
+```c
+static void
+gld${EMULATION_NAME}_after_allocation (void)
+{
+  int need_layout = bfd_elf_discard_info (&link_info);   /* installs the cache */
+  ...
+    ldelf_map_segments (need_layout);                    /* calls lang_relax_sections */
+}
+```
 
-**binutils** — the actual defect, patch above. Live in the Xilinx 2.36 snapshot;
-latent but still unchecked in upstream master (`bfd/elf32-microblaze.c`, the
-`for (irelscan = irelocs; ...)` loop). Worth submitting as hardening of an
-out-of-bounds read rather than as a fix for a live regression.
+The buffer is installed and read out of bounds inside one function call, and a single
+ASan trace shows both ends.
+
+**Not a wider BFD problem.** The guarded idiom is standard elsewhere
+(`elf32-avr.c:2028`, `elf-m10200.c:642`), and MicroBlaze applies it correctly to the
+section being relaxed (`elf32-microblaze.c:2021`). Only the *other-sections* loop is
+unguarded. Three files in `bfd/` have such a loop; the two SH ones do not index
+`isymbuf` by relocation symbol inside it. MicroBlaze is the outlier.
+
+`make check-ld` on upstream master, target `microblaze-xilinx-rtems7`: 476 expected
+passes, 13 unexpected failures, and the baseline and patched result lists are
+byte-identical. The patch changes no test outcome. There is no
+`ld/testsuite/ld-microblaze` directory at all.
+
+## An aside: why MicroBlaze `.eh_frame` warns
+
+Not part of this bug, but it surfaced while building the reproducer and it explains
+something RTEMS users see.
+
+MicroBlaze GAS emits an `R_MICROBLAZE_NONE` marker relocation for every *resolved*
+label-difference expression — the same mechanism that produces the `R_MICROBLAZE_NONE`
+entries next to conditional branches. In `.eh_frame`, which is built almost entirely
+out of label differences (`.4byte .LFE - .LFB` and friends), those markers land in
+`.rela.eh_frame` and desynchronise `ent->reloc_index`, so
+`_bfd_elf_discard_section_eh_frame()` trips
+
+```c
+BFD_ASSERT (cookie->rel < cookie->relend
+	    && cookie->rel->r_offset == ent->offset + 8);
+```
+
+This is the source of the `error in <file>(.eh_frame); no .eh_frame_hdr table will be
+created` messages seen when linking libgcc objects, and it is presumably why the Xilinx
+patch set carries `0003-Disable-the-warning-message-for-eh_frame_hdr.patch`. Silencing
+the message does not fix the underlying reloc-marker mismatch. Hand-assembling the CIE
+and FDEs with literal lengths avoids it entirely, which is what the upstream reproducer
+does so its input cannot be dismissed as malformed.
+
+Not investigated further.
+
+## Who needs to change## Who needs to change
+
+**binutils** — the actual defect, patch above. Live in the Xilinx 2.36 snapshot and in
+current upstream master (`bfd/elf32-microblaze.c`, the `for (irelscan = irelocs; ...)`
+loop). Worth a Sourceware Bugzilla entry against `ld` / MicroBlaze plus a patch to
+binutils@sourceware.org, with the ASan reproducer and the `make check-ld` comparison.
 
 **GCC** — not a bug, but complicit: `gcc/config/microblaze/microblaze.h`
 
