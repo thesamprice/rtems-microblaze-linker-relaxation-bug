@@ -64,6 +64,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`patches/binutils/`](patches/binutils/) | the real fix — 2 lines in `bfd/elf32-microblaze.c` |
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
+| [`testcase/`](testcase/) | **minimal deterministic reproducer** — two `.s` files, an ASan report, and a dejagnu test |
 | [`repro/`](repro/) | BSP config, QEMU test runner, reference scanner, `ld` instrumentation |
 | [`results/`](results/) | per-test verdicts for the three runs |
 
@@ -98,6 +99,29 @@ That fully explains the `--gc-sections` dependency: without it, `symtab_hdr->con
 is `NULL` at relax time, relax reads the whole symbol table itself, the genuine global
 symbol is `SHN_UNDEF`/`STT_NOTYPE`, the guard fails deterministically, and nothing is
 corrupted.
+
+## Minimal reproducer
+
+Two assembly files, no RTEMS, no compiler — see [`testcase/`](testcase/). Under an
+ASan-built `ld` the unfixed linker reports, on every run:
+
+```
+ERROR: AddressSanitizer: heap-buffer-overflow
+READ of size 4
+    #0 microblaze_elf_relax_section elf32-microblaze.c:2155
+    ...
+    #5 lang_relax_sections ldlang.c:7675
+
+0x61000000037c is located 124 bytes after 192-byte region
+allocated by thread T0 here:
+    #2 bfd_elf_get_elf_syms elf.c:498
+    #3 _bfd_elf_gc_mark elflink.c:13720
+    #6 bfd_elf_gc_sections elflink.c:14277
+```
+
+192 bytes is `sh_info` (6) x `sizeof (Elf_Internal_Sym)` (32) — the locals-only
+cache — and the read is at entry 9, the global the relocation refers to. With the
+fix the same link is clean.
 
 ## The fix
 

@@ -1,0 +1,32 @@
+=================================================================
+==16687==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x61000000037c at pc 0x000100bc5c28 bp 0x00016f2e1c90 sp 0x00016f2e1c88
+READ of size 4 at 0x61000000037c thread T0
+    #0 0x000100bc5c24 in microblaze_elf_relax_section elf32-microblaze.c:2155
+    #1 0x000100b3b93c in lang_size_sections_1 ldlang.c:6088
+    #2 0x000100b3bd60 in lang_size_sections_1 ldlang.c
+    #3 0x000100b3cc48 in lang_size_sections_1 ldlang.c:5826
+    #4 0x000100b3e5e4 in lang_size_sections ldlang.c:6406
+    #5 0x000100b40a78 in lang_relax_sections ldlang.c:7675
+    #6 0x000100b7a05c in ldelf_map_segments ldelfgen.c:41
+    #7 0x000100b4494c in lang_process ldlang.c:8189
+    #8 0x000100b57b24 in main ldmain.c:496
+    #9 0x000185beab94 in start+0x17b8 (dyld:arm64e+0xfffffffffff3ab94)
+
+0x61000000037c is located 124 bytes after 192-byte region [0x610000000240,0x610000000300)
+allocated by thread T0 here:
+    #0 0x00010173138c in malloc+0x78 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x3d38c)
+    #1 0x000100b951e8 in bfd_malloc libbfd.c:275
+    #2 0x000100bda4a0 in bfd_elf_get_elf_syms elf.c:498
+    #3 0x000100c33c5c in _bfd_elf_gc_mark elflink.c:13720
+    #4 0x000100c337dc in _bfd_elf_gc_mark_reloc elflink.c:13681
+    #5 0x000100c33d24 in _bfd_elf_gc_mark elflink.c:13725
+    #6 0x000100c36808 in bfd_elf_gc_sections elflink.c:14277
+    #7 0x000100b433a8 in lang_process ldlang.c:8104
+    #8 0x000100b57b24 in main ldmain.c:496
+    #9 0x000185beab94 in start+0x17b8 (dyld:arm64e+0xfffffffffff3ab94)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow elf32-microblaze.c:2155 in microblaze_elf_relax_section
+Shadow bytes around the buggy address:
+  0x610000000080: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x610000000100: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+  0x610000000180: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
