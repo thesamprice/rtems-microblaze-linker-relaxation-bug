@@ -11,6 +11,11 @@ except as motivation.
 
 ## Result
 
+Baseline is **unmodified upstream master `b7da195b94`**, verified to contain no part
+of the fix before the run. An earlier version of this page compared against a tree
+that already had the fix applied — the numbers happened to be the same, but the
+comparison was meaningless. Corrected here.
+
 ```
 make -k check
 ```

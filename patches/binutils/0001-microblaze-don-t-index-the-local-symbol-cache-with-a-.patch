@@ -1,4 +1,4 @@
-From 34d2e12cac5513a621a2ce371b53a140fab0e84d Mon Sep 17 00:00:00 2001
+From ef8d7c73b9687317fc6c2805ee1fad32458ca3ab Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 10:30:39 -0400
 Subject: [PATCH] microblaze: don't index the local symbol cache with a global
@@ -87,13 +87,13 @@ ld/
  create mode 100644 ld/testsuite/ld-microblaze/relax-addend.s
 
 diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
-index 06cfb42c..f228e003 100644
+index a52358a9..06cfb42c 100644
 --- a/bfd/elf32-microblaze.c
 +++ b/bfd/elf32-microblaze.c
-@@ -2087,6 +2087,9 @@ microblaze_elf_relax_section (bfd *abfd,
- 	      if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
- 		continue;
- 
+@@ -2084,6 +2084,9 @@ microblaze_elf_relax_section (bfd *abfd,
+ 	  irelscanend = irelocs + o->reloc_count;
+ 	  for (irelscan = irelocs; irelscan < irelscanend; irelscan++)
+ 	    {
 +	      if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
 +		continue;
 +
