@@ -1,0 +1,238 @@
+Test run by sprice5 on Thu Aug  6 10:51:12 2026
+Target is microblaze-xilinx-rtems7
+Host   is aarch64-apple-darwin24.5.0
+
+		=== binutils tests ===
+
+Schedule of variations:
+    unix
+
+Running target unix
+WARNING: Assuming target board is the local machine (which is probably wrong).
+You may need to set your DEJAGNU environment variable.
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/aarch64/aarch64.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/addr2line.exp ...
+UNTESTED: addr2line
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/ar.exp ...
+FAIL: ar long file names
+UNSUPPORTED: ar thin archive
+UNSUPPORTED: ar thin archive with nested archive
+UNSUPPORTED: ar symbol table
+UNSUPPORTED: ar argument parsing
+UNSUPPORTED: ar deterministic archive
+UNSUPPORTED: replacing deterministic member
+UNSUPPORTED: replacing non-deterministic member
+UNSUPPORTED: replacing SOURCE_DATE_EPOCH deterministic member
+UNSUPPORTED: ar deleting an element
+UNSUPPORTED: ar moving an element
+FAIL: archive with empty element
+UNSUPPORTED: ar extracting an element
+UNSUPPORTED: ar many files
+UNSUPPORTED: ar adding library dependencies
+UNSUPPORTED: ar unique symbol in archive
+FAIL: ar foreign object
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/arc/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/arm/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/bfin/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/compress.exp ...
+UNSUPPORTED: compressed debug sections
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/cris/cris.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/cxxfilt.exp ...
+PASS: cxxfilt: demangling _Z1fIvJiELb0EEvPDOT1_EFT_DpT0_E
+PASS: cxxfilt: demangling _Z14int_if_addableI1YERiP1AIXszpldecvPT_Li0EdecvS4_Li0EEE
+PASS: cxxfilt: demangling Z3fooiPiPS_PS0_PS1_PS2_PS3_PS4_PS5_PS6_PS7_PS8_PS9_PSA_PSB_PSC_
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/debuginfod.exp ...
+UNSUPPORTED: debuginfod (not found)
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/dlltool.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/elfedit.exp ...
+UNSUPPORTED: Update ELF header 1
+UNSUPPORTED: Update ELF header 2
+UNSUPPORTED: Update ELF header 3
+UNSUPPORTED: Update ELF header 4
+UNSUPPORTED: Update ELF header 5
+UNSUPPORTED: Update ELF header 6
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/hppa/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/i386/i386.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/kvx/kvx.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/loongarch64/loongarch64.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/m68k/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/mips/mips.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/nfp/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/nm.exp ...
+FAIL: nm (assembling)
+FAIL: nm --size-sort (assembling)
+UNSUPPORTED: nm -g on unique symbols
+FAIL: nm --with-symbol-versions (assembling)
+FAIL: nm --line-numbers on DWARF-4 debug info (assembly)
+FAIL: nm --ifunc-chars (assembly)
+FAIL: nm --no-weak (assembly)
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/objcopy.exp ...
+UNSUPPORTED: objcopy object (simple copy)
+UNSUPPORTED: objcopy (verilog data width)
+FAIL: objcopy -i --interleave-width
+ERROR: objdump can not recognize bintest.o
+ERROR: objdump can not recognize bintest.o
+UNRESOLVED: strip
+UNTESTED: strip with saving a symbol
+UNTESTED: strip -g on archive
+UNTESTED: simple objcopy of executable
+UNTESTED: run objcopy of executable
+UNTESTED: strip executable
+UNTESTED: run stripped executable
+UNTESTED: strip executable with saving a symbol
+UNTESTED: run stripped executable with saving a symbol
+UNTESTED: keep only debug data
+UNTESTED: simple objcopy of debug data
+UNTESTED: NOBITS sections retain sh_link field
+UNTESTED: --only-keep-debug for ELF relocatables
+PASS: localize 'fo*' but not 'foo'
+PASS: weaken 'fo*' but not 'foo'
+PASS: weaken 'fo*' but not 'foo', localize foo.
+PASS: weaken '*' but not 'foo' or 'bar'
+PASS: globalize and weaken 'foo'
+PASS: weaken STB_GNU_UNIQUE symbols
+PASS: binutils-all/common-1a
+PASS: binutils-all/common-1b
+PASS: binutils-all/common-1c
+PASS: binutils-all/common-1d
+PASS: binutils-all/common-1e
+PASS: binutils-all/common-1f
+PASS: binutils-all/common-2a
+PASS: binutils-all/common-2b
+PASS: binutils-all/common-2c
+PASS: binutils-all/common-2d
+PASS: binutils-all/common-2e
+PASS: binutils-all/common-2f
+UNSUPPORTED: objcopy object (ELF unknown section type)
+UNSUPPORTED: objcopy (ELF group 1)
+UNSUPPORTED: objcopy (ELF group 2)
+UNSUPPORTED: objcopy (ELF group 3)
+UNSUPPORTED: objcopy (ELF group 4)
+UNSUPPORTED: objcopy (GNU_MBIND section)
+PASS: copy removing group member
+PASS: copy removing all group member
+PASS: copy removing reloc group member
+PASS: copy removing non-reloc group member
+PASS: copy removing reloc and non-reloc group member
+PASS: copy with setting section flags 1
+PASS: copy with unknown section flag
+PASS: add notes section
+PASS: merge notes section (32-bits)
+PASS: v2 gnu build attribute notes (32-bit)
+PASS: v3 gnu build attribute notes (32-bit)
+PASS: v3 gnu build attribute note merging (32-bit)
+PASS: assembler generated build notes
+UNSUPPORTED: Copy object attributes v2 data from an object to another.
+PASS: copy with setting section flags 2
+PASS: copy with setting section flags 3
+PASS: strip --strip-unneeded on common symbol
+PASS: Error when using --keep-global-symbol with --globalize-symbol
+PASS: ihex objcopy test
+PASS: binutils-all/pr19020a
+PASS: binutils-all/pr19020b
+PASS: strip with section group 1
+PASS: strip with section group 2
+UNSUPPORTED: strip empty file
+PASS: strip with section group 4
+PASS: strip with section group 5
+PASS: strip with section group 6
+PASS: strip with section group 7
+PASS: strip with section group 8
+PASS: strip with section group 9
+PASS: strip on STB_GNU_UNIQUE
+PASS: strip -g empty file
+PASS: binutils-all/strip-12
+PASS: binutils-all/strip-13
+PASS: binutils-all/strip-14
+PASS: binutils-all/strip-15
+PASS: strip with build notes
+PASS: --localize-hidden test 1
+PASS: unordered .debug_info references to .debug_ranges
+UNSUPPORTED: unordered .debug_info references to .debug_ranges (ia64)
+PASS: objcopy add-section
+PASS: objcopy add-symbol
+PASS: objcopy add-empty-section
+PASS: objcopy on sections with SHF_EXCLUDE
+PASS: strip --strip-unneeded on sections with SHF_EXCLUDE
+PASS: binutils-all/only-section-01
+PASS: binutils-all/remove-section-01
+PASS: binutils-all/keep-section-1
+PASS: binutils-all/keep-section-2
+PASS: binutils-all/remove-relocs-01
+PASS: binutils-all/remove-relocs-02
+PASS: binutils-all/remove-relocs-03
+PASS: binutils-all/remove-relocs-04
+PASS: binutils-all/remove-relocs-05
+PASS: binutils-all/remove-relocs-06
+PASS: binutils-all/remove-relocs-07
+PASS: binutils-all/remove-relocs-08
+PASS: binutils-all/strip-section-headers-1
+PASS: --localize-hidden test 2
+UNTESTED: strip without global symbol 
+UNTESTED: remove-section relocation sections
+PASS: binutils-all/pr23633
+PASS: binutils-all/set-section-alignment
+UNSUPPORTED: objcopy executable (pr25662)
+PASS: objcopy rename-section with flags - keep relocation
+FAIL: objcopy tek2bin
+FAIL: binary symbol (implicit)
+FAIL: binary symbol (explicit)
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/objdump.exp ...
+PASS: objdump -i
+FAIL: objdump (assembling bintest.s)
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/readelf.exp ...
+UNSUPPORTED: readelf -h bintest (failed to assemble)
+UNSUPPORTED: readelf -S bintest (failed to assemble)
+UNSUPPORTED: readelf -s bintest (failed to assemble)
+UNSUPPORTED: readelf -r bintest (failed to assemble)
+UNSUPPORTED: readelf -s -C bintest (failed to assemble)
+UNTESTED: readelf -wi
+UNTESTED: readelf -wa (compressed)
+UNSUPPORTED: readelf -p: failed to assemble dump test file
+PASS: binutils-all/pr25543
+PASS: readelf SHF_GNU_RETAIN
+PASS: -t (section details) for readelf SHF_GNU_RETAIN
+PASS: Unknown SHF_MASKOS value in section
+PASS: -t (section details) for unknown SHF_MASKOS value in section
+PASS: readelf -wsm readelf-debug-str-offsets-dw4
+PASS: binutils-all/pr26548
+UNSUPPORTED: pr26548e (failed to assemble)
+UNSUPPORTED: readelf -n version (failed to assemble)
+UNSUPPORTED: readelf --debug-dump=loc pr18374 (failed to assemble)
+UNSUPPORTED: readelf --debug-dump=loc locview-1 (failed to assemble)
+UNSUPPORTED: readelf --debug-dump=loc locview-2 (failed to assemble)
+UNSUPPORTED: readelf --decompress --hex-dump .debug_loc z (failed to assemble)
+UNSUPPORTED: readelf -wiaoRlL dw5 (failed to assemble)
+UNSUPPORTED: readelf -wi dwarf-attributes (failed to assemble)
+UNSUPPORTED: readelf --debug-dump=links (failed to assemble debuglink.s)
+UNSUPPORTED: readelf --debug-dump=links (failed to assemble dwo.s)
+UNSUPPORTED: readelf --enable-checks (failed to assemble zero-sec.s)
+PASS: readelf --debug-dump=macro -wN pr26112
+PASS: readelf -wi pr26160
+PASS: readelf -SW corrupt-1
+UNSUPPORTED: readelf -wi dw5-op (failed to assemble)
+FAIL: readelf -j .rela.debug_info --display-section=.rel.debug_info corrupt-1
+FAIL: readelf --display-section=0 corrupt-1
+UNSUPPORTED: readelf -r (RELR): failed to assemble RELR test file
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/riscv/riscv.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/s390/sframe.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/size.exp ...
+FAIL: size (assembling)
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/strings.exp ...
+PASS: strings: decoding little-endian multibyte strings
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/update-section.exp ...
+UNSUPPORTED: update-section.exp
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/vax/objdump.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/wasm32/wasm32.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/windres/windres.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/x86-64/objects.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/x86-64/sframe.exp ...
+Running /private/tmp/claude-501/-Users-sprice5-src-claude-mb/35a84d15-563d-401a-b53a-54fffdd453be/scratchpad/bu/upstream/binutils/testsuite/binutils-all/x86-64/x86-64.exp ...
+
+		=== binutils Summary ===
+
+# of expected passes		92
+# of unexpected failures	17
+# of unresolved testcases	1
+# of untested testcases		17
+# of unsupported tests		55

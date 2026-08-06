@@ -66,6 +66,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`patches/binutils/`](patches/binutils/) | the real fix — 2 lines in `bfd/elf32-microblaze.c` |
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
 | [`ld-microblaze/`](ld-microblaze/) | the dejagnu tests from the patch, readable without unpacking it |
+| [`binutils-testsuite/`](binutils-testsuite/) | whole binutils `make check`, baseline vs patched, with raw `.sum` files |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
 | [`testcase-upstream/`](testcase-upstream/) | **reproducer for current binutils master** — via `.eh_frame`, plus `make check-ld` results |
 | [`testcase/`](testcase/) | reproducer for 2.36-era — via `--gc-sections`, plus an unexecuted dejagnu stub |
@@ -192,18 +193,22 @@ being relaxed (`elf32-microblaze.c:2021`). Only its *other-sections* loop is ung
 Just three files in `bfd/` have such a loop, and the two SH ones do not index `isymbuf`
 by relocation symbol inside it. MicroBlaze is the outlier; the fix does not need to grow.
 
-### ld testsuite
+### binutils testsuite
 
-`make check-ld`, target `microblaze-xilinx-rtems7`, upstream master: **476 expected
-passes, 13 unexpected failures, baseline and patched byte-identical.** The patch changes
-no test outcome. The 13 are pre-existing and unrelated — 8 `sysroot-prefix` variants
-(host environment), plus `ld-discard/zero-range`, `ld-discard/zero-rel`,
-`ld-elf/linkonce1`, `ld-elf/linkonce2`, `ld-elf/pr24511`. Both `.sum` files are in
-[`testcase-upstream/`](testcase-upstream/).
+Whole `make check`, target `microblaze-xilinx-rtems7`, upstream master:
 
-There is no `ld/testsuite/ld-microblaze` directory in binutils — MicroBlaze has no
-target-specific linker tests at all, which is some of the reason a defect this old went
-unnoticed.
+| component | baseline | patched |
+|---|---|---|
+| gas | 323 pass, 2 fail | identical |
+| binutils | 92 pass, 17 fail | identical |
+| ld | 476 pass, 13 fail | **478 pass**, 13 fail |
+
+The only change the patch makes to the entire testsuite is the two tests it adds; the
+32 pre-existing failures are host artifacts present either way. Raw `.sum` files and the
+full breakdown: [`binutils-testsuite/`](binutils-testsuite/).
+
+The patch also adds `ld/testsuite/ld-microblaze/` — **the first linker tests this target
+has ever had**, which is some of the reason a defect this old went unnoticed.
 
 ## Who needs to change
 

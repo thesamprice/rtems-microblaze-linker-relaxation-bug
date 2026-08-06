@@ -45,15 +45,16 @@ PASS: MicroBlaze relaxation preserves R_MICROBLAZE_32 addends
 PASS: MicroBlaze relaxation preserves R_MICROBLAZE_64 addends
 ```
 
-Whole `ld` testsuite, target `microblaze-xilinx-rtems7`:
+Whole binutils `make check`, target `microblaze-xilinx-rtems7`:
 
-| | expected passes | unexpected failures |
-|---|---:|---:|
-| without these tests | 476 | 13 |
-| with these tests | 478 | 13 |
+| component | baseline | patched |
+|---|---|---|
+| gas | 323 pass, 2 fail | identical |
+| binutils | 92 pass, 17 fail | identical |
+| ld | 476 pass, 13 fail | 478 pass, 13 fail |
 
-Delta is exactly the two new passes; the failure set is byte-identical and the
-13 are pre-existing.
+Delta across the whole suite is exactly the two new passes. Details and raw
+`.sum` files: [`../binutils-testsuite/`](../binutils-testsuite/).
 
 ## What they do and do not prove
 

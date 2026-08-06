@@ -27,10 +27,21 @@ so use `git apply -3` or `patch -l` if it does not go on cleanly.
   [`../../testcase-upstream/`](../../testcase-upstream/).
 - Xilinx 2.36, ASan build: same, via the `--gc-sections` route. See
   [`../../testcase/`](../../testcase/).
-- `make check-ld`, target `microblaze-xilinx-rtems7`, upstream master: 476 expected
-  passes without the new tests, 478 with them, 13 pre-existing unexpected failures
-  either way. The delta is exactly the two new passes and the failure set is
-  byte-identical.
+
+Note on evidence: the RTEMS material elsewhere in this repository is *motivation* --
+why the bug matters to a real project -- and is not validation for the patch. The
+validation is the ASan reproducer and the binutils testsuite below.
+- **Whole binutils `make check`**, target `microblaze-xilinx-rtems7`, upstream master:
+
+  | component | baseline | patched |
+  |---|---|---|
+  | gas | 323 pass, 2 fail | identical |
+  | binutils | 92 pass, 17 fail | identical |
+  | ld | 476 pass, 13 fail | 478 pass, 13 fail |
+
+  The only difference in the entire testsuite is the two tests the patch adds. The
+  32 pre-existing failures are host artifacts and are present either way. Raw `.sum`
+  files for both runs: [`../../binutils-testsuite/`](../../binutils-testsuite/).
 - The new tests fail if the addend is corrupted, verified by injecting an
   unconditional four-byte subtraction at the same place. They do not fail on an
   unfixed linker, because the effect of the out-of-bounds read is heap-dependent;
