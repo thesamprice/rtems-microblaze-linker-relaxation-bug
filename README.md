@@ -67,6 +67,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
 | [`ld-microblaze/`](ld-microblaze/) | the dejagnu tests from the patch, readable without unpacking it |
 | [`binutils-testsuite/`](binutils-testsuite/) | whole binutils `make check`, baseline vs patched, with raw `.sum` files |
+| [`torture-suite/`](torture-suite/) | GCC torture suite: executable content byte-identical, 1585/1609 execute tests pass, zero regressions |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
 | [`testcase-upstream/`](testcase-upstream/) | **reproducer for current binutils master** — via `.eh_frame`, plus `make check-ld` results |
 | [`testcase/`](testcase/) | reproducer for 2.36-era — via `--gc-sections`, plus an unexecuted dejagnu stub |
