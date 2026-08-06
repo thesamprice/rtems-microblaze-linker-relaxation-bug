@@ -197,15 +197,18 @@ by relocation symbol inside it. MicroBlaze is the outlier; the fix does not need
 
 Whole `make check`, target `microblaze-xilinx-rtems7`, upstream master:
 
+On `microblaze-elf`, the canonical upstream target:
+
 | component | baseline | patched |
 |---|---|---|
-| gas | 324 pass, 1 fail | identical |
+| gas | 327 pass, 1 fail | identical |
 | binutils | 239 pass, 0 fail | identical |
-| ld | 472 pass, 5 fail | **474 pass**, 5 fail |
+| ld | 473 pass, 4 fail | **475 pass**, 4 fail |
 
 The only change the patch makes to the entire testsuite is the two tests it adds.
 
-The 6 pre-existing failures are **all MicroBlaze-related** — not host artifacts, as an
+Also run on `microblaze-xilinx-rtems7` with the same delta. The 5 pre-existing failures
+are **all MicroBlaze-related** — not host artifacts, as an
 earlier version of this page wrongly claimed. Two of them look like further independent
 target bugs: `bfd/elf32-microblaze.c` has no `RELOC_AGAINST_DISCARDED_SECTION` where 60
 other ELF backends do, and GAS assembles `.dc.b`/`.dc.w` of a label difference to zero.

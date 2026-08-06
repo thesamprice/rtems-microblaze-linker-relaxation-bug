@@ -1,7 +1,12 @@
 # binutils testsuite, baseline vs patched
 
-Binutils' own `make check`, whole suite, with and without the patch. Target
-`microblaze-xilinx-rtems7`, upstream master `b7da195b94` (2.47.50.20260805).
+Binutils' own `make check`, whole suite, with and without the patch, on upstream master
+`b7da195b94` (2.47.50.20260805).
+
+Run on **`microblaze-elf`** — the canonical upstream target, and what a maintainer will
+build. Also run on `microblaze-xilinx-rtems7` for completeness, since that is the
+toolchain where the bug was found; the only difference is one extra pre-existing
+failure, explained below.
 
 RTEMS testsuite results are **not** validation for a binutils change. They are why the
 bug matters, not evidence that the patch is correct.
@@ -9,7 +14,16 @@ bug matters, not evidence that the patch is correct.
 Baseline is **unmodified upstream master**, verified to contain no part of the fix
 before the run.
 
-## Result
+## Result — `microblaze-elf`
+
+| component | baseline | patched | delta |
+|---|---|---|---|
+| gas | 327 pass, 1 fail | 327 pass, 1 fail | none |
+| binutils | 239 pass, 0 fail | 239 pass, 0 fail | none |
+| ld | 473 pass, 4 fail | **475 pass**, 4 fail | **+2** |
+| **total** | **1039 pass, 5 fail** | **1041 pass, 5 fail** | **+2 pass** |
+
+## Result — `microblaze-xilinx-rtems7`
 
 | component | baseline | patched | delta |
 |---|---|---|---|
@@ -17,6 +31,8 @@ before the run.
 | binutils | 239 pass, 0 fail | 239 pass, 0 fail | none |
 | ld | 472 pass, 5 fail | **474 pass**, 5 fail | **+2** |
 | **total** | **1035 pass, 6 fail** | **1037 pass, 6 fail** | **+2 pass** |
+
+The new tests pass on both targets, so they are not RTEMS-specific.
 
 Diffing the full `PASS`/`FAIL`/`XFAIL`/`XPASS`/`UNRESOLVED`/`UNTESTED`/`UNSUPPORTED`
 lists: `gas` and `binutils` **identical**, `ld` identical except
@@ -43,7 +59,10 @@ real. Rebuilt without ASan, `binutils` goes from 92 pass / 17 fail to **239 pass
 **The remaining failures were called "host artifacts". They are not.** All six are
 MicroBlaze-related. That claim was made without checking and was wrong.
 
-## The 6 real failures — all MicroBlaze
+## The real failures — all MicroBlaze
+
+Five on `microblaze-elf`, six on the RTEMS triple. The extra one is `pr24511`, and it
+is purely an artefact of the triple; see below.
 
 Present identically with and without the patch. None are caused by it, and none are
 host problems.
@@ -101,9 +120,10 @@ almost entirely from label differences, which desynchronises `ent->reloc_index` 
 `error in <file>(.eh_frame); no .eh_frame_hdr table will be created` messages that the
 Xilinx patch set silences rather than fixes.
 
-### Missing `__init_array_start` (1)
+### Missing `__init_array_start` (1) — RTEMS triple only
 
-`ld-elf/pr24511` — a known limitation whose `xfail` misses this triple:
+**Does not fail on `microblaze-elf`.** A known limitation whose `xfail` matches the
+canonical target but not the RTEMS one:
 
 ```
 #xfail: ... microblaze*-*-elf* ...
