@@ -1,0 +1,93 @@
+From 4be49bf2af3ca5ad14634e1247b449721c04737e Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Thu, 6 Aug 2026 12:11:32 -0400
+Subject: [PATCH 4/4] microblaze: write the value for BFD_RELOC_8 and
+ BFD_RELOC_16 fixups
+
+md_apply_fix has cases for BFD_RELOC_32 and BFD_RELOC_64 and for the
+MicroBlaze-specific relocations, but none for BFD_RELOC_8 or
+BFD_RELOC_16.  Those fall through to the default and nothing is written,
+so a byte or halfword datum whose value is only known at fixup time
+assembles to zero.  Since the fixup is then resolved and turned into
+BFD_RELOC_NONE, no relocation survives for the linker to correct it
+either, and the zero is permanent.
+
+  .data
+  L0:
+    .dc.b L1-L0
+    .dc.w L1-L0
+    .dc.l L1-L0
+  L1:
+
+assembled to
+
+  0000 00000000 00000000 0000000c
+
+where the word is correct and the byte and halfword are not.
+
+Add the two cases, following the existing BFD_RELOC_32 case.
+
+Fixes gas/all/simple-forward, and also gas/all/forward, which was xfailed
+for microblaze-*-* and now passes; drop it from that xfail list.  gas
+testsuite on microblaze-elf goes from 327 passes and 1 unexpected failure
+to 329 and 0, with no unexpected successes.
+
+gas/
+	* config/tc-microblaze.c (md_apply_fix): Handle BFD_RELOC_8 and
+	BFD_RELOC_16.
+	* testsuite/gas/all/forward.d: Remove the microblaze-*-* xfail.
+---
+ gas/config/tc-microblaze.c      | 23 +++++++++++++++++++++++
+ gas/testsuite/gas/all/forward.d |  2 +-
+ 2 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
+index 42ce97b3..2bba6a59 100644
+--- a/gas/config/tc-microblaze.c
++++ b/gas/config/tc-microblaze.c
+@@ -2142,6 +2142,29 @@ md_apply_fix (fixS *   fixP,
+ 	    }
+ 	}
+       break;
++    case BFD_RELOC_8:
++      /* Don't do anything if the symbol is not defined.  */
++      if (fixP->fx_addsy == NULL || S_IS_DEFINED (fixP->fx_addsy))
++	buf[0] |= (val & 0xff);
++      break;
++
++    case BFD_RELOC_16:
++      /* Don't do anything if the symbol is not defined.  */
++      if (fixP->fx_addsy == NULL || S_IS_DEFINED (fixP->fx_addsy))
++	{
++	  if (target_big_endian)
++	    {
++	      buf[0] |= ((val >> 8) & 0xff);
++	      buf[1] |= (val & 0xff);
++	    }
++	  else
++	    {
++	      buf[1] |= ((val >> 8) & 0xff);
++	      buf[0] |= (val & 0xff);
++	    }
++	}
++      break;
++
+     case BFD_RELOC_32:
+     case BFD_RELOC_RVA:
+     case BFD_RELOC_32_PCREL:
+diff --git a/gas/testsuite/gas/all/forward.d b/gas/testsuite/gas/all/forward.d
+index d921ec51..360ab778 100644
+--- a/gas/testsuite/gas/all/forward.d
++++ b/gas/testsuite/gas/all/forward.d
+@@ -11,7 +11,7 @@
+ # mep and microblaze use complex relocs and don't resolve the relocs.
+ # one of the relocs references minus_one, which is a bug, but no one
+ # seems bothered enough to fix this.
+-#xfail: mep-*-* microblaze-*-*
++#xfail: mep-*-*
+ 
+ .*: .*
+ 
+-- 
+2.39.5 (Apple Git-154)
+

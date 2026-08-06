@@ -1,0 +1,99 @@
+From 9c0e152119d06135c07a514517a8fb93f9380f99 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Thu, 6 Aug 2026 12:07:11 -0400
+Subject: [PATCH 2/4] microblaze: neutralise relocations against discarded
+ sections
+
+microblaze_elf_relocate_section does not handle relocations against
+symbols defined in sections discarded by linkonce or comdat handling.
+bfd/elf32-microblaze.c contains no RELOC_AGAINST_DISCARDED_SECTION at
+all, where 60 other bfd/elf*.c files use it.  The relocation survives and
+resolves against a dead symbol, so debug sections end up holding garbage
+where zero is expected:
+
+  ld-elf/linkonce2
+    regexp "^.*(NONE|unused|UNUSED).*\*ABS\*$"
+    line   "00000000 R_MICROBLAZE_32   foo"
+
+  ld-discard/zero-range
+    regexp "^ 0000 (01)?000000(01)? (01)?000000(01)? 00000000 00000000 .*$"
+    line   " 0000 00000000 00000002 00000000 00000000  ................"
+
+Most backends put the check after symbol resolution and before the
+bfd_link_relocatable early exit.  This one resolves the symbol separately
+in each of two branches, and the relocatable branch returns early for
+global symbols, which is exactly the case ld-elf/linkonce2 exercises.
+The defining section is therefore looked up once before either branch,
+which covers both the final and the relocatable link without
+restructuring the function.
+
+Fixes four existing tests on microblaze-elf:
+
+  ld-discard/zero-range
+  ld-discard/zero-rel
+  ld-elf/linkonce1
+  ld-elf/linkonce2
+
+ld/testsuite goes from 476 passes and 4 unexpected failures to 480 and 0.
+gas and binutils result lists are byte-identical.  No test changes state
+in the other direction.
+
+bfd/
+	* elf32-microblaze.c (microblaze_elf_relocate_section): Look up
+	the section defining the symbol and neutralise relocations
+	against discarded sections.
+---
+ bfd/elf32-microblaze.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index 06cfb42c..c3a1c5bc 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -1063,6 +1063,7 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+       struct elf_link_hash_entry *h;
+       Elf_Internal_Sym *sym;
+       asection *sec;
++      asection *sym_sec;
+       const char *sym_name;
+       bfd_reloc_status_type r = bfd_reloc_ok;
+       const char *errmsg = NULL;
+@@ -1085,6 +1086,35 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+       howto = microblaze_elf_howto_table[r_type];
+       r_symndx = ELF32_R_SYM (rel->r_info);
+ 
++      /* Find the section defining the symbol, so that a relocation
++	 against a section discarded by linkonce or comdat handling can
++	 be neutralised.  The symbol is resolved separately in each of
++	 the two branches below, so this has to be done here to cover
++	 both the final and the relocatable link.  */
++      sym_sec = NULL;
++      if (r_symndx < symtab_hdr->sh_info)
++	sym_sec = local_sections[r_symndx];
++      else
++	{
++	  struct elf_link_hash_entry *hd;
++
++	  hd = sym_hashes[r_symndx - symtab_hdr->sh_info];
++	  while (hd != NULL
++		 && (hd->root.type == bfd_link_hash_indirect
++		     || hd->root.type == bfd_link_hash_warning))
++	    hd = (struct elf_link_hash_entry *) hd->root.u.i.link;
++
++	  if (hd != NULL
++	      && (hd->root.type == bfd_link_hash_defined
++		  || hd->root.type == bfd_link_hash_defweak))
++	    sym_sec = hd->root.u.def.section;
++	}
++
++      if (sym_sec != NULL && discarded_section (sym_sec))
++	RELOC_AGAINST_DISCARDED_SECTION (info, input_bfd, input_section,
++					 rel, 1, relend, R_MICROBLAZE_NONE,
++					 howto, 0, contents);
++
+       if (bfd_link_relocatable (info))
+ 	{
+ 	  /* This is a relocatable link.  We don't have to change
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,500 @@
+Test run on Thu Aug  6 12:10:49 2026
+Target is microblaze-xilinx-elf
+Host   is aarch64-apple-darwin24.5.0
+
+		=== gas tests ===
+
+Schedule of variations:
+    unix
+
+Running target unix
+WARNING: Assuming target board is the local machine (which is probably wrong).
+You may need to set your DEJAGNU environment variable.
+Running <srcdir>/gas/testsuite/gas/aarch64/aarch64.exp ...
+Running <srcdir>/gas/testsuite/gas/aarch64/build-attributes/aarch64-build-attributes.exp ...
+Running <srcdir>/gas/testsuite/gas/aarch64/codeview.exp ...
+Running <srcdir>/gas/testsuite/gas/aarch64/sysreg/aarch64-sysreg.exp ...
+Running <srcdir>/gas/testsuite/gas/all/gas.exp ...
+PASS: pcrel values in assignment
+PASS: simplifiable double subtraction
+PASS: simplifiable double subtraction (-a)
+PASS: simple FP constants
+PASS: .equiv for symbol already set to another one
+PASS: .equiv for symbol already set to an expression
+PASS: Output file must be distinct from input
+PASS: .equ for symbol already set
+PASS: .equ for symbol already set through .eqv
+PASS: .eqv support
+PASS: .eqv for symbol already set
+PASS: eqv involving dot
+PASS: == assignment support
+PASS: == assignment for symbol already set
+PASS: bad recursive assignments
+PASS: gas/all/local-label-overflow
+PASS: simple forward references
+PASS: forward references
+PASS: forward expression
+PASS: .equ redefinitions
+PASS: .equ redefinitions (2)
+PASS: .equ redefinitions (3)
+PASS: .set for symbol already used as label
+PASS: .set for symbol already defined through .comm
+PASS: comment.s: comments in listings
+PASS: general info section in listings
+PASS: difference between forward references
+PASS: struct
+PASS: align
+PASS: align2
+PASS: alternate macro syntax
+PASS: alternate macro syntax (escape)
+PASS: evaluation of simple expressions
+PASS: conditional listings
+PASS: incbin
+PASS: all overflow
+PASS: assignment tests
+PASS: .sleb128 tests
+PASS: .sleb128 tests (2)
+PASS: .sleb128 tests (3)
+PASS: .sleb128 tests (4)
+PASS: .sleb128 tests (5)
+PASS: .sleb128 tests (7)
+PASS: .sleb128 tests (8)
+PASS: undefined symbols in sleb128 directive
+PASS: relax .uleb128
+PASS: .quad tests
+PASS: .quad binary-not tests
+PASS: octa bignum
+PASS: .quad with division
+PASS: .quad with division (fwdref)
+PASS: .octa with division
+PASS: weakref tests, relocations
+PASS: weakref tests, global syms
+PASS: weakref tests, local syms
+PASS: weakref tests, strong undefined syms
+PASS: weakref tests, weak undefined syms
+PASS: all cond-diag
+PASS: e: would close weakref loop: e => a => b => c => d => e
+PASS: a: would close weakref loop: a => b => c => d => e => a
+PASS: is already defined
+PASS: .base64 test
+PASS: .base64 errors test
+PASS: .strings tests
+PASS: .ascii w/ angle brackets
+PASS: gas/all/none
+PASS: quoted symbol names
+PASS: quoted label name followed by whitespace
+PASS: all cond-2
+PASS: all linefile
+PASS: all const-1
+PASS: generic line comment
+PASS: generic line comment -f
+PASS: all macro
+PASS: all pr20312
+PASS: gas/all/err-1.s  (test for errors, line 3)
+PASS: gas/all/err-1.s  (test for errors, line 4)
+PASS: gas/all/err-1.s  (test for errors, line 5)
+PASS: gas/all/err-1.s  (test for errors, line 6)
+PASS: gas/all/err-1.s  (test for errors, line 7)
+PASS: gas/all/err-1.s (test for excess errors)
+PASS: gas/all/err-fakelabel.s  (test for errors, line 3)
+PASS: gas/all/err-fakelabel.s (test for excess errors)
+PASS: gas/all/err-sizeof.s  (test for errors, line 3)
+PASS: gas/all/err-sizeof.s  (test for errors, line 4)
+PASS: gas/all/err-sizeof.s  (test for errors, line 5)
+PASS: gas/all/err-sizeof.s  (test for errors, line 6)
+PASS: gas/all/err-sizeof.s  (test for errors, line 9)
+PASS: gas/all/err-sizeof.s  (test for errors, line 10)
+PASS: gas/all/err-sizeof.s junk (test for errors, line 3)
+PASS: gas/all/err-sizeof.s junk (test for errors, line 4)
+PASS: gas/all/err-sizeof.s junk (test for errors, line 5)
+PASS: gas/all/err-sizeof.s junk (test for errors, line 6)
+PASS: gas/all/err-sizeof.s missing (test for warnings, line 9)
+PASS: gas/all/err-sizeof.s missing (test for warnings, line 10)
+PASS: gas/all/err-sizeof.s (test for excess errors)
+PASS: gas/all/warn-1.s  (test for warnings, line 3)
+PASS: gas/all/warn-1.s  (test for errors, line 4)
+PASS: gas/all/warn-1.s  (test for warnings, line 5)
+PASS: gas/all/warn-1.s  (test for warnings, line 6)
+PASS: gas/all/warn-1.s  (test for warnings, line 7)
+PASS: gas/all/warn-1.s (test for excess errors)
+PASS: .org test 1
+PASS: .org test 2
+PASS: .org test 3
+PASS: .org test 4
+PASS: .org test 5
+PASS: .org test 6
+PASS: fill test with forward labels
+PASS: .xstabs
+PASS: Generate NOPs in an architecture neutral manner
+PASS: Generation of NUL terminated strings
+PASS: gas/all/pr27384
+PASS: gas/all/pr27381
+PASS: gas/all/multibyte1
+PASS: gas/all/multibyte2
+PASS: all multibyte3
+PASS: all multibyte3 -f
+PASS: pre-defined version symbol
+PASS: pre-defined version symbol (empty symbol table)
+PASS: pre-defined version symbol (non-empty symbol table)
+Running <srcdir>/gas/testsuite/gas/alpha/alpha.exp ...
+Running <srcdir>/gas/testsuite/gas/arc/arc.exp ...
+Running <srcdir>/gas/testsuite/gas/arc/warn.exp ...
+Running <srcdir>/gas/testsuite/gas/arm/arm.exp ...
+Running <srcdir>/gas/testsuite/gas/avr/avr.exp ...
+Running <srcdir>/gas/testsuite/gas/bfin/bfin.exp ...
+Running <srcdir>/gas/testsuite/gas/bfin/error.exp ...
+Running <srcdir>/gas/testsuite/gas/bpf/bpf.exp ...
+Running <srcdir>/gas/testsuite/gas/cfi-sframe/cfi-sframe.exp ...
+Running <srcdir>/gas/testsuite/gas/cfi/cfi.exp ...
+Running <srcdir>/gas/testsuite/gas/coff/coff.exp ...
+Running <srcdir>/gas/testsuite/gas/cr16/cr16.exp ...
+Running <srcdir>/gas/testsuite/gas/cr16/pic.exp ...
+Running <srcdir>/gas/testsuite/gas/cris/cris.exp ...
+Running <srcdir>/gas/testsuite/gas/crx/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/csky/csky.exp ...
+Running <srcdir>/gas/testsuite/gas/d10v/d10v.exp ...
+Running <srcdir>/gas/testsuite/gas/d30v/d30.exp ...
+Running <srcdir>/gas/testsuite/gas/dlx/alltests.exp ...
+Running <srcdir>/gas/testsuite/gas/elf/elf.exp ...
+PASS: elf ehopt0
+PASS: .file file names
+PASS: .file file names ordering
+PASS: group section (using readelf -SW)
+PASS: group section (using readelf -g)
+PASS: group section name
+PASS: group section with multiple sections of same name (using readelf -SW)
+PASS: group section with multiple sections of same name (using readelf -g)
+PASS: debug info in group section and non-group section with same name
+PASS: gas/elf/group3
+PASS: Attaching a section to a group
+PASS: Attaching a section to group defined later
+PASS: Errors generated by .attach_to_group
+PASS: automatic section group a
+PASS: automatic section group b
+PASS: .equ redefinitions (ELF)
+PASS: elf equate relocs
+PASS: reloc-section-sym=all
+PASS: reloc-section-sym=internal
+PASS: reloc-section-sym=none
+PASS: Ill-formed directives
+PASS: .text / .previous interaction
+PASS: .text <subsection>
+PASS: .data / .previous interaction
+PASS: .data <subsection>
+PASS: elf section0
+PASS: elf section1
+PASS: elf section2 list
+PASS: note section
+PASS: label arithmetic with multiple same-name sections
+PASS: elf section5 list
+PASS: ELF struct
+PASS: .set with expression
+PASS: diagnostics for visibility directives
+PASS: ELF symbol versioning
+PASS: unsupported .symver with common symbol
+PASS: defining a section with the same name as a symbol
+PASS: .set with IFUNC
+PASS: elf type list
+PASS: elf type-2 list
+PASS: elf section6
+PASS: elf section7
+PASS: section flags
+PASS: section flags (for GNU lto sections)
+PASS: numeric section flags and types
+PASS: Disabling section padding
+PASS: mbind sections 12
+PASS: mbind section contents 12
+PASS: mbind sections without SHF_ALLOC
+PASS: array sections
+PASS: elf section15
+PASS: mbind sections 16
+PASS: mbind section contents 16
+PASS: incorrect section ID
+PASS: linked-to section 1
+PASS: linked-to section 2
+PASS: linked-to section 3
+PASS: incorrect linked-to symbols
+PASS: SHF_GNU_RETAIN sections 22
+PASS: SHF_GNU_RETAIN set with numeric flag value in .section
+PASS: Merge SHF_GNU_RETAIN for non-unique sections
+PASS: Merge SHF_GNU_RETAIN for non-unique sections (check no unmerged)
+PASS: sections 25 (.noinit)
+PASS: sections 26 (.persistent)
+PASS: SHF_GNU_RETAIN sections 27
+PASS: SHF_GNU_RETAIN sections 28
+PASS: SHF_GNU_RETAIN sections 29
+PASS: --sectname-subst plus section attr/type inherting
+PASS: gas/elf/sh-link-abs-1
+PASS: gas/elf/sh-link-abs-2
+PASS: gas/elf/sh-link-common-1
+PASS: gas/elf/sh-link-common-2
+PASS: gas/elf/sh-link-abs-3-32
+PASS: gas/elf/sh-link-abs-4-32
+PASS: gas/elf/sh-link-common-3-32
+PASS: gas/elf/sh-link-common-4-32
+PASS: Setting the sh_link field to 0
+PASS: string sections
+PASS: ELF symbol size
+PASS: sections with entity size
+PASS: DWARF2 1
+PASS: DWARF2 2
+PASS: DWARF2 3
+PASS: DWARF2 4
+PASS: DWARF2 5
+PASS: DWARF2 6
+PASS: DWARF2 7
+PASS: DWARF2 8
+PASS: DWARF2 9
+PASS: DWARF2 10
+PASS: DWARF2 11
+PASS: DWARF2 12
+PASS: DWARF2 13
+PASS: DWARF2 14
+PASS: DWARF2 15
+PASS: DWARF2 16
+PASS: DWARF2 17
+PASS: DWARF2 18
+PASS: DWARF2 19
+PASS: DWARF2_20: debug ranges ignore non-code sections
+PASS: DWARF2 21
+PASS: DWARF5 .file 0 (no directory)
+PASS: DWARF5 .file 0 (directory and relative file)
+PASS: DWARF5 .file 0 (directory and absolute file)
+PASS: DWARF5 dir[0]
+PASS: DWARF5 .loc 0
+PASS: DWARF4 CU
+PASS: DWARF5 CU
+PASS: Check line table is produced with .nops
+PASS: line number entries for section changes inside .irp
+PASS: line number entries for .macro expansions
+PASS: line number entries for expansions of .macro coming from .include
+UNSUPPORTED: Dwarf3 function debug info
+UNSUPPORTED: Dwarf5 function debug info
+UNSUPPORTED: Dwarf5 global function debug info
+UNSUPPORTED: Dwarf5 local function debug info
+PASS: elf line
+PASS: elf line2
+PASS: elf equ-rept
+PASS: DWARF5: no files or directories (PR 25917)
+UNSUPPORTED: good .bss / .struct data allocation directives
+PASS: .bss / .previous interaction
+PASS: .bss <subsection>
+UNSUPPORTED: bad .bss / .struct data allocation directives
+PASS: Check bad section flag
+PASS: Check bad size directive
+PASS: Check bad group
+PASS: PR 27355
+PASS: Multibyte symbol names
+PASS: .startof. / .sizeof.
+PASS: gas/elf/missing-build-notes
+PASS: weak and common directives
+PASS: common and weak directives
+PASS: gas/elf/common3a
+PASS: gas/elf/common3b
+PASS: gas/elf/common4a
+PASS: gas/elf/common4b
+PASS: gas/elf/common5a
+PASS: gas/elf/common5b
+PASS: gas/elf/common5c
+PASS: gas/elf/common5d
+PASS: .strtab section
+PASS: bignum byte values
+PASS: gas/elf/section-symbol-redef
+PASS: gas/elf/section-symbol-redef-2
+PASS: .reloc against undefined local symbol (PR 27228)
+Running <srcdir>/gas/testsuite/gas/epiphany/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/fr30/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/fr30/fr30.exp ...
+Running <srcdir>/gas/testsuite/gas/frv/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/ft32/ft32.exp ...
+Running <srcdir>/gas/testsuite/gas/gnu-attributes/gnu-attributes.exp ...
+PASS: GNU attributes v1/v2: no support for directive .gnu_attribute
+PASS: GNU attributes v2: no support for directive .gnu_subsection
+UNSUPPORTED: GNU attributes v2: error cases
+UNSUPPORTED: GNU attributes v2: correct context switching between interleaved subsections
+UNSUPPORTED: GNU attributes v2: parsing of subsections
+UNSUPPORTED: GNU attributes v2: dump subsections content from attributes vendor section.
+Running <srcdir>/gas/testsuite/gas/h8300/h8300-elf.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/h8300.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t01_mov.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t02_mova.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t03_add.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t04_sub.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t05_cmp.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t06_ari2.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t07_ari3.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t08_or.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t09_xor.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t10_and.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t11_logs.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t12_bit.exp ...
+Running <srcdir>/gas/testsuite/gas/h8300/t13_otr.exp ...
+Running <srcdir>/gas/testsuite/gas/hppa/basic/basic.exp ...
+Running <srcdir>/gas/testsuite/gas/hppa/parse/parse.exp ...
+Running <srcdir>/gas/testsuite/gas/hppa/reloc/reloc.exp ...
+Running <srcdir>/gas/testsuite/gas/hppa/unsorted/unsorted.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/codeview.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/i386.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/ilp32/cfi/ilp32.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/ilp32/elf/ilp32.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/ilp32/ilp32.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/ilp32/lns/ilp32.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/solaris/solaris.exp ...
+Running <srcdir>/gas/testsuite/gas/i386/x86-64.exp ...
+Running <srcdir>/gas/testsuite/gas/ia64/ia64.exp ...
+Running <srcdir>/gas/testsuite/gas/ieee-fp/x930509a.exp ...
+Running <srcdir>/gas/testsuite/gas/ip2k/ip2k-allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/iq2000/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/iq2000/load-hazards.exp ...
+Running <srcdir>/gas/testsuite/gas/iq2000/odd-ldw.exp ...
+Running <srcdir>/gas/testsuite/gas/iq2000/odd-sdw.exp ...
+Running <srcdir>/gas/testsuite/gas/iq2000/yield.exp ...
+Running <srcdir>/gas/testsuite/gas/kvx/kvx.exp ...
+Running <srcdir>/gas/testsuite/gas/lm32/all.exp ...
+Running <srcdir>/gas/testsuite/gas/lns/lns.exp ...
+PASS: lns lns-diag-1
+PASS: lns-duplicate
+PASS: lns-common-1
+Running <srcdir>/gas/testsuite/gas/loongarch/loongarch.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/error.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/m32r.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/m32r2.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/m32rx.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/pic.exp ...
+Running <srcdir>/gas/testsuite/gas/m32r/rel32.exp ...
+Running <srcdir>/gas/testsuite/gas/m68hc11/m68hc11.exp ...
+Running <srcdir>/gas/testsuite/gas/m68k/all.exp ...
+Running <srcdir>/gas/testsuite/gas/mach-o/mach-o.exp ...
+Running <srcdir>/gas/testsuite/gas/macros/macros.exp ...
+PASS: macro test 1
+PASS: macro test 2
+PASS: macro test 3
+PASS: macro irp
+PASS: macro rept
+PASS: macros rept
+PASS: nested irp/irpc/rept
+PASS: macro vararg
+PASS: macro infinite recursion
+PASS: logical and in macro definition
+PASS: semi
+PASS: strings
+PASS: APP with macro without NO_APP
+PASS: APP with macro then NO_APP
+PASS: APP with macro then NO_APP then more code
+PASS: included file with .if 0 wrapped in APP/NO_APP, no final NO_APP, macro in main file
+PASS: APP with linefile
+PASS: macros app6
+PASS: gas/macros/arg1
+PASS: macros badarg
+PASS: macros dot
+PASS: macros end
+PASS: macros purge
+PASS: macros redef
+PASS: gas/macros/paren
+PASS: .exitm outside of a macro
+PASS: macros altmacro
+PASS: macros count
+PASS: macros irp-count
+PASS: macros irpc-quote
+PASS: macros rept-count
+PASS: Nested macros (PR 32484)
+PASS: Nested macros (PR 32486)
+PASS: Nested macros (PR 32487)
+Running <srcdir>/gas/testsuite/gas/mcore/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/mep/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/mep/complex-relocs.exp ...
+Running <srcdir>/gas/testsuite/gas/metag/metag.exp ...
+Running <srcdir>/gas/testsuite/gas/microblaze/allinsn.exp ...
+PASS: gas/microblaze/allinsn
+Running <srcdir>/gas/testsuite/gas/microblaze/endian.exp ...
+PASS: MicroBlaze Big Endian
+PASS: MicroBlaze Little Endian
+Running <srcdir>/gas/testsuite/gas/microblaze/relax_size.exp ...
+PASS: matching relax_size.elf
+PASS: matching relax_size2.elf
+Running <srcdir>/gas/testsuite/gas/microblaze/reloc_sym.exp ...
+PASS: assembling reloc_strongsym
+PASS: assembling reloc_weaksym
+PASS: linking reloc_sym.x
+PASS: disassembling reloc_sym.x
+PASS: matching disassembly
+Running <srcdir>/gas/testsuite/gas/microblaze/special_reg.exp ...
+PASS: gas/microblaze/special_reg
+Running <srcdir>/gas/testsuite/gas/mips/mips.exp ...
+Running <srcdir>/gas/testsuite/gas/mmix/mmix-err.exp ...
+Running <srcdir>/gas/testsuite/gas/mmix/mmix-list.exp ...
+Running <srcdir>/gas/testsuite/gas/mmix/mmix.exp ...
+Running <srcdir>/gas/testsuite/gas/mn10200/basic.exp ...
+Running <srcdir>/gas/testsuite/gas/mn10300/basic.exp ...
+Running <srcdir>/gas/testsuite/gas/mri/mri.exp ...
+Running <srcdir>/gas/testsuite/gas/msp430/msp430.exp ...
+Running <srcdir>/gas/testsuite/gas/mt/errors.exp ...
+Running <srcdir>/gas/testsuite/gas/mt/mt.exp ...
+Running <srcdir>/gas/testsuite/gas/mt/relocs.exp ...
+Running <srcdir>/gas/testsuite/gas/nds32/nds32.exp ...
+Running <srcdir>/gas/testsuite/gas/or1k/or1k.exp ...
+Running <srcdir>/gas/testsuite/gas/pdp11/pdp11.exp ...
+Running <srcdir>/gas/testsuite/gas/pe/pe.exp ...
+Running <srcdir>/gas/testsuite/gas/pj/pj.exp ...
+Running <srcdir>/gas/testsuite/gas/ppc/aix.exp ...
+Running <srcdir>/gas/testsuite/gas/ppc/ppc.exp ...
+Running <srcdir>/gas/testsuite/gas/pru/pru.exp ...
+Running <srcdir>/gas/testsuite/gas/riscv/riscv.exp ...
+Running <srcdir>/gas/testsuite/gas/rl78/rl78.exp ...
+Running <srcdir>/gas/testsuite/gas/rx/rx.exp ...
+Running <srcdir>/gas/testsuite/gas/s12z/s12z.exp ...
+Running <srcdir>/gas/testsuite/gas/s390/s390.exp ...
+Running <srcdir>/gas/testsuite/gas/scfi/aarch64/scfi-aarch64.exp ...
+Running <srcdir>/gas/testsuite/gas/scfi/x86_64/scfi-x86-64.exp ...
+Running <srcdir>/gas/testsuite/gas/score/relax.exp ...
+Running <srcdir>/gas/testsuite/gas/score/relax_32.exp ...
+Running <srcdir>/gas/testsuite/gas/sh/arch/arch.exp ...
+Running <srcdir>/gas/testsuite/gas/sh/basic.exp ...
+Running <srcdir>/gas/testsuite/gas/sh/err.exp ...
+Running <srcdir>/gas/testsuite/gas/sparc-solaris/addend.exp ...
+Running <srcdir>/gas/testsuite/gas/sparc-solaris/gas.exp ...
+Running <srcdir>/gas/testsuite/gas/sparc/mismatch.exp ...
+Running <srcdir>/gas/testsuite/gas/sparc/sparc.exp ...
+Running <srcdir>/gas/testsuite/gas/symver/symver.exp ...
+PASS: symver symver0
+PASS: symver symver1
+PASS: symver symver10a
+PASS: symver symver10b
+PASS: symver symver11
+PASS: symver symver12
+PASS: symver symver13
+PASS: symver symver16
+PASS: symver symver6
+PASS: symver symver7
+PASS: symver symver8
+PASS: symver symver9a
+PASS: symver symver9b
+PASS: symver symver2
+PASS: symver symver3
+PASS: symver symver14
+PASS: symver symver15
+PASS: symver symver17
+Running <srcdir>/gas/testsuite/gas/tic4x/tic4x.exp ...
+Running <srcdir>/gas/testsuite/gas/tic54x/tic54x.exp ...
+Running <srcdir>/gas/testsuite/gas/tic6x/tic6x.exp ...
+Running <srcdir>/gas/testsuite/gas/tilegx/tilegx.exp ...
+Running <srcdir>/gas/testsuite/gas/tilepro/tilepro.exp ...
+Running <srcdir>/gas/testsuite/gas/v850/basic.exp ...
+Running <srcdir>/gas/testsuite/gas/vax/vax.exp ...
+Running <srcdir>/gas/testsuite/gas/visium/error.exp ...
+Running <srcdir>/gas/testsuite/gas/visium/visium.exp ...
+Running <srcdir>/gas/testsuite/gas/wasm32/wasm32.exp ...
+Running <srcdir>/gas/testsuite/gas/xgate/xgate.exp ...
+Running <srcdir>/gas/testsuite/gas/xstormy16/allinsn.exp ...
+Running <srcdir>/gas/testsuite/gas/xtensa/all.exp ...
+Running <srcdir>/gas/testsuite/gas/xtensa/xtensa-err.exp ...
+Running <srcdir>/gas/testsuite/gas/z80/z80.exp ...
+Running <srcdir>/gas/testsuite/gas/z8k/z8k.exp ...
+
+		=== gas Summary ===
+
+# of expected passes		329
+# of unsupported tests		10
+<builddir>/gas/as-new 2.47.50.20260805
+

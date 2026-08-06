@@ -1,67 +1,91 @@
-# binutils patch
+# binutils patch series
 
-**Complete and submittable**: the bfd fix *and* two dejagnu tests in one
-`git am`-able patch against upstream master `b7da195b94` (2.47.50.20260805).
-The commit message carries the analysis and the ChangeLog entries.
-
-No `ChangeLog` file edits are included, and none are needed. Since 2021-07-03
-binutils generates those from the git log — see
-`binutils/README-how-to-make-a-release`, which regenerates with
-`gitlog-to-changelog --since=2021-07-03` and describes that date as "when
-changelog entries were no longer required". The entry belongs in the commit
-message, which is where it is.
+Four `git am`-able patches against upstream master `b7da195b94` (2.47.50.20260805).
+Together they take the MicroBlaze testsuite to **zero unexpected failures** on both
+`microblaze-elf` and `microblaze-xilinx-rtems7`.
 
 ```sh
 cd binutils-gdb
-git am .../0001-microblaze-don-t-index-the-local-symbol-cache-with-a-.patch
+git am .../0001-*.patch .../0002-*.patch .../0003-*.patch .../0004-*.patch
 ```
 
-It also applies to the Xilinx binutils 2.36 snapshot used by the RTEMS MicroBlaze
-toolchain — the surrounding code is unchanged there — though the line numbers differ,
-so use `git apply -3` or `patch -l` if it does not go on cleanly.
+Verified: the series applies to pristine master with `git am`, and the resulting tree is
+identical to the one tested.
 
-## Verified
+## The patches
 
-- Upstream master, ASan build: the reproducer reports a heap-buffer-overflow on every
-  run without the patch, clean on every run with it. See
-  [`../../testcase-upstream/`](../../testcase-upstream/).
-- Xilinx 2.36, ASan build: same, via the `--gc-sections` route. See
-  [`../../testcase/`](../../testcase/).
+| # | what | fixes |
+|---|---|---|
+| 0001 | don't index the local symbol cache with a global symbol index | the relaxation bug; adds 3 new tests |
+| 0002 | neutralise relocations against discarded sections | 4 existing tests |
+| 0003 | widen the `pr24511` xfail to all MicroBlaze targets | 1 existing test |
+| 0004 | write the value for `BFD_RELOC_8` and `BFD_RELOC_16` fixups | 2 existing tests |
 
-Note on evidence: the RTEMS material elsewhere in this repository is *motivation* --
-why the bug matters to a real project -- and is not validation for the patch. The
-validation is the ASan reproducer and the binutils testsuite below.
-- **Whole binutils `make check`**, target `microblaze-xilinx-rtems7`, upstream master:
+**0001** is the substantive one and stands alone — it is the silent miscompilation
+documented in the rest of this repository. The other three are independent bugs found
+while testing it, and each can be taken or dropped separately.
 
-  | component | baseline | patched |
-  |---|---|---|
-  | gas | 323 pass, 2 fail | identical |
-  | binutils | 92 pass, 17 fail | identical |
-  | ld | 476 pass, 13 fail | 478 pass, 13 fail |
+**0002** — `bfd/elf32-microblaze.c` had no `RELOC_AGAINST_DISCARDED_SECTION`, the idiom
+60 other ELF backends use. Relocations into discarded linkonce sections survived and
+resolved against dead symbols.
 
-  The only difference in the entire testsuite is the two tests the patch adds. The
-  32 pre-existing failures are host artifacts and are present either way. Raw `.sum`
-  files for both runs: [`../../binutils-testsuite/`](../../binutils-testsuite/).
-- The new tests fail if the addend is corrupted, verified by injecting an
-  unconditional four-byte subtraction at the same place. They do not fail on an
-  unfixed linker, because the effect of the out-of-bounds read is heap-dependent;
-  see [`../../ld-microblaze/`](../../ld-microblaze/).
-- `git diff --check` reports no whitespace errors; indentation is tabs, matching the
-  surrounding GNU style.
+**0003** — testsuite only. The test already xfails targets whose own linker script does
+not define `__init_array_start`; MicroBlaze is such a target but the glob only covered
+`*-elf` triples.
 
-## Contents
+**0004** — `md_apply_fix` had no case for `BFD_RELOC_8` or `BFD_RELOC_16`, so a byte or
+halfword datum resolved at fixup time assembled to **zero**. It also cures
+`gas/all/forward`, which was xfailed for `microblaze-*-*`; that xfail is dropped in the
+same patch.
 
-```
- bfd/elf32-microblaze.c                          |  3 +
- ld/testsuite/ld-microblaze/microblaze.exp       | new
- ld/testsuite/ld-microblaze/relax-addend.s       | new
- ld/testsuite/ld-microblaze/relax-addend-support.s | new
- ld/testsuite/ld-microblaze/relax-addend.ld      | new
- ld/testsuite/ld-microblaze/relax-addend.d       | new
- ld/testsuite/ld-microblaze/relax-addend-data.d  | new
-```
+## Testsuite
+
+Whole `make check`, both targets, pristine master versus the series applied.
+
+### `microblaze-elf`
+
+| component | baseline | with series |
+|---|---|---|
+| gas | 327 pass, 1 fail | **329 pass, 0 fail** |
+| binutils | 239 pass, 0 fail | 239 pass, 0 fail |
+| ld | 473 pass, 4 fail | **480 pass, 0 fail** |
+
+### `microblaze-xilinx-rtems7`
+
+| component | baseline | with series |
+|---|---|---|
+| gas | 324 pass, 1 fail | **326 pass, 0 fail** |
+| binutils | 239 pass, 0 fail | 239 pass, 0 fail |
+| ld | 472 pass, 5 fail | **479 pass, 0 fail** |
+
+**No test moves in the wrong direction, and `XPASS` is zero everywhere** — which matters
+because 0004 cures a test that was xfailed, and that xfail is removed in the same patch.
+
+Raw `.sum` files: [`../../binutils-testsuite/`](../../binutils-testsuite/).
+
+## Checks run on every patch
+
+- `contrib/check_GNU_style.py` — clean on all four. Verified the checker actually works
+  by feeding it a deliberately mangled version of the same hunk first; it reported all
+  five error classes.
+- `git diff --check` across the whole series — no whitespace errors.
+- `git am` onto pristine master — all four apply, resulting tree identical to the tested
+  one.
+- ChangeLog entries are in the commit messages. Binutils has generated the `ChangeLog`
+  files from the git log since 2021-07-03, per
+  `binutils/README-how-to-make-a-release`.
+
+## Note on evidence
+
+The RTEMS material elsewhere in this repository is *motivation* — why 0001 matters to a
+real project — not validation. Validation is the ASan reproducer in
+[`../../testcase-upstream/`](../../testcase-upstream/) and the testsuite results above.
 
 ## Where to send it
 
-Sourceware Bugzilla against `ld` / MicroBlaze, plus the patch to
+Sourceware Bugzilla against `ld` / MicroBlaze for 0001, plus the series to
 binutils@sourceware.org. Add your own `Signed-off-by:` before sending.
+
+Consider sending 0001 on its own first. It is a two-line fix with a reproducer and a
+clean testsuite; the other three are unrelated and can follow once it lands, rather than
+splitting reviewer attention across four problems with the same target.

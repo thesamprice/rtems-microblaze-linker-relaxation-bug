@@ -1,0 +1,45 @@
+From 5aadda755bf098cc642dcc7e8352f4bc1c937132 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Thu, 6 Aug 2026 12:08:58 -0400
+Subject: [PATCH 3/4] ld/testsuite: widen the pr24511 xfail to all MicroBlaze
+ targets
+
+The test already xfails microblaze*-*-elf*, on the grounds given in its own
+comment: "Most targets with their own scripts don't support init/fini_array
+and thus don't define __init/fini_array_start."
+
+MicroBlaze is such a target -- ld/scripttempl/elfmicroblaze.sc defines
+neither symbol -- but the glob only covers *-elf triples, so the test fails
+rather than xfails on microblaze-xilinx-rtems7 and any other MicroBlaze
+triple.
+
+Widen it to microblaze*-*-*.  ld/testsuite on microblaze-xilinx-rtems7 goes
+from 478 passes and 1 unexpected failure to 479 and 0; on
+microblaze-xilinx-elf the test was already XFAIL and is unaffected.
+
+Providing the symbols in elfmicroblaze.sc would be the alternative fix, but
+that changes what real links produce and is a separate question.
+
+ld/
+	* testsuite/ld-elf/pr24511.d: Widen the MicroBlaze xfail from
+	microblaze*-*-elf* to microblaze*-*-*.
+---
+ ld/testsuite/ld-elf/pr24511.d | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ld/testsuite/ld-elf/pr24511.d b/ld/testsuite/ld-elf/pr24511.d
+index f77a43b9..ec7f584b 100644
+--- a/ld/testsuite/ld-elf/pr24511.d
++++ b/ld/testsuite/ld-elf/pr24511.d
+@@ -4,7 +4,7 @@
+ # Most targets with their own scripts don't support init/fini_array and
+ # thus don't define __init/fini_array_start.
+ #xfail: avr-*-* cr16-*-* crx-*-* d10v-*-* d30v-*-* dlx-*-* ft32-*-* iq2000-*-*
+-#xfail: m68hc1*-*-* mep-*-* microblaze*-*-elf* s12z-*-* v850-*-* visium-*-*
++#xfail: m68hc1*-*-* mep-*-* microblaze*-*-* s12z-*-* v850-*-* visium-*-*
+ #xfail: xgate-*-* xstormy*-*-*
+ # Some targets with their own scripts haven't kept up with elf.sc and
+ # PROVIDE __init_array_start rather than using PROVIDE_HIDDEN.  These
+-- 
+2.39.5 (Apple Git-154)
+

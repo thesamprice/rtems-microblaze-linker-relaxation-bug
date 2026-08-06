@@ -1,8 +1,8 @@
 From 531b63eb8dda80c6088b69f83215afa98ee8f1d5 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 11:45:26 -0400
-Subject: [PATCH] microblaze: don't index the local symbol cache with a global
- symbol index
+Subject: [PATCH 1/4] microblaze: don't index the local symbol cache with a
+ global symbol index
 
 microblaze_elf_relax_section walks the relocations of every other section
 of the BFD it is relaxing and, for R_MICROBLAZE_32, R_MICROBLAZE_32_NONE,

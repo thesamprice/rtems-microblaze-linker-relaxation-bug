@@ -1,0 +1,965 @@
+Test run on Thu Aug  6 12:10:54 2026
+Target is microblaze-xilinx-elf
+Host   is aarch64-apple-darwin24.5.0
+
+		=== ld tests ===
+
+Schedule of variations:
+    unix
+
+Running target unix
+WARNING: Assuming target board is the local machine (which is probably wrong).
+You may need to set your DEJAGNU environment variable.
+Running <srcdir>/ld/testsuite/ld-aarch64/aarch64-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-aarch64/aarch64-nto.exp ...
+Running <srcdir>/ld/testsuite/ld-aarch64/build-attributes/aarch64-build-attributes.exp ...
+Running <srcdir>/ld/testsuite/ld-aarch64/non-contiguous-mem/aarch64-non-contiguous-mem.exp ...
+Running <srcdir>/ld/testsuite/ld-aarch64/protections/aarch64-protections.exp ...
+Running <srcdir>/ld/testsuite/ld-alpha/alpha.exp ...
+Running <srcdir>/ld/testsuite/ld-arc/arc.exp ...
+Running <srcdir>/ld/testsuite/ld-archive/archive.exp ...
+PASS: First regular archive create
+PASS: Second regular archive create
+PASS: First thin archive create
+PASS: Second thin archive create
+PASS: Regular archive w/o index create
+PASS: Thin archive w/o index create
+PASS: Other regular archive create
+PASS: Other thin archive create
+PASS: Other regular archive w/o index create
+PASS: Other thin archive w/o index create
+PASS: Regular archive link
+PASS: Thin archive link
+PASS: Fake archive link
+PASS: Script fake archive link
+PASS: Regular whole archive link
+PASS: Thin whole archive link
+PASS: Fake whole archive link
+PASS: Script fake whole archive link
+PASS: Regular non-group archive link reject
+PASS: Thin non-group archive link reject
+PASS: Fake non-group archive link reject
+PASS: Script fake non-group archive link reject
+PASS: Regular group archive link accept
+PASS: Thin group archive link accept
+PASS: Fake group archive link accept
+PASS: Script fake group archive link accept
+PASS: Regular archive plus regular link
+PASS: Regular archive plus thin link
+PASS: Regular archive plus fake link
+PASS: Regular archive plus script fake link
+PASS: Thin archive plus regular link
+PASS: Thin archive plus thin link
+PASS: Thin archive plus fake link
+PASS: Thin archive plus script fake link
+PASS: Fake archive plus regular link
+PASS: Script fake archive plus regular link
+PASS: Fake archive plus thin link
+PASS: Fake archive plus fake link
+PASS: Script fake archive plus script fake link
+PASS: Regular archive plus whole regular link
+PASS: Regular archive plus whole thin link
+PASS: Regular archive plus whole fake link
+PASS: Regular archive w/o index link accept
+PASS: Thin archive w/o index link accept
+PASS: Fake archive with --no-link-mapless link accept
+PASS: Script fake archive with --no-link-mapless link accept
+PASS: Regular archive w/o index plus thin link accept
+PASS: Thin archive w/o index plus regular link accept
+PASS: Regular non-group archive w/o index link reject
+PASS: Thin non-group archive w/o index link reject
+PASS: Regular group archive w/o index link accept
+PASS: Thin group archive w/o index link accept
+PASS: Regular archive w/o index link reject
+PASS: Thin archive w/o index link reject
+PASS: Regular archive w/o index plus thin link reject
+PASS: Thin archive w/o index plus regular link reject
+Running <srcdir>/ld/testsuite/ld-arm/arm-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-arm/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-attributes/ld-attributes.exp ...
+UNSUPPORTED: Object Attributes v2: mismatch subsection properties with oav2-1-all-optional-1
+UNSUPPORTED: Object Attributes v2: only one input object is copied to the output object
+UNSUPPORTED: Object Attributes v2: 2 files, all optional, 1 more, 1 missing
+UNSUPPORTED: Object Attributes v2: unknown attribute inside known subsection should be removed from the output.
+UNSUPPORTED: Object Attributes v2: unknown subsections are removed from the output.
+UNSUPPORTED: Object Attributes v2: combine non-matching required subsections
+UNSUPPORTED: Object Attributes v2: combine matching required subsections
+Running <srcdir>/ld/testsuite/ld-auto-import/auto-import.exp ...
+Running <srcdir>/ld/testsuite/ld-avr/avr.exp ...
+Running <srcdir>/ld/testsuite/ld-bootstrap/bootstrap.exp ...
+Running <srcdir>/ld/testsuite/ld-bpf/bpf.exp ...
+Running <srcdir>/ld/testsuite/ld-cdtest/cdtest.exp ...
+UNTESTED: cdtest
+UNTESTED: cdtest with -Ur
+Running <srcdir>/ld/testsuite/ld-checks/checks.exp ...
+PASS: check sections 1
+PASS: check sections 2
+Running <srcdir>/ld/testsuite/ld-cris/archive.exp ...
+Running <srcdir>/ld/testsuite/ld-cris/cris.exp ...
+Running <srcdir>/ld/testsuite/ld-crx/crx.exp ...
+Running <srcdir>/ld/testsuite/ld-csky/csky.exp ...
+Running <srcdir>/ld/testsuite/ld-ctf/ctf.exp ...
+UNSUPPORTED: no CTF format support in the compiler, or CTF disabled
+Running <srcdir>/ld/testsuite/ld-cygwin/exe-export.exp ...
+Running <srcdir>/ld/testsuite/ld-d10v/d10v.exp ...
+Running <srcdir>/ld/testsuite/ld-discard/discard.exp ...
+PASS: ld-discard/extern
+PASS: ld-discard/start
+PASS: ld-discard/static
+PASS: ld-discard/zero-range
+PASS: ld-discard/zero-rel
+Running <srcdir>/ld/testsuite/ld-dynamic/export-dynamic-symbol.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/audit.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/binutils.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/build-id.exp ...
+PASS: pr28639a.o
+PASS: pr28639b.o
+PASS: pr28639a.o deadbeef
+PASS: pr28639a
+PASS: pr28639b
+Running <srcdir>/ld/testsuite/ld-elf/comm-data.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/compress.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/dt-relr.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/dwarf.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/eh-group.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/elf.exp ...
+PASS: Build symbol3.a
+PASS: Build symbol3w.a
+PASS: PR ld/21703
+PASS: PR ld/21703 -r
+PASS: Build libretain5.a
+PASS: Build libretain6.a
+PASS: ld-elf/anno-sym
+PASS: Symbol flags copy
+PASS: changelma (pr20659)
+PASS: ld-elf/comm-data4
+PASS: ld-elf/comm-data5
+UNSUPPORTED: ld-elf/commonpage1
+UNSUPPORTED: ld-elf/commonpage2
+PASS: ld-elf/compress1a
+PASS: ld-elf/compress1b
+UNSUPPORTED: ld-elf/compress1c
+PASS: ld-elf/compressed1a
+UNSUPPORTED: ld-elf/compressed1b
+UNSUPPORTED: ld-elf/compressed1c
+UNSUPPORTED: ld-elf/compressed1d-alt
+PASS: ld-elf/compressed1d
+UNSUPPORTED: ld-elf/compressed1e
+UNSUPPORTED: ld-elf/discard1
+UNSUPPORTED: ld-elf/discard2
+UNSUPPORTED: ld-elf/discard3
+UNSUPPORTED: ld-elf/dt-relr-1a
+UNSUPPORTED: ld-elf/dt-relr-1b
+UNSUPPORTED: ld-elf/dt-relr-1c
+UNSUPPORTED: ld-elf/dt-relr-2a
+UNSUPPORTED: ld-elf/dt-relr-2b
+UNSUPPORTED: ld-elf/dt-relr-2c
+UNSUPPORTED: ld-elf/dt-relr-2d
+UNSUPPORTED: ld-elf/dt-relr-2e
+UNSUPPORTED: ld-elf/dt-relr-2f
+UNSUPPORTED: ld-elf/dt-relr-2g
+UNSUPPORTED: ld-elf/dt-relr-2h
+UNSUPPORTED: ld-elf/dt-relr-2i
+UNSUPPORTED: ld-elf/dt-relr-3a
+UNSUPPORTED: ld-elf/dt-relr-3b
+UNSUPPORTED: ld-elf/dynamic1
+UNSUPPORTED: ld-elf/dynsym1
+UNSUPPORTED: ld-elf/eh-frame-hdr
+UNSUPPORTED: ld-elf/eh1
+UNSUPPORTED: ld-elf/eh2
+UNSUPPORTED: ld-elf/eh3
+UNSUPPORTED: ld-elf/eh4
+UNSUPPORTED: ld-elf/eh5
+UNSUPPORTED: ld-elf/eh6
+UNSUPPORTED: ld-elf/ehdr_start-missing
+UNSUPPORTED: ld-elf/ehdr_start-shared
+UNSUPPORTED: ld-elf/ehdr_start-userdef
+UNSUPPORTED: ld-elf/ehdr_start-weak
+UNSUPPORTED: ld-elf/ehdr_start
+PASS: ld-elf/empty
+PASS: ld-elf/empty2
+PASS: ld-elf/endsym
+PASS: ld-elf/exclude3a
+UNSUPPORTED: ld-elf/exclude3b
+PASS: ld-elf/exclude3c
+PASS: ld-elf/expr1
+UNSUPPORTED: ld-elf/fatal-warnings-1a
+UNSUPPORTED: ld-elf/fatal-warnings-1b
+PASS: ld-elf/fatal-warnings-2a
+PASS: ld-elf/fatal-warnings-2b
+PASS: ld-elf/fatal-warnings-3a
+PASS: ld-elf/fatal-warnings-3b
+PASS: ld-elf/fatal-warnings-4a
+PASS: ld-elf/fatal-warnings-4b
+PASS: --set-section-flags test 1 (sections)
+UNSUPPORTED: ld-elf/global1
+PASS: ld-elf/group1
+PASS: ld-elf/group10
+PASS: ld-elf/group11
+PASS: ld-elf/group12
+PASS: ld-elf/group2
+PASS: ld-elf/group3a
+PASS: ld-elf/group3b
+PASS: ld-elf/group4
+PASS: ld-elf/group5
+PASS: ld-elf/group6
+PASS: ld-elf/group7
+PASS: ld-elf/group8a
+PASS: ld-elf/group8b
+PASS: ld-elf/group9a
+PASS: ld-elf/group9b
+UNSUPPORTED: ld-elf/hash-2
+UNSUPPORTED: ld-elf/hash
+UNSUPPORTED: ld-elf/header
+PASS: ld-elf/init-fini-arrays
+PASS: --interleave test byte 0
+PASS: --interleave test byte 4
+UNSUPPORTED: ld-elf/linkinfo1a
+UNSUPPORTED: ld-elf/linkinfo1b
+PASS: ld-elf/linkonce1
+PASS: ld-elf/linkonce2
+UNSUPPORTED: ld-elf/linkonce3
+PASS: ld-elf/linkoncerdiff
+UNSUPPORTED: ld-elf/loadaddr1
+UNSUPPORTED: ld-elf/loadaddr2
+UNSUPPORTED: ld-elf/loadaddr3a
+UNSUPPORTED: ld-elf/loadaddr3b
+UNSUPPORTED: ld-elf/local1
+UNSUPPORTED: ld-elf/maxpage1
+UNSUPPORTED: ld-elf/maxpage2
+UNSUPPORTED: ld-elf/maxpage3a
+UNSUPPORTED: ld-elf/maxpage3b
+UNSUPPORTED: ld-elf/maxpage3c
+UNSUPPORTED: ld-elf/maxpage4
+UNSUPPORTED: ld-elf/maxpage5
+UNSUPPORTED: ld-elf/mbind1a
+UNSUPPORTED: ld-elf/mbind1b
+UNSUPPORTED: ld-elf/mbind1c
+PASS: ld-elf/merge
+PASS: ld-elf/merge2
+PASS: ld-elf/merge3
+PASS: ld-elf/merge5
+UNSUPPORTED: ld-elf/multibss1
+PASS: ld-elf/nobits-1
+UNSUPPORTED: .noinit sections
+UNSUPPORTED: .noinit sections (ld -r)
+PASS: ld-elf/noload-1
+UNSUPPORTED: ld-elf/noload-2
+PASS: ld-elf/noload-3
+PASS: non-contiguous
+PASS: ld-elf/nosectionheader-1
+PASS: ld-elf/nosectionheader-2
+PASS: ld-elf/note-1
+PASS: ld-elf/note-2
+UNSUPPORTED: .note.GNU-stack using SHT_NOTE
+PASS: .note.GNU-stack ld -r SHT_NOTE + SHT_PROGBITS (positive)
+PASS: .note.GNU-stack ld -r SHT_NOTE + SHT_PROGBITS (negative)
+PASS: .note.GNU-stack ld -r SHT_PROGBITS + SHT_NOTE (positive)
+PASS: .note.GNU-stack ld -r SHT_PROGBITS + SHT_NOTE (negative)
+UNSUPPORTED: ld-elf/now-1
+UNSUPPORTED: ld-elf/now-2
+UNSUPPORTED: ld-elf/now-3
+UNSUPPORTED: ld-elf/now-4
+PASS: ld-elf/orphan-10
+PASS: ld-elf/orphan-11
+PASS: ld-elf/orphan-12
+PASS: ld-elf/orphan-13
+PASS: Report warning for orphan sections
+PASS: Report error for orphan sections
+PASS: Discard orphan sections (map file check)
+PASS: Place orphan sections (map file check)
+PASS: ld-elf/orphan-9
+PASS: ld-elf/orphan-region
+PASS: ld-elf/orphan
+PASS: ld-elf/orphan2
+PASS: ld-elf/orphan3
+PASS: ld-elf/orphan4
+PASS: ld-elf/overlay
+UNSUPPORTED: ld-elf/page-size-1
+UNSUPPORTED: .persistent sections
+UNSUPPORTED: .persistent sections (ld -r)
+UNSUPPORTED: ld-elf/pie
+PASS: ld-elf/pr11304
+PASS: ld-elf/pr12851
+UNSUPPORTED: ld-elf/pr12975
+UNSUPPORTED: ld-elf/pr13177
+UNSUPPORTED: ld-elf/pr13195
+PASS: ld-elf/pr13839
+PASS: ld-elf/pr14052
+PASS: ld-elf/pr14156a
+PASS: ld-elf/pr14156b
+PASS: ld-elf/pr14156c
+PASS: ld-elf/pr14926
+UNSUPPORTED: ld-elf/pr16322
+UNSUPPORTED: ld-elf/pr16498a
+UNSUPPORTED: ld-elf/pr16498b
+PASS: ld-elf/pr17550a
+PASS: ld-elf/pr17550b
+PASS: ld-elf/pr17550c
+PASS: ld-elf/pr17550d
+UNSUPPORTED: ld-elf/pr17615
+PASS: ld-elf/pr18735
+PASS: ld-elf/pr19005
+UNSUPPORTED: ld-elf/pr19162
+UNSUPPORTED: ld-elf/pr19539
+UNSUPPORTED: ld-elf/pr19617a
+UNSUPPORTED: ld-elf/pr19617b
+UNSUPPORTED: ld-elf/pr19617c
+UNSUPPORTED: ld-elf/pr19698
+UNSUPPORTED: ld-elf/pr19789
+PASS: ld-elf/pr20513a
+PASS: ld-elf/pr20513b
+UNSUPPORTED: ld-elf/pr20513c
+UNSUPPORTED: ld-elf/pr20513d
+PASS: ld-elf/pr20513e
+PASS: ld-elf/pr20513f
+PASS: ld-elf/pr20528a
+PASS: ld-elf/pr20528b
+UNSUPPORTED: ld-elf/pr21384
+UNSUPPORTED: ld-elf/pr21389a
+UNSUPPORTED: ld-elf/pr21389b
+UNSUPPORTED: ld-elf/pr21389c
+UNSUPPORTED: ld-elf/pr21562a
+UNSUPPORTED: ld-elf/pr21562b
+UNSUPPORTED: ld-elf/pr21562c
+UNSUPPORTED: ld-elf/pr21562d
+UNSUPPORTED: ld-elf/pr21562e
+UNSUPPORTED: ld-elf/pr21562f
+UNSUPPORTED: ld-elf/pr21562g
+UNSUPPORTED: ld-elf/pr21562h
+UNSUPPORTED: ld-elf/pr21562i
+UNSUPPORTED: ld-elf/pr21562j
+UNSUPPORTED: ld-elf/pr21562k
+UNSUPPORTED: ld-elf/pr21562l
+UNSUPPORTED: ld-elf/pr21562m
+UNSUPPORTED: ld-elf/pr21562n
+PASS: ld-elf/pr21884
+UNSUPPORTED: ld-elf/pr21903a
+UNSUPPORTED: ld-elf/pr21903b
+PASS: ld-elf/pr21903c
+UNSUPPORTED: ld-elf/pr21903d
+PASS: ld-elf/pr21903e
+PASS: ld-elf/pr21904
+UNSUPPORTED: PR ld/22269
+UNSUPPORTED: PR ld/22269 (-z dynamic-undefined-weak)
+PASS: PR 22319 - required undefined symbols in output
+UNSUPPORTED: ld-elf/pr22393-1a
+UNSUPPORTED: ld-elf/pr22393-1b
+UNSUPPORTED: ld-elf/pr22393-1c
+UNSUPPORTED: ld-elf/pr22393-1d
+UNSUPPORTED: ld-elf/pr22393-1e
+UNSUPPORTED: ld-elf/pr22393-1f
+UNSUPPORTED: ld-elf/pr22423
+PASS: ld-elf/pr22450
+PASS: ld-elf/pr22677
+PASS: ld-elf/pr22836-1a
+PASS: ld-elf/pr22836-1b
+PASS: ld-elf/pr22836-2
+PASS: ld-elf/pr23591
+PASS: ld-elf/pr23648
+PASS: ld-elf/pr23658-1a
+PASS: ld-elf/pr23658-1b
+UNSUPPORTED: ld-elf/pr23658-1c
+XFAIL: ld-elf/pr23658-1e
+UNSUPPORTED: ld-elf/pr23658-1f
+UNSUPPORTED: ld-elf/pr23658-3
+UNSUPPORTED: ld-elf/pr23900-1
+UNSUPPORTED: ld-elf/pr23900-2a
+UNSUPPORTED: ld-elf/pr23900-2b
+XFAIL: ld-elf/pr24511
+PASS: ld-elf/pr24526
+UNSUPPORTED: ld-elf/pr24718-1
+PASS: ld-elf/pr24819
+PASS: ld-elf/pr25021
+PASS: ld-elf/pr25022
+UNSUPPORTED: ld-elf/pr25207
+PASS: ld-elf/pr25490-1
+UNSUPPORTED: ld-elf/pr25708
+PASS: ld-elf/pr26256-1a
+PASS: ld-elf/pr26256-1b
+PASS: ld-elf/pr26256-2a
+UNSUPPORTED: ld-elf/pr26256-2b-alt
+PASS: ld-elf/pr26256-2b
+PASS: ld-elf/pr26256-3a
+PASS: ld-elf/pr26256-3b
+PASS: ld-elf/pr26681
+PASS: ld-elf/pr26907
+UNSUPPORTED: ld-elf/pr26936
+UNSUPPORTED: ld-elf/pr26978a
+UNSUPPORTED: ld-elf/pr26978b
+UNSUPPORTED: ld-elf/pr26979a
+UNSUPPORTED: ld-elf/pr26979b
+UNSUPPORTED: ld-elf/pr27128a
+UNSUPPORTED: ld-elf/pr27128b
+UNSUPPORTED: ld-elf/pr27128c
+UNSUPPORTED: ld-elf/pr27128d
+UNSUPPORTED: ld-elf/pr27128e
+PASS: ld-elf/pr27259
+PASS: ld-elf/pr27590a
+PASS: ld-elf/pr27590b
+PASS: ld-elf/pr27825-1
+PASS: ld-elf/pr27825-2
+UNSUPPORTED: ld-elf/pr28597
+PASS: ld-elf/pr29259
+XFAIL: ld-elf/pr29435
+UNSUPPORTED: ld-elf/pr30508
+PASS: ld-elf/pr30791a
+PASS: ld-elf/pr30791b
+UNSUPPORTED: --rosegment (pr30907-1) (does not have two read-only segments)
+UNSUPPORTED: --rosegment (pr30907-2) (has at least one RX, one R and one RW segments)
+UNSUPPORTED: ld-elf/pr32341
+PASS: ld-elf/pr32787
+XFAIL: ld-elf/pr33291
+UNSUPPORTED: ld-elf/pr33599
+UNSUPPORTED: --rosegment (has at least one R, one RX and one RW segments)
+PASS: ld-elf/pr349
+XFAIL: ld-elf/property-1_needed-1a
+UNSUPPORTED: ld-elf/property-1_needed-1b
+UNSUPPORTED: ld-elf/property-1_needed-1c
+XFAIL: ld-elf/property-and-1
+XFAIL: ld-elf/property-and-2
+XFAIL: ld-elf/property-and-3
+XFAIL: ld-elf/property-and-4
+XFAIL: ld-elf/property-or-1
+XFAIL: ld-elf/property-or-2
+XFAIL: ld-elf/property-or-3
+XFAIL: ld-elf/property-or-4
+UNSUPPORTED: ld-elf/property-seal-1
+UNSUPPORTED: ld-elf/property-seal-2
+UNSUPPORTED: ld-elf/property-seal-3
+UNSUPPORTED: ld-elf/property-seal-4
+UNSUPPORTED: ld-elf/property-seal-5
+UNSUPPORTED: ld-elf/property-seal-6
+UNSUPPORTED: ld-elf/property-seal-7
+UNSUPPORTED: ld-elf/property-seal-8
+UNSUPPORTED: Discarded dynamic relocation section
+PASS: relocatable with script
+PASS: SHF_GNU_RETAIN 1a
+PASS: SHF_GNU_RETAIN 1b
+PASS: SHF_GNU_RETAIN 2 (remove SHF_GNU_RETAIN sections by placing in /DISCARD/) (map file check)
+PASS: SHF_GNU_RETAIN 3 (keep sections referenced by retained sections)
+PASS: SHF_GNU_RETAIN 4 (keep orphaned sections when not discarding)
+PASS: SHF_GNU_RETAIN 5 (don't pull SHF_GNU_RETAIN section out of lib) (map file check)
+PASS: SHF_GNU_RETAIN 5 (don't pull SHF_GNU_RETAIN section out of lib)
+PASS: SHF_GNU_RETAIN 6a (pull section out of lib required by SHF_GNU_RETAIN section)
+PASS: SHF_GNU_RETAIN 6b (pull section out of lib required by SHF_GNU_RETAIN section)
+PASS: SHF_GNU_RETAIN 7a
+PASS: SHF_GNU_RETAIN 7b
+UNSUPPORTED: ld-elf/rpath-1
+UNSUPPORTED: ld-elf/rpath-2
+UNSUPPORTED: ld-elf/runpath-1
+UNSUPPORTED: ld-elf/runpath-2
+UNSUPPORTED: ld-elf/seg
+PASS: ld-elf/size-1
+PASS: ld-elf/size-2
+PASS: ld-elf/sizeofa
+UNSUPPORTED: ld-elf/sizeofb
+PASS: ld-elf/sizeofc
+PASS: ld-elf/stab
+PASS: ld-elf/startofa
+UNSUPPORTED: ld-elf/startofb
+PASS: ld-elf/startofc
+UNSUPPORTED: ld-elf/strtab
+UNSUPPORTED: ld-elf/tbss4
+UNSUPPORTED: ld-elf/textaddr1
+UNSUPPORTED: ld-elf/textaddr10
+UNSUPPORTED: ld-elf/textaddr2
+UNSUPPORTED: ld-elf/textaddr3
+UNSUPPORTED: ld-elf/textaddr4
+UNSUPPORTED: ld-elf/textaddr5
+UNSUPPORTED: ld-elf/textaddr6
+UNSUPPORTED: ld-elf/textaddr7
+UNSUPPORTED: ld-elf/textaddr8
+UNSUPPORTED: ld-elf/textaddr9
+PASS: ld-elf/unknown
+UNSUPPORTED: ld-elf/unknown2
+PASS: ld-elf/var1
+PASS: ld-elf/warn1
+PASS: ld-elf/warn2
+PASS: ld-elf/warn3
+PASS: Generate empty import library
+PASS: Generate import library
+PASS: Generate undefweak-1.a
+PASS: Generate undefweak-1.o
+PASS: --gc-sections on tls variable
+PASS: __patchable_function_entries section 2
+PASS: __patchable_function_entries section 3
+PASS: __patchable_function_entries section 4
+PASS: __patchable_function_entries section 5
+PASS: __patchable_function_entries section 6
+Running <srcdir>/ld/testsuite/ld-elf/exclude.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/frame.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/indirect.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/linux-x86.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/no-section-header.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/notes.exp ...
+PASS: Linkonce sections with assembler generated notes
+Running <srcdir>/ld/testsuite/ld-elf/package-note.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/provide-hidden.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/readelf.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/sec-to-seg.exp ...
+PASS: assignment of ELF sections to segments (same page)
+PASS: assignment of ELF sections to segments (adjacent pages)
+PASS: assignment of ELF sections to segments (disjoint pages)
+Running <srcdir>/ld/testsuite/ld-elf/sec64k.exp ...
+PASS: ld-elf/64ksec-r
+PASS: ld-elf/64ksec
+Running <srcdir>/ld/testsuite/ld-elf/shared.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/tls.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/tls_common.exp ...
+Running <srcdir>/ld/testsuite/ld-elf/wrap.exp ...
+Running <srcdir>/ld/testsuite/ld-elfcomm/elfcomm.exp ...
+PASS: --sort-common (descending)
+PASS: --sort-common (ascending)
+UNTESTED: size/alignment change of common symbols (warning 1)
+UNTESTED: size/alignment change of common symbols (warning 2)
+UNTESTED: size/alignment change of common symbols (change 1)
+UNTESTED: size/alignment change of common symbols (change 2)
+Running <srcdir>/ld/testsuite/ld-elfvers/vers.exp ...
+Running <srcdir>/ld/testsuite/ld-elfweak/elfweak.exp ...
+Running <srcdir>/ld/testsuite/ld-fastcall/fastcall.exp ...
+Running <srcdir>/ld/testsuite/ld-frv/fdpic.exp ...
+Running <srcdir>/ld/testsuite/ld-frv/frv-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-frv/tls.exp ...
+Running <srcdir>/ld/testsuite/ld-gc/gc.exp ...
+UNTESTED: Check --gc-section
+UNTESTED: Check --gc-section/-q
+UNTESTED: Check --gc-section/-r/-e
+UNTESTED: Check --gc-section/-r/-u
+PASS: --gc-sections -r without -e
+PASS: --gc-sections with note section
+PASS: --gc-sections with multiple debug sections for a function section
+PASS: ld-gc/pr19167
+PASS: --gc-sections with relocations in debug section
+PASS: --gc-sections removing __stop_
+PASS: --gc-sections with __start_
+PASS: --gc-sections with -z start-stop-gc
+PASS: --gc-sections with groups and start/stop syms
+PASS: --gc-sections with other syms and start/stop syms
+PASS: Check --no-print-map-discarded linker option (map file check)
+Running <srcdir>/ld/testsuite/ld-h8300/h8300.exp ...
+Running <srcdir>/ld/testsuite/ld-i386/binutils.exp ...
+Running <srcdir>/ld/testsuite/ld-i386/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-i386/i386.exp ...
+Running <srcdir>/ld/testsuite/ld-i386/no-plt.exp ...
+Running <srcdir>/ld/testsuite/ld-i386/tls.exp ...
+Running <srcdir>/ld/testsuite/ld-ia64/ia64.exp ...
+Running <srcdir>/ld/testsuite/ld-ia64/line.exp ...
+Running <srcdir>/ld/testsuite/ld-ifunc/binutils.exp ...
+Running <srcdir>/ld/testsuite/ld-ifunc/ifunc.exp ...
+Running <srcdir>/ld/testsuite/ld-kvx/kvx-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-libs/libs.exp ...
+PASS: -l: test (preparation)
+PASS: -l: test
+Running <srcdir>/ld/testsuite/ld-linkonce/linkonce.exp ...
+PASS: Build sym.a
+PASS: pr26103
+UNSUPPORTED: ld-linkonce/zeroehl32
+Running <srcdir>/ld/testsuite/ld-loongarch-elf/cmodel.exp ...
+Running <srcdir>/ld/testsuite/ld-loongarch-elf/ifunc.exp ...
+Running <srcdir>/ld/testsuite/ld-loongarch-elf/ld-loongarch-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-loongarch-elf/pic.exp ...
+Running <srcdir>/ld/testsuite/ld-loongarch-elf/relax.exp ...
+Running <srcdir>/ld/testsuite/ld-m68hc11/m68hc11.exp ...
+Running <srcdir>/ld/testsuite/ld-m68k/m68k-got.exp ...
+Running <srcdir>/ld/testsuite/ld-m68k/m68k.exp ...
+Running <srcdir>/ld/testsuite/ld-mep/mep.exp ...
+Running <srcdir>/ld/testsuite/ld-metag/metag.exp ...
+Running <srcdir>/ld/testsuite/ld-microblaze/microblaze.exp ...
+PASS: MicroBlaze relaxation preserves R_MICROBLAZE_32 addends
+PASS: MicroBlaze relaxation preserves addends across .eh_frame editing
+PASS: MicroBlaze relaxation preserves R_MICROBLAZE_64 addends
+Running <srcdir>/ld/testsuite/ld-mips-elf/comm-data.exp ...
+Running <srcdir>/ld/testsuite/ld-mips-elf/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-mips-elf/mips-elf-flags.exp ...
+Running <srcdir>/ld/testsuite/ld-mips-elf/mips-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-misc/defsym.exp ...
+PASS: ld-misc/defsym1
+Running <srcdir>/ld/testsuite/ld-misc/input-remap.exp ...
+XFAIL: --remap-inputs (expected fail)
+PASS: --remap-inputs (simple)
+PASS: --remap-inputs (wildcard)
+PASS: --remap-inputs-file
+PASS: --remap-inputs-file (with map output)
+Running <srcdir>/ld/testsuite/ld-misc/just-symbols.exp ...
+PASS: Object for --just-symbols test
+PASS: Executable for --just-symbols test
+PASS: Object with --just-symbols test
+PASS: Executable with --just-symbols test
+Running <srcdir>/ld/testsuite/ld-mmix/mmix.exp ...
+Running <srcdir>/ld/testsuite/ld-mn10300/mn10300.exp ...
+Running <srcdir>/ld/testsuite/ld-msp430-elf/msp430-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-nds32/nds32.exp ...
+Running <srcdir>/ld/testsuite/ld-or1k/or1k.exp ...
+Running <srcdir>/ld/testsuite/ld-pdp11/pdp11.exp ...
+Running <srcdir>/ld/testsuite/ld-pe/pdb.exp ...
+Running <srcdir>/ld/testsuite/ld-pe/pe-compile.exp ...
+Running <srcdir>/ld/testsuite/ld-pe/pe-run.exp ...
+Running <srcdir>/ld/testsuite/ld-pe/pe-run2-def.exp ...
+Running <srcdir>/ld/testsuite/ld-pe/pe-run2.exp ...
+Running <srcdir>/ld/testsuite/ld-pe/pe.exp ...
+Running <srcdir>/ld/testsuite/ld-pie/pie.exp ...
+Running <srcdir>/ld/testsuite/ld-plugin/lto-binutils.exp ...
+Running <srcdir>/ld/testsuite/ld-plugin/lto.exp ...
+Running <srcdir>/ld/testsuite/ld-plugin/plugin.exp ...
+PASS: plugin API enabled
+UNSUPPORTED: load plugin
+UNSUPPORTED: fail plugin onload
+UNSUPPORTED: fail plugin allsymbolsread
+UNSUPPORTED: fail plugin cleanup
+UNSUPPORTED: plugin all hooks
+UNSUPPORTED: plugin claimfile lost symbol
+UNSUPPORTED: plugin claimfile replace symbol
+UNSUPPORTED: plugin claimfile resolve symbol
+UNSUPPORTED: plugin claimfile replace file
+UNSUPPORTED: load plugin with source
+UNSUPPORTED: plugin claimfile lost symbol with source
+UNSUPPORTED: plugin claimfile replace symbol with source
+UNSUPPORTED: plugin claimfile resolve symbol with source
+UNSUPPORTED: plugin claimfile replace file with source
+UNSUPPORTED: load plugin with source not claimed
+UNSUPPORTED: plugin fatal error
+UNSUPPORTED: plugin error
+UNSUPPORTED: plugin warning
+UNSUPPORTED: plugin set symbol visibility
+UNSUPPORTED: plugin set symbol visibility with source
+Running <srcdir>/ld/testsuite/ld-powerpc/aix52.exp ...
+Running <srcdir>/ld/testsuite/ld-powerpc/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-powerpc/powerpc.exp ...
+Running <srcdir>/ld/testsuite/ld-pru/pru.exp ...
+Running <srcdir>/ld/testsuite/ld-riscv-elf/ld-riscv-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-s12z/s12z.exp ...
+Running <srcdir>/ld/testsuite/ld-s390/binutils.exp ...
+Running <srcdir>/ld/testsuite/ld-s390/s390.exp ...
+Running <srcdir>/ld/testsuite/ld-scripts/align.exp ...
+PASS: align1
+PASS: ld-scripts/align2a
+PASS: ld-scripts/align2b
+PASS: ld-scripts/align3
+PASS: ld-scripts/align4
+PASS: ld-scripts/align5
+PASS: ld-scripts/align2c
+PASS: ld-scripts/subalign
+PASS: ld-scripts/pr23571
+Running <srcdir>/ld/testsuite/ld-scripts/alignof.exp ...
+PASS: ALIGNOF
+Running <srcdir>/ld/testsuite/ld-scripts/assert.exp ...
+PASS: ASSERT
+PASS: ld-scripts/assert2
+Running <srcdir>/ld/testsuite/ld-scripts/crossref.exp ...
+UNTESTED: NOCROSSREFS 1
+UNTESTED: NOCROSSREFS 2
+UNTESTED: NOCROSSREFS 3
+UNTESTED: NOCROSSREFS_TO 1
+UNTESTED: NOCROSSREFS_TO 2
+UNTESTED: NOCROSSREFS_TO 3
+UNTESTED: NOCROSSREFS_TO 4
+Running <srcdir>/ld/testsuite/ld-scripts/data.exp ...
+PASS: ld-scripts/data
+PASS: ld-scripts/fill
+PASS: ld-scripts/fill16
+PASS: ld-scripts/fill2
+PASS: ld-scripts/pr27100
+Running <srcdir>/ld/testsuite/ld-scripts/default-script.exp ...
+PASS: ld-scripts/default-script1
+PASS: ld-scripts/default-script2
+PASS: ld-scripts/default-script3
+PASS: ld-scripts/default-script4
+Running <srcdir>/ld/testsuite/ld-scripts/defined.exp ...
+PASS: DEFINED (PRMS 5699)
+PASS: ld-scripts/defined2
+PASS: ld-scripts/defined3
+PASS: ld-scripts/defined4
+PASS: ld-scripts/defined5
+PASS: ld-scripts/defined6
+PASS: ld-scripts/pr24008 (map file check)
+PASS: ld-scripts/pr24008
+Running <srcdir>/ld/testsuite/ld-scripts/dynamic-sections.exp ...
+PASS: dynamic sections
+Running <srcdir>/ld/testsuite/ld-scripts/empty-address.exp ...
+PASS: ld-scripts/empty-address-1
+PASS: ld-scripts/empty-address-2a
+PASS: ld-scripts/empty-address-2b
+PASS: ld-scripts/empty-address-3a
+PASS: ld-scripts/empty-address-3b
+PASS: ld-scripts/empty-address-3c
+PASS: ld-scripts/empty-address-4
+Running <srcdir>/ld/testsuite/ld-scripts/empty-aligned.exp ...
+PASS: ld-scripts/empty-aligned
+Running <srcdir>/ld/testsuite/ld-scripts/empty-orphan.exp ...
+PASS: ld-scripts/empty-orphan
+Running <srcdir>/ld/testsuite/ld-scripts/exclude-file.exp ...
+PASS: ld-scripts/exclude-file-1 (map file check)
+PASS: ld-scripts/exclude-file-2 (map file check)
+PASS: ld-scripts/exclude-file-3 (map file check)
+PASS: ld-scripts/exclude-file-4 (map file check)
+PASS: ld-scripts/exclude-file-5 (map file check)
+PASS: ld-scripts/exclude-file-6 (map file check)
+PASS: ld-scripts/exclude-file-7 (map file check)
+Running <srcdir>/ld/testsuite/ld-scripts/expr.exp ...
+PASS: ld-scripts/expr1
+PASS: ld-scripts/expr2
+PASS: ld-scripts/sane1
+PASS: ld-scripts/assign-loc
+PASS: ld-scripts/pr14962
+PASS: ld-scripts/pr14962-2
+PASS: ld-scripts/pr18963
+PASS: ld-scripts/pr22267
+Running <srcdir>/ld/testsuite/ld-scripts/extern.exp ...
+PASS: EXTERN
+Running <srcdir>/ld/testsuite/ld-scripts/include.exp ...
+PASS: include-1
+Running <srcdir>/ld/testsuite/ld-scripts/log2.exp ...
+PASS: binary logarithm
+Running <srcdir>/ld/testsuite/ld-scripts/map-address.exp ...
+PASS: map addresses
+PASS: map to directory
+PASS: map to % directory
+PASS: map to %.foo directory
+PASS: map with locals
+PASS: map with resource usage
+Running <srcdir>/ld/testsuite/ld-scripts/overlay-size.exp ...
+PASS: overlay size (map file check)
+PASS: overlay size
+Running <srcdir>/ld/testsuite/ld-scripts/phdrs.exp ...
+PASS: PHDRS
+Running <srcdir>/ld/testsuite/ld-scripts/phdrs2.exp ...
+PASS: PHDRS2
+Running <srcdir>/ld/testsuite/ld-scripts/phdrs3.exp ...
+PASS: PHDRS headers
+PASS: PHDRS headers 3a
+Running <srcdir>/ld/testsuite/ld-scripts/print-memory-usage.exp ...
+PASS: print-memory-usage-1
+PASS: print-memory-usage-2
+PASS: print-memory-usage-3
+Running <srcdir>/ld/testsuite/ld-scripts/provide.exp ...
+PASS: ld-scripts/provide-1
+PASS: ld-scripts/provide-10 (map file check)
+PASS: ld-scripts/provide-11 (map file check)
+PASS: ld-scripts/provide-12 (map file check)
+PASS: ld-scripts/provide-2
+XFAIL: ld-scripts/provide-3
+PASS: ld-scripts/provide-4 (map file check)
+PASS: ld-scripts/provide-4
+PASS: ld-scripts/provide-5 (map file check)
+PASS: ld-scripts/provide-5
+PASS: ld-scripts/provide-6
+PASS: ld-scripts/provide-7
+PASS: ld-scripts/provide-8
+PASS: ld-scripts/provide-9 (map file check)
+Running <srcdir>/ld/testsuite/ld-scripts/rgn-at.exp ...
+PASS: rgn-at1
+PASS: ld-scripts/rgn-at10
+PASS: ld-scripts/rgn-at11
+PASS: rgn-at2
+PASS: rgn-at3
+PASS: rgn-at4
+UNSUPPORTED: rgn-at5
+PASS: ld-scripts/rgn-at6
+PASS: ld-scripts/rgn-at7
+PASS: ld-scripts/rgn-at8
+PASS: ld-scripts/rgn-at9
+Running <srcdir>/ld/testsuite/ld-scripts/rgn-over.exp ...
+PASS: rgn-over1
+PASS: rgn-over1 (map check)
+PASS: rgn-over2
+PASS: rgn-over2 (map check)
+PASS: rgn-over3
+PASS: rgn-over3 (map check)
+PASS: rgn-over4
+PASS: rgn-over4 (map check)
+PASS: rgn-over5
+PASS: rgn-over5 (map check)
+PASS: rgn-over6
+PASS: rgn-over6 (map check)
+PASS: rgn-over7
+PASS: rgn-over7 (map check)
+PASS: rgn-over8
+Running <srcdir>/ld/testsuite/ld-scripts/script.exp ...
+PASS: script
+PASS: MRI script
+PASS: MEMORY
+PASS: MEMORY with symbols
+PASS: extract symbols
+PASS: ld-scripts/region-alias-1
+PASS: ld-scripts/region-alias-2
+PASS: ld-scripts/region-alias-3
+PASS: ld-scripts/region-alias-4
+PASS: ld-scripts/asciz
+PASS: ld-scripts/align-with-input
+PASS: ld-scripts/pr20302
+PASS: ld-scripts/output-section-types
+PASS: ld-scripts/ld-version
+PASS: ld-scripts/ld-version-2
+PASS: ld-scripts/pr24576-1
+PASS: ld-scripts/pr24576-2
+PASS: ld-scripts/linker-script-not-found
+PASS: SEGMENT_START expression not absolute (default)
+PASS: SEGMENT_START expression not absolute (overridden)
+PASS: ld-scripts/pr33265-1
+PASS: ld-scripts/pr33265-2
+PASS: ld-scripts/pr33265-3
+Running <srcdir>/ld/testsuite/ld-scripts/section-flags.exp ...
+PASS: section-flags-1
+PASS: section-flags-2
+Running <srcdir>/ld/testsuite/ld-scripts/section-match.exp ...
+PASS: ld-scripts/section-match-1
+Running <srcdir>/ld/testsuite/ld-scripts/section-order.exp ...
+PASS: Text Section Ordering (section-order-1a)
+PASS: Text Section Ordering (section-order-1b)
+PASS: Data Section Ordering (section-order-1c)
+PASS: Data Section Ordering (section-order-1d)
+Running <srcdir>/ld/testsuite/ld-scripts/sizeof.exp ...
+PASS: SIZEOF
+Running <srcdir>/ld/testsuite/ld-scripts/sort.exp ...
+PASS: ld-scripts/sort-file-reversed-1
+PASS: ld-scripts/sort-file-reversed-2
+PASS: ld-scripts/sort-file
+PASS: ld-scripts/sort-sections-reversed-1
+PASS: ld-scripts/sort-sections-reversed-2
+PASS: ld-scripts/sort-sections-reversed-3
+PASS: --sort-section alignment
+PASS: SORT_BY_ALIGNMENT
+PASS: SORT_BY_ALIGNMENT(SORT_BY_ALIGNMENT())
+PASS: SORT_BY_ALIGNMENT(SORT_BY_ALIGNMENT()) --sort-section alignment
+PASS: SORT_BY_ALIGNMENT(SORT_BY_ALIGNMENT()) --sort-section name
+PASS: SORT_BY_ALIGNMENT(SORT_BY_NAME())
+PASS: SORT_BY_ALIGNMENT(SORT_BY_NAME()) --sort-section name
+PASS: SORT_BY_ALIGNMENT(SORT_BY_NAME()) --sort-section alignment
+PASS: --sort-section name
+PASS: SORT_BY_NAME
+PASS: SORT_BY_NAME(SORT_BY_ALIGNMENT())
+PASS: SORT_BY_NAME(SORT_BY_ALIGNMENT()) --sort-section name
+PASS: SORT_BY_NAME(SORT_BY_ALIGNMENT()) --sort-section alignment
+PASS: SORT_BY_NAME(SORT_BY_NAME())
+PASS: SORT_BY_NAME(SORT_BY_NAME()) --sort-section name
+PASS: SORT_BY_NAME(SORT_BY_NAME()) --sort-section alignment
+PASS: no SORT_BY_NAME/SORT_BY_ALIGNMENT/SORT
+PASS: no SORT_BY_NAME/SORT_BY_ALIGNMENT/SORT (2)
+Running <srcdir>/ld/testsuite/ld-scripts/sysroot-prefix.exp ...
+PASS: sysroot-prefix common plain -Lpath, quoted
+PASS: sysroot-prefix common plain -Lpath, unquoted
+PASS: sysroot-prefix common root-anchored but -Lpath, quoted
+PASS: sysroot-prefix common root-anchored but -Lpath, unquoted
+PASS: sysroot-prefix common full-path, quoted
+PASS: sysroot-prefix common full-path, unquoted
+PASS: sysroot-prefix common root-anchored =-prefixed -Lpath, quoted
+PASS: sysroot-prefix common root-anchored =-prefixed -Lpath, unquoted
+PASS: sysroot-prefix common root-anchored $SYSROOT-prefixed -Lpath, quoted
+PASS: sysroot-prefix common root-anchored $SYSROOT-prefixed -Lpath, unquoted
+PASS: sysroot-prefix common plain =-prefixed with empty, quoted
+PASS: sysroot-prefix common plain =-prefixed with empty, unquoted
+PASS: sysroot-prefix common plain $SYSROOT-prefixed with empty, quoted
+PASS: sysroot-prefix common plain $SYSROOT-prefixed with empty, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored but script outside sysroot, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored but script outside sysroot, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored and script inside sysroot, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored and script inside sysroot, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script outside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script outside, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script outside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script outside, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script inside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script inside, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script inside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script inside, unquoted
+UNSUPPORTED: sysroot-prefix common plain =-prefixed without but -Lpath, quoted
+UNSUPPORTED: sysroot-prefix common plain =-prefixed without but -Lpath, unquoted
+UNSUPPORTED: sysroot-prefix common plain $SYSROOT-prefixed without but -Lpath, quoted
+UNSUPPORTED: sysroot-prefix common plain $SYSROOT-prefixed without but -Lpath, unquoted
+UNSUPPORTED: sysroot-prefix common full-path =-prefixed without, quoted
+UNSUPPORTED: sysroot-prefix common full-path =-prefixed without, unquoted
+UNSUPPORTED: sysroot-prefix common full-path $SYSROOT-prefixed without, quoted
+UNSUPPORTED: sysroot-prefix common full-path $SYSROOT-prefixed without, unquoted
+PASS: sysroot-prefix common plain =-prefixed -Lpath, quoted
+PASS: sysroot-prefix common plain =-prefixed -Lpath, unquoted
+PASS: sysroot-prefix common plain $SYSROOT-prefixed -Lpath, quoted
+PASS: sysroot-prefix common plain $SYSROOT-prefixed -Lpath, unquoted
+PASS: sysroot-prefix common full-path =-prefixed without, quoted
+PASS: sysroot-prefix common full-path =-prefixed without, unquoted
+PASS: sysroot-prefix common full-path $SYSROOT-prefixed without, quoted
+PASS: sysroot-prefix common full-path $SYSROOT-prefixed without, unquoted
+Running <srcdir>/ld/testsuite/ld-scripts/weak.exp ...
+PASS: weak symbols
+Running <srcdir>/ld/testsuite/ld-selective/sel-dump.exp ...
+PASS: Preserve default . = 0
+PASS: Preserve explicit . = 0
+Running <srcdir>/ld/testsuite/ld-selective/selective.exp ...
+UNTESTED: selective1
+UNTESTED: selective2
+UNTESTED: selective3
+UNTESTED: selective4
+UNTESTED: selective5
+UNTESTED: selective6
+Running <srcdir>/ld/testsuite/ld-sframe/sframe.exp ...
+UNSUPPORTED: no SFrame format support in the assembler, or SFrame disabled
+Running <srcdir>/ld/testsuite/ld-sh/arch/arch.exp ...
+Running <srcdir>/ld/testsuite/ld-sh/rd-sh.exp ...
+Running <srcdir>/ld/testsuite/ld-sh/sh-vxworks.exp ...
+Running <srcdir>/ld/testsuite/ld-sh/sh.exp ...
+Running <srcdir>/ld/testsuite/ld-shared/shared.exp ...
+Running <srcdir>/ld/testsuite/ld-size/size.exp ...
+Running <srcdir>/ld/testsuite/ld-sparc/sparc.exp ...
+Running <srcdir>/ld/testsuite/ld-spu/spu.exp ...
+Running <srcdir>/ld/testsuite/ld-srec/srec.exp ...
+UNTESTED: S-records
+UNTESTED: S-records with constructors
+Running <srcdir>/ld/testsuite/ld-tic6x/tic6x.exp ...
+Running <srcdir>/ld/testsuite/ld-tilegx/tilegx.exp ...
+Running <srcdir>/ld/testsuite/ld-tilepro/tilepro.exp ...
+Running <srcdir>/ld/testsuite/ld-undefined/entry.exp ...
+PASS: Build libentry.a
+PASS: --entry foo archive
+PASS: --entry foo -u foo archive
+UNSUPPORTED: -shared --entry foo archive
+UNSUPPORTED: -shared --entry foo -u foo archive
+PASS: --entry foo
+PASS: --entry foo -u foo
+PASS: --entry 0x0
+Running <srcdir>/ld/testsuite/ld-undefined/require-defined.exp ...
+PASS: Build libfoo.a
+PASS: Check require-defined with an undefined symbol
+PASS: Check require-defined can require a symbol from an object
+PASS: Check require-defined does no error on a defined symbol
+PASS: Check require-defined can require a symbol from an archive
+PASS: Check require-defined can require two symbols
+Running <srcdir>/ld/testsuite/ld-undefined/undefined.exp ...
+UNTESTED: undefined
+UNTESTED: undefined function
+UNTESTED: undefined line
+UNSUPPORTED: undefined symbols in shared lib
+Running <srcdir>/ld/testsuite/ld-undefined/weak-undef.exp ...
+PASS: weak undefined data symbols
+UNSUPPORTED: weak undefined function symbols in shared lib
+Running <srcdir>/ld/testsuite/ld-unique/unique.exp ...
+PASS: ld-unique/pr21529
+PASS: Linker setting GNU OSABI on STB_GNU_UNIQUE symbol (PR 10549)
+Running <srcdir>/ld/testsuite/ld-v850/v850.exp ...
+Running <srcdir>/ld/testsuite/ld-vax-elf/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-vax-elf/vax-elf.exp ...
+Running <srcdir>/ld/testsuite/ld-visium/visium.exp ...
+Running <srcdir>/ld/testsuite/ld-vsb/vsb.exp ...
+Running <srcdir>/ld/testsuite/ld-vxworks/vxworks.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/binutils.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/dwarfreloc.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/export-class.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/line.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/no-plt.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/pe-x86-64.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/tls.exp ...
+Running <srcdir>/ld/testsuite/ld-x86-64/x86-64.exp ...
+Running <srcdir>/ld/testsuite/ld-xstormy16/xstormy16.exp ...
+Running <srcdir>/ld/testsuite/ld-xtensa/xtensa-linux.exp ...
+Running <srcdir>/ld/testsuite/ld-xtensa/xtensa.exp ...
+Running <srcdir>/ld/testsuite/ld-z80/z80.exp ...
+Running <srcdir>/ld/testsuite/ld-z8k/z8k.exp ...
+
+		=== ld Summary ===
+
+# of expected passes		480
+# of expected failures		15
+# of untested testcases		28
+# of unsupported tests		235
+./ld-new 2.47.50.20260805
+
