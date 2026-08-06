@@ -67,11 +67,27 @@ FAIL: MicroBlaze relaxation preserves R_MICROBLAZE_32 addends
 FAIL: MicroBlaze relaxation preserves R_MICROBLAZE_64 addends
 ```
 
-**They do not fail on an unfixed linker.** They pass with and without the fix.
-The out-of-bounds read happens on every run, but whether it corrupts the addend
-depends on what the bytes past the end of the symbol buffer happen to be — on
-this host they read as zero and the guard is not satisfied. A portable
+**In a normally built linker they do not fail on unfixed binutils.** The
+out-of-bounds read happens on every run, but whether it corrupts the addend depends on
+what the bytes past the end of the symbol buffer happen to be. A portable
 output-comparison test cannot force that.
+
+**Under an ASan-built linker `relax-addend-eh.d` does fail on unfixed binutils**, because
+the read itself is unconditional and ASan traps it. Measured on `microblaze-xilinx-elf`,
+master `b7da195b94`:
+
+| ld built | fix | result |
+|---|---|---|
+| normally | absent | 3 pass |
+| normally | present | 3 pass |
+| with ASan | absent | **`relax-addend-eh.d` FAILS**, 2 ASan reports |
+| with ASan | present | 3 pass |
+
+So anyone running the binutils testsuite against an ASan-instrumented `ld` — which is
+worth doing anyway — gets a test that genuinely catches this. See
+[`../binutils-testsuite/`](../binutils-testsuite/) for how to set that up; on macOS it
+needs `MallocNanoZone=0` or the allocator prints into tool output and manufactures
+spurious failures.
 
 So these are regression tests that pin correct behaviour, plus the first
 coverage this target has ever had. The evidence that the bug is real is the
