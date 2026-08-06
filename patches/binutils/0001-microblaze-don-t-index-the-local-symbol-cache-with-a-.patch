@@ -1,13 +1,13 @@
-From 0cafa3ca9163885a2b85eae5914921d75732efc5 Mon Sep 17 00:00:00 2001
+From 34d2e12cac5513a621a2ce371b53a140fab0e84d Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Wed, 5 Aug 2026 13:58:22 -0400
+Date: Thu, 6 Aug 2026 10:30:39 -0400
 Subject: [PATCH] microblaze: don't index the local symbol cache with a global
  symbol index
 
 microblaze_elf_relax_section walks the relocations of every other section
-of the BFD it is relaxing, and for R_MICROBLAZE_32, R_MICROBLAZE_32_NONE,
+of the BFD it is relaxing and, for R_MICROBLAZE_32, R_MICROBLAZE_32_NONE,
 R_MICROBLAZE_32_LO, R_MICROBLAZE_64, R_MICROBLAZE_TEXTREL_64 and
-R_MICROBLAZE_64_PCREL it does
+R_MICROBLAZE_64_PCREL, does
 
 	isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
 	if (isym->st_shndx == shndx
@@ -18,23 +18,24 @@ R_MICROBLAZE_64_PCREL it does
 without checking the symbol index against symtab_hdr->sh_info.  isymbuf
 comes from symtab_hdr->contents, which by convention holds only the
 sh_info local symbols, so a relocation against a global symbol indexes
-past the end of the allocation.
+past the end of the allocation.  The scan over the section being relaxed
+already has this guard; the scan over the other sections does not.
 
 The adjustment is only ever meaningful for a reference made through the
 local section symbol of the section being relaxed, so relocations against
-global symbols can be skipped outright.  The same guard is already applied
-to the relocations of the section being relaxed.
+global symbols can be skipped outright.
 
-Besides being an out-of-bounds read, it silently miscompiles.  If the
-bytes past the buffer happen to satisfy the two tests above, the addend of
-a relocation against a global symbol loses four bytes for every IMM the
-relaxation pass deleted below it.  Relocations with a zero addend are
-unaffected, so there is no link error; a structure member reference such as
+Besides being an out-of-bounds read this silently miscompiles.  If the
+bytes past the end of the buffer happen to satisfy the two tests above,
+the addend of a relocation against a global symbol loses four bytes for
+every IMM the relaxation pass deleted below it.  Relocations with a zero
+addend are unaffected, so there is no link error; a structure member
+reference such as
 
 	lwi rD, r0, sym + offsetof (struct s, member)
 
-simply reads a neighbouring member.  This was found as a miscompilation of
-RTEMS built at -O2, where Per_CPU_Control::executing was fetched as
+simply reads a neighbouring member.  This was found as a miscompilation
+of RTEMS built at -O2, where Per_CPU_Control::executing was fetched as
 Per_CPU_Control::dispatch_necessary and the operating system handed out
 the wrong executing thread.
 
@@ -43,30 +44,271 @@ _bfd_elf_discard_section_eh_frame, via bfd_elf_discard_info; in the
 generic ELF emulation both run from the same after_allocation call, so
 the buffer is installed and read out of bounds within one call.  Older
 binutils also populated it from init_reloc_cookie under --gc-sections.
+Confirmed with an ASan-instrumented ld, which reports a
+heap-buffer-overflow READ at elf32-microblaze.c in
+microblaze_elf_relax_section, allocated by bfd_elf_get_elf_syms under
+_bfd_elf_discard_section_eh_frame.
 
-ld/testsuite results for microblaze-xilinx-rtems7 are unchanged.
+Two tests are added, the first for this target.  Both check that an
+addend of 0x18 against a global survives relaxation of a sibling section
+that loses an IMM, one through an instruction operand (R_MICROBLAZE_64)
+and one through a data word (R_MICROBLAZE_32).  They pass with and
+without the fix on hosts where the out-of-bounds read happens to return
+harmless bytes -- the read is unconditional but its effect depends on the
+heap -- and they fail if the addend is corrupted, verified by injecting
+an unconditional four byte subtraction at the same place.
 
+bfd/
 	* elf32-microblaze.c (microblaze_elf_relax_section): Skip
 	relocations against global symbols when scanning the relocations
 	of other sections.
+
+ld/
+	* testsuite/ld-microblaze/microblaze.exp: New file.
+	* testsuite/ld-microblaze/relax-addend.s: New file.
+	* testsuite/ld-microblaze/relax-addend-support.s: New file.
+	* testsuite/ld-microblaze/relax-addend.ld: New file.
+	* testsuite/ld-microblaze/relax-addend.d: New test.
+	* testsuite/ld-microblaze/relax-addend-data.d: New test.
 ---
- bfd/elf32-microblaze.c | 3 +++
- 1 file changed, 3 insertions(+)
+ bfd/elf32-microblaze.c                        |  3 +
+ ld/testsuite/ld-microblaze/microblaze.exp     | 28 ++++++++++
+ .../ld-microblaze/relax-addend-data.d         | 17 ++++++
+ .../ld-microblaze/relax-addend-support.s      | 24 ++++++++
+ ld/testsuite/ld-microblaze/relax-addend.d     | 26 +++++++++
+ ld/testsuite/ld-microblaze/relax-addend.ld    | 23 ++++++++
+ ld/testsuite/ld-microblaze/relax-addend.s     | 55 +++++++++++++++++++
+ 7 files changed, 176 insertions(+)
+ create mode 100644 ld/testsuite/ld-microblaze/microblaze.exp
+ create mode 100644 ld/testsuite/ld-microblaze/relax-addend-data.d
+ create mode 100644 ld/testsuite/ld-microblaze/relax-addend-support.s
+ create mode 100644 ld/testsuite/ld-microblaze/relax-addend.d
+ create mode 100644 ld/testsuite/ld-microblaze/relax-addend.ld
+ create mode 100644 ld/testsuite/ld-microblaze/relax-addend.s
 
 diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
-index a52358a9..06cfb42c 100644
+index 06cfb42c..f228e003 100644
 --- a/bfd/elf32-microblaze.c
 +++ b/bfd/elf32-microblaze.c
-@@ -2084,6 +2084,9 @@ microblaze_elf_relax_section (bfd *abfd,
- 	  irelscanend = irelocs + o->reloc_count;
- 	  for (irelscan = irelocs; irelscan < irelscanend; irelscan++)
- 	    {
+@@ -2087,6 +2087,9 @@ microblaze_elf_relax_section (bfd *abfd,
+ 	      if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
+ 		continue;
+ 
 +	      if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
 +		continue;
 +
  	      if ((ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32)
  		  || (ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32_NONE))
  		{
+diff --git a/ld/testsuite/ld-microblaze/microblaze.exp b/ld/testsuite/ld-microblaze/microblaze.exp
+new file mode 100644
+index 00000000..919fc2c2
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/microblaze.exp
+@@ -0,0 +1,28 @@
++# Expect script for MicroBlaze ELF linker tests.
++#   Copyright (C) 2026 Free Software Foundation, Inc.
++#
++# This file is part of the GNU Binutils.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
++# MA 02110-1301, USA.
++
++if { ![istarget "microblaze*-*-*"] } {
++    return
++}
++
++foreach test [lsort [glob -nocomplain $srcdir/$subdir/*.d]] {
++    verbose [file rootname $test]
++    run_dump_test [file rootname $test]
++}
+diff --git a/ld/testsuite/ld-microblaze/relax-addend-data.d b/ld/testsuite/ld-microblaze/relax-addend-data.d
+new file mode 100644
+index 00000000..c4b5232d
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-addend-data.d
+@@ -0,0 +1,17 @@
++#source: relax-addend.s
++#source: relax-addend-support.s
++#as: -EL
++#ld: -EL -relax --gc-sections -T $srcdir/$subdir/relax-addend.ld
++#readelf: -x .checkdata
++#name: MicroBlaze relaxation preserves R_MICROBLAZE_32 addends
++
++# The same check for the R_MICROBLAZE_32 arm of the same loop, using a data
++# word rather than an instruction so that readelf alone can verify it.
++# .checkdata holds a single word initialised to gvar + 0x18; with .data pinned
++# by the linker script that is 0x90001018, little endian 18 10 00 90.
++# A linker which corrupts the addend stores 14 10 00 90.
++
++#...
++Hex dump of section '.checkdata':
++[ 	]*0x90001100 18100090 .*
++#pass
+diff --git a/ld/testsuite/ld-microblaze/relax-addend-support.s b/ld/testsuite/ld-microblaze/relax-addend-support.s
+new file mode 100644
+index 00000000..03d5eb0f
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-addend-support.s
+@@ -0,0 +1,24 @@
++# Placed in .text.zz_support so that it is laid out after the sections of
++# relax-addend.s and the call from aaa_relaxed is a forward reference.  A
++# backward reference is not relaxed and the test would not exercise anything.
++
++	.section .text.zz_support,"ax",@progbits
++	.globl	near_callee
++	.type	near_callee,@function
++near_callee:
++	rtsd	r15, 8
++	nop
++	.size	near_callee, .-near_callee
++
++	.globl	_start
++_start:
++	brlid	r15, aaa_relaxed
++	nop
++	brlid	r15, zzz_victim
++	nop
++	bri	0
++
++	.data
++	.globl	gvar
++	.align	2
++gvar:	.space	64
+diff --git a/ld/testsuite/ld-microblaze/relax-addend.d b/ld/testsuite/ld-microblaze/relax-addend.d
+new file mode 100644
+index 00000000..951c8737
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-addend.d
+@@ -0,0 +1,26 @@
++#source: relax-addend.s
++#source: relax-addend-support.s
++#as: -EL
++#ld: -EL -relax --gc-sections -T $srcdir/$subdir/relax-addend.ld
++#objdump: -d
++#name: MicroBlaze relaxation preserves R_MICROBLAZE_64 addends
++
++# .text.aaa_relaxed contains an IMM that relaxation deletes.  .text.zzz_victim,
++# a sibling section of the same object, refers to gvar + 0x18.  The linker must
++# not let the deletion disturb that addend.
++#
++# The linker script pins .data, so gvar is at 0x90001000 and the reference must
++# resolve to 0x90001018, encoded as IMM 0x9000 followed by LWI with 0x1018.
++# A linker which corrupts the addend emits e8601014 instead.
++
++.*: +file format .*
++#...
++90000000 <aaa_relaxed>:
++[ 	]*90000000:[ 	]+3021ffe4[ 	]+addik[ 	]+r1, r1, -28
++[ 	]*90000004:[ 	]+f9e10000[ 	]+swi[ 	]+r15, r1, 0
++[ 	]*90000008:[ 	]+b9f40024[ 	]+brlid[ 	]+r15, 36
++#...
++9000001c <zzz_victim>:
++[ 	]*9000001c:[ 	]+b0009000[ 	]+imm[ 	]+-28672
++[ 	]*90000020:[ 	]+e8601018[ 	]+lwi[ 	]+r3, r0, 4120
++#pass
+diff --git a/ld/testsuite/ld-microblaze/relax-addend.ld b/ld/testsuite/ld-microblaze/relax-addend.ld
+new file mode 100644
+index 00000000..ca4d3603
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-addend.ld
+@@ -0,0 +1,23 @@
++/* Fixed layout so that the expected dump is deterministic.  gvar is the first
++   thing in .data, which is pinned, so the reference to gvar + 0x18 has a known
++   value regardless of how the sections happen to be ordered.  */
++ENTRY(_start)
++SECTIONS
++{
++  . = 0x90000000;
++  .text : {
++    *(.text.aaa_relaxed)
++    *(.text.zzz_victim)
++    *(.text.zz_support)
++    *(.text)
++    *(.text.*)
++  }
++  . = 0x90001000;
++  .data : {
++    *(.data)
++    *(.data.*)
++  }
++  . = 0x90001100;
++  .checkdata : { KEEP (*(.checkdata)) }
++  /DISCARD/ : { *(.comment) *(.note*) }
++}
+diff --git a/ld/testsuite/ld-microblaze/relax-addend.s b/ld/testsuite/ld-microblaze/relax-addend.s
+new file mode 100644
+index 00000000..16e50017
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-addend.s
+@@ -0,0 +1,55 @@
++# Linker relaxation must not disturb the addend of an R_MICROBLAZE_64
++# relocation that refers to a symbol outside the section being relaxed.
++#
++# .text.aaa_relaxed contains an IMM that relaxation deletes.  .text.zzz_victim,
++# a sibling section in the same object file, contains
++#
++#	R_MICROBLAZE_64  gvar + 0x18
++#
++# While relaxing .text.aaa_relaxed, microblaze_elf_relax_section() walks the
++# relocations of every other section of the same BFD and, for R_MICROBLAZE_64,
++# indexes isymbuf with ELF32_R_SYM (irelscan->r_info) without checking it
++# against symtab_hdr->sh_info.  gvar is global, so its symbol index is >=
++# sh_info and the read is out of bounds -- isymbuf holds only sh_info entries
++# once --gc-sections has installed the locals-only cache.  If the bytes read
++# happen to satisfy
++#
++#	isym->st_shndx == shndx && ELF32_ST_TYPE (isym->st_info) == STT_SECTION
++#
++# the addend is decremented by calc_fixup(), and gvar + 0x18 links as
++# gvar + 0x14.
++#
++# The out-of-bounds read itself is unconditional; run ld under ASan or
++# valgrind to observe it.  Whether it corrupts the addend depends on what is
++# in the adjacent heap, so the check below is a correctness assertion rather
++# than a reliable trigger.
++
++	.section .text.aaa_relaxed,"ax",@progbits
++	.globl	aaa_relaxed
++	.type	aaa_relaxed,@function
++aaa_relaxed:
++	addik	r1, r1, -28
++	swi	r15, r1, 0
++	brlid	r15, near_callee	# IMM + BRLID; the IMM is deleted
++	nop
++	lwi	r15, r1, 0
++	rtsd	r15, 8
++	addik	r1, r1, 28
++	.size	aaa_relaxed, .-aaa_relaxed
++
++	.section .text.zzz_victim,"ax",@progbits
++	.globl	zzz_victim
++	.type	zzz_victim,@function
++zzz_victim:
++	lwi	r3, r0, gvar+24		# IMM + LWI; R_MICROBLAZE_64 gvar+0x18
++	rtsd	r15, 8
++	nop
++	.size	zzz_victim, .-zzz_victim
++
++/* A data reference to the same symbol with the same non-zero addend.  This
++   goes through the R_MICROBLAZE_32 arm of the same loop, and unlike the
++   instruction above it can be checked with readelf alone.  */
++	.section .checkdata,"aw",@progbits
++	.globl	check_word
++check_word:
++	.4byte	gvar + 0x18
 -- 
 2.39.5 (Apple Git-154)
 

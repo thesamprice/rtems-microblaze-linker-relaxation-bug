@@ -65,6 +65,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`ASAN-GUIDE.md`](ASAN-GUIDE.md) | how to build and use an ASan linker, and what can and cannot be sanitized on the target |
 | [`patches/binutils/`](patches/binutils/) | the real fix — 2 lines in `bfd/elf32-microblaze.c` |
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
+| [`ld-microblaze/`](ld-microblaze/) | the dejagnu tests from the patch, readable without unpacking it |
 | [`evidence/`](evidence/) | object disassembly, instrumented `ld` traces |
 | [`testcase-upstream/`](testcase-upstream/) | **reproducer for current binutils master** — via `.eh_frame`, plus `make check-ld` results |
 | [`testcase/`](testcase/) | reproducer for 2.36-era — via `--gc-sections`, plus an unexecuted dejagnu stub |
