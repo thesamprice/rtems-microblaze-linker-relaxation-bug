@@ -256,6 +256,17 @@ byte-identical. The patch changes no test outcome. There is no
 Not part of this bug, but it surfaced while building the reproducer and it explains
 something RTEMS users see.
 
+**Observation, not something I have proven end to end.** Three separate symptoms on
+this target look like one root cause, and the connection is worth recording even though
+I have not traced it through GAS:
+
+1. `gas/all/simple-forward` fails — `.dc.b` and `.dc.w` of a label difference assemble
+   to **zero**, while `.dc.l` is correct.
+2. `gas/all/forward` is already xfailed for `microblaze-*-*` upstream, so the family is
+   known to be broken here.
+3. `.eh_frame` fails to parse, because it is built almost entirely from label
+   differences.
+
 MicroBlaze GAS emits an `R_MICROBLAZE_NONE` marker relocation for every *resolved*
 label-difference expression — the same mechanism that produces the `R_MICROBLAZE_NONE`
 entries next to conditional branches. In `.eh_frame`, which is built almost entirely
@@ -271,7 +282,9 @@ BFD_ASSERT (cookie->rel < cookie->relend
 This is the source of the `error in <file>(.eh_frame); no .eh_frame_hdr table will be
 created` messages seen when linking libgcc objects, and it is presumably why the Xilinx
 patch set carries `0003-Disable-the-warning-message-for-eh_frame_hdr.patch`. Silencing
-the message does not fix the underlying reloc-marker mismatch. Hand-assembling the CIE
+the message does not fix the underlying reloc-marker mismatch — which is the point: if
+the three symptoms above do share a cause, the Xilinx patch treats the most visible one
+and leaves the assembler behaviour in place. Hand-assembling the CIE
 and FDEs with literal lengths avoids it entirely, which is what the upstream reproducer
 does so its input cannot be dismissed as malformed.
 
