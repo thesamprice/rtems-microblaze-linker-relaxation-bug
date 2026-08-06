@@ -1,4 +1,4 @@
-Test run on Thu Aug  6 11:05:25 2026
+Test run on Thu Aug  6 11:19:31 2026
 Target is microblaze-xilinx-rtems7
 Host   is aarch64-apple-darwin24.5.0
 
@@ -14,28 +14,54 @@ Running <srcdir>/binutils/testsuite/binutils-all/aarch64/aarch64.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/addr2line.exp ...
 UNTESTED: addr2line
 Running <srcdir>/binutils/testsuite/binutils-all/ar.exp ...
-FAIL: ar long file names
-UNSUPPORTED: ar thin archive
-UNSUPPORTED: ar thin archive with nested archive
-UNSUPPORTED: ar symbol table
-UNSUPPORTED: ar argument parsing
-UNSUPPORTED: ar deterministic archive
-UNSUPPORTED: replacing deterministic member
-UNSUPPORTED: replacing non-deterministic member
-UNSUPPORTED: replacing SOURCE_DATE_EPOCH deterministic member
-UNSUPPORTED: ar deleting an element
-UNSUPPORTED: ar moving an element
-FAIL: archive with empty element
-UNSUPPORTED: ar extracting an element
-UNSUPPORTED: ar many files
-UNSUPPORTED: ar adding library dependencies
-UNSUPPORTED: ar unique symbol in archive
-FAIL: ar foreign object
+PASS: ar long file names
+PASS: ar thin archive
+PASS: ar thin archive with nested archive
+PASS: ar symbol table
+PASS: ar argument parsing
+PASS: ar deterministic archive
+PASS: replacing deterministic member
+PASS: replacing non-deterministic member
+PASS: replacing SOURCE_DATE_EPOCH deterministic member
+PASS: ar deleting an element
+PASS: ar moving an element
+PASS: archive with empty element
+PASS: ar extracting an element
+PASS: ar many files
+PASS: ar adding library dependencies
+PASS: ar unique symbol in archive
+PASS: ar foreign object
 Running <srcdir>/binutils/testsuite/binutils-all/arc/objdump.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/arm/objdump.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/bfin/objdump.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/compress.exp ...
-UNSUPPORTED: compressed debug sections
+PASS: objcopy (objcopy compress debug sections)
+PASS: objcopy (objcopy decompress compressed debug sections)
+PASS: objcopy decompress debug sections in archive
+XFAIL: objcopy compress debug sections in archive with zlib-gnu (reason: unexpected output)
+XFAIL: objcopy compress debug sections in archive with zlib-gnu
+PASS: objdump compress debug sections
+PASS: objdump compress debug sections 3
+PASS: objcopy (objcopy compress empty debug sections)
+PASS: Uncompressed .debug_str section starting with ZLIB
+PASS: readelf -t zlib-gabi compress debug sections
+PASS: readelf -S zlib-gabi compress debug sections
+PASS: objcopy (objcopy compress debug sections with zlib-gabi)
+PASS: objcopy (objcopy decompress compressed debug sections with zlib-gabi)
+PASS: objcopy (objcopy zlib-gnu compress debug sections with zlib-gabi)
+PASS: objcopy (objcopy zlib-gabi compress debug sections with zlib-gnu)
+PASS: objcopy (objcopy compress debug sections 3 with zlib-gabi)
+PASS: objcopy (objcopy decompress compressed debug sections 3 with zlib-gabi)
+PASS: objcopy (objcopy zlib-gnu compress debug sections 3 with zlib-gabi)
+PASS: objcopy (objcopy zlib-gabi compress debug sections 3 with zlib-gnu)
+PASS: objcopy (objcopy zlib-gnu compress debug sections 3)
+PASS: objcopy (objcopy zlib-gabi compress debug sections 3)
+PASS: objcopy decompress debug sections in archive with zlib-gabi
+PASS: objcopy compress debug sections in archive with zlib-gabi
+PASS: objdump compress debug sections 3 with zlib-gabi
+PASS: objcopy (objcopy compress debug sections with zstd)
+PASS: objcopy (objcopy decompress compressed debug sections with zstd)
+UNSUPPORTED: gnu-debuglink (build)
 Running <srcdir>/binutils/testsuite/binutils-all/cris/cris.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/cxxfilt.exp ...
 PASS: cxxfilt: demangling _Z1fIvJiELb0EEvPDOT1_EFT_DpT0_E
@@ -59,20 +85,38 @@ Running <srcdir>/binutils/testsuite/binutils-all/m68k/objdump.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/mips/mips.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/nfp/objdump.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/nm.exp ...
-FAIL: nm (assembling)
-FAIL: nm --size-sort (assembling)
-UNSUPPORTED: nm -g on unique symbols
-FAIL: nm --with-symbol-versions (assembling)
-FAIL: nm --line-numbers on DWARF-4 debug info (assembly)
-FAIL: nm --ifunc-chars (assembly)
-FAIL: nm --no-weak (assembly)
+PASS: nm (no arguments)
+PASS: nm -g
+PASS: nm -P
+PASS: nm -t d
+PASS: nm --format posix
+PASS: nm --size-sort
+PASS: nm -g on unique symbols
+PASS: nm --with-symbol-versions
+UNSUPPORTED: nm --line-numbers on DWARF-4 debug info (needs a 64-bit target)
+PASS: nm --ifunc-chars (global ifunc)
+PASS: nm --ifunc-chars (local ifunc)
+PASS: nm --ifunc-chars=-- (global ifunc)
+PASS: nm --ifunc-chars=-- (local ifunc)
+PASS: nm --no-weak (weak symbol with default value)
+PASS: nm --no-weak (weak symbol without default value)
 Running <srcdir>/binutils/testsuite/binutils-all/objcopy.exp ...
-UNSUPPORTED: objcopy object (simple copy)
-UNSUPPORTED: objcopy (verilog data width)
-FAIL: objcopy -i --interleave-width
-ERROR: objdump can not recognize bintest.o
-ERROR: objdump can not recognize bintest.o
-UNRESOLVED: strip
+PASS: objcopy object (simple copy)
+PASS: objcopy (verilog data width 0)
+PASS: objcopy (verilog data width 1)
+PASS: objcopy (verilog data width 2)
+PASS: objcopy (verilog data width 4)
+PASS: objcopy (verilog data width 8)
+PASS: objcopy (verilog output endian-ness == input endian-ness)
+PASS: objcopy --reverse-bytes
+PASS: objcopy -i --interleave-width
+PASS: objcopy -O srec
+PASS: objcopy --set-start
+PASS: objcopy --adjust-start
+PASS: objcopy --adjust-vma
+PASS: objcopy --adjust-section-vma +
+PASS: objcopy --adjust-section-vma =
+UNTESTED: strip
 UNTESTED: strip with saving a symbol
 UNTESTED: strip -g on archive
 UNTESTED: simple objcopy of executable
@@ -103,12 +147,12 @@ PASS: binutils-all/common-2c
 PASS: binutils-all/common-2d
 PASS: binutils-all/common-2e
 PASS: binutils-all/common-2f
-UNSUPPORTED: objcopy object (ELF unknown section type)
-UNSUPPORTED: objcopy (ELF group 1)
-UNSUPPORTED: objcopy (ELF group 2)
-UNSUPPORTED: objcopy (ELF group 3)
-UNSUPPORTED: objcopy (ELF group 4)
-UNSUPPORTED: objcopy (GNU_MBIND section)
+PASS: objcopy object (ELF unknown section type)
+PASS: objcopy (ELF group 1)
+PASS: objcopy (ELF group 2)
+PASS: objcopy (ELF group 3)
+PASS: objcopy (ELF group 4)
+PASS: objcopy (GNU_MBIND section)
 PASS: copy removing group member
 PASS: copy removing all group member
 PASS: copy removing reloc group member
@@ -172,23 +216,60 @@ UNTESTED: strip without global symbol
 UNTESTED: remove-section relocation sections
 PASS: binutils-all/pr23633
 PASS: binutils-all/set-section-alignment
-UNSUPPORTED: objcopy executable (pr25662)
+PASS: objcopy executable (pr25662)
+PASS: objcopy executable (pr25662) timestamp
 PASS: objcopy rename-section with flags - keep relocation
-FAIL: objcopy tek2bin
-FAIL: binary symbol (implicit)
-FAIL: binary symbol (explicit)
+PASS: objcopy tek2bin
+PASS: binary symbol (implicit)
+PASS: binary symbol (explicit)
 Running <srcdir>/binutils/testsuite/binutils-all/objdump.exp ...
 PASS: objdump -i
-FAIL: objdump (assembling bintest.s)
+PASS: objdump -f (tmpdir/bintest.o, tmpdir/bintest.o)
+PASS: objdump -f (tmpdir/bintest.a, bintest2.o)
+PASS: objdump -h (tmpdir/bintest.o, tmpdir/bintest.o)
+PASS: objdump -h (tmpdir/bintest.a, bintest2.o)
+PASS: objdump -t (tmpdir/bintest.o)
+PASS: objdump -t (tmpdir/bintest.a)
+PASS: objdump -r (tmpdir/bintest.o, tmpdir/bintest.o)
+PASS: objdump -r (tmpdir/bintest.a, bintest2.o)
+PASS: objdump -d tmpdir/bintest.o
+PASS: objdump -d tmpdir/bintest.a
+PASS: objdump --disassemble= of consecutive same-name functions (1)
+PASS: objdump --disassemble= of consecutive same-name functions (2)
+PASS: objdump multiple --disassemble=
+PASS: objdump --disassemble=text_symbol2 tmpdir/bintest.o
+PASS: objdump --disassemble=func tmpdir/disasm.o
+PASS: objdump --disassemble=non_func tmpdir/disasm.o
+PASS: objdump -d --show-all-symbols tmpdir/bintest.o
+PASS: objdump -s (tmpdir/bintest.o, tmpdir/bintest.o)
+PASS: objdump -s (tmpdir/bintest.a, bintest2.o)
+PASS: objdump -s -j .zdebug_abbrev
+PASS: objdump -W
+PASS: objdump -Z -s
+PASS: objdump -WL
+PASS: objdump -W for debug_ranges
+PASS: objdump -Wi for DW_OP_*
+UNSUPPORTED: build-id-debuglink (none) (build)
+UNSUPPORTED: build-id-debuglink (zlib) (build)
+PASS: objdump -Wk
+PASS: follow-debuglink (--process-links --dwarf=info --dwarf=str)
+PASS: follow-debuglink (--process-links --headers --wide)
+PASS: objdump -s --start-address 0x80000004 --stop-address 0x80000008 (tmpdir/bintest_signed.o)
+PASS: objdump -d --start-address 0x80000004 --stop-address 0x80000008 (tmpdir/bintest_signed.o)
+UNSUPPORTED: dotnet-assemblies (ordinary x86 DLL)
+UNSUPPORTED: objdump -S (build)
+UNSUPPORTED: objdump --map-global-vars (build)
 Running <srcdir>/binutils/testsuite/binutils-all/readelf.exp ...
-UNSUPPORTED: readelf -h bintest (failed to assemble)
-UNSUPPORTED: readelf -S bintest (failed to assemble)
-UNSUPPORTED: readelf -s bintest (failed to assemble)
-UNSUPPORTED: readelf -r bintest (failed to assemble)
-UNSUPPORTED: readelf -s -C bintest (failed to assemble)
+PASS: finding out ELF size with readelf -h (1)
+PASS: readelf -h bintest
+PASS: readelf -S bintest
+PASS: readelf -s bintest
+PASS: readelf -r bintest
+PASS: readelf -h bintest.thin
+PASS: readelf --syms --demangle --wide mangled
 UNTESTED: readelf -wi
 UNTESTED: readelf -wa (compressed)
-UNSUPPORTED: readelf -p: failed to assemble dump test file
+PASS: readelf -p
 PASS: binutils-all/pr25543
 PASS: readelf SHF_GNU_RETAIN
 PASS: -t (section details) for readelf SHF_GNU_RETAIN
@@ -196,32 +277,43 @@ PASS: Unknown SHF_MASKOS value in section
 PASS: -t (section details) for unknown SHF_MASKOS value in section
 PASS: readelf -wsm readelf-debug-str-offsets-dw4
 PASS: binutils-all/pr26548
-UNSUPPORTED: pr26548e (failed to assemble)
-UNSUPPORTED: readelf -n version (failed to assemble)
-UNSUPPORTED: readelf --debug-dump=loc pr18374 (failed to assemble)
-UNSUPPORTED: readelf --debug-dump=loc locview-1 (failed to assemble)
-UNSUPPORTED: readelf --debug-dump=loc locview-2 (failed to assemble)
-UNSUPPORTED: readelf --decompress --hex-dump .debug_loc z (failed to assemble)
-UNSUPPORTED: readelf -wiaoRlL dw5 (failed to assemble)
-UNSUPPORTED: readelf -wi dwarf-attributes (failed to assemble)
-UNSUPPORTED: readelf --debug-dump=links (failed to assemble debuglink.s)
-UNSUPPORTED: readelf --debug-dump=links (failed to assemble dwo.s)
-UNSUPPORTED: readelf --enable-checks (failed to assemble zero-sec.s)
+PASS: readelf -Wwi pr26548e
+PASS: readelf -n version
+PASS: readelf --debug-dump=loc pr18374
+PASS: readelf --debug-dump=loc locview-1
+PASS: readelf --debug-dump=loc locview-2
+PASS: readelf --decompress --hex-dump .debug_loc z
+PASS: finding out ELF size with readelf -h (2)
+PASS: readelf -wiaoRlL dw5
+PASS: finding out ELF size with readelf -h (3)
+PASS: readelf -wi dwarf-attributes
+PASS: readelf --debug-dump=links -wN debuglink
+PASS: readelf -wKis -P debuglink
+PASS: readelf --debug-dump=links --debug-dump=no-follow-links dwo
+PASS: readelf --enable-checks --sections --wide zero-sec
 PASS: readelf --debug-dump=macro -wN pr26112
 PASS: readelf -wi pr26160
 PASS: readelf -SW corrupt-1
-UNSUPPORTED: readelf -wi dw5-op (failed to assemble)
-FAIL: readelf -j .rela.debug_info --display-section=.rel.debug_info corrupt-1
-FAIL: readelf --display-section=0 corrupt-1
-UNSUPPORTED: readelf -r (RELR): failed to assemble RELR test file
+PASS: finding out ELF size with readelf -h (4)
+PASS: readelf -wi dw5-op
+PASS: readelf -j .rela.debug_info --display-section=.rel.debug_info dw5-op
+PASS: readelf --display-section=0 dw5-op
+PASS: readelf -r (RELR)
 Running <srcdir>/binutils/testsuite/binutils-all/riscv/riscv.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/s390/sframe.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/size.exp ...
-FAIL: size (assembling)
+PASS: size (no arguments)
+PASS: size -A
+PASS: size -G
 Running <srcdir>/binutils/testsuite/binutils-all/strings.exp ...
 PASS: strings: decoding little-endian multibyte strings
 Running <srcdir>/binutils/testsuite/binutils-all/update-section.exp ...
-UNSUPPORTED: update-section.exp
+PASS: objcopy (dump empty section)
+PASS: objcopy (compare update-1.o update-2.o)
+PASS: objcopy (compare update-1.o update-3.o)
+PASS: objcopy (compare update-1.o update-4.o)
+PASS: objcopy (objcopy --update-section .bar=tmpdir/dumped-contents update-2.o)
+PASS: objcopy (objcopy --update-section .foo=tmpdir/dumped-contents  --remove-section .foo update-2.o)
 Running <srcdir>/binutils/testsuite/binutils-all/vax/objdump.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/wasm32/wasm32.exp ...
 Running <srcdir>/binutils/testsuite/binutils-all/windres/windres.exp ...
@@ -231,8 +323,7 @@ Running <srcdir>/binutils/testsuite/binutils-all/x86-64/x86-64.exp ...
 
 		=== binutils Summary ===
 
-# of expected passes		92
-# of unexpected failures	17
-# of unresolved testcases	1
-# of untested testcases		17
-# of unsupported tests		55
+# of expected passes		239
+# of expected failures		2
+# of untested testcases		18
+# of unsupported tests		17

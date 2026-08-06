@@ -1,4 +1,4 @@
-Test run on Thu Aug  6 11:08:54 2026
+Test run on Thu Aug  6 11:20:50 2026
 Target is microblaze-xilinx-rtems7
 Host   is aarch64-apple-darwin24.5.0
 
@@ -850,49 +850,46 @@ PASS: sysroot-prefix common plain =-prefixed with empty, quoted
 PASS: sysroot-prefix common plain =-prefixed with empty, unquoted
 PASS: sysroot-prefix common plain $SYSROOT-prefixed with empty, quoted
 PASS: sysroot-prefix common plain $SYSROOT-prefixed with empty, unquoted
-PASS: sysroot-prefix common root-anchored but script outside sysroot, quoted
-PASS: sysroot-prefix common root-anchored but script outside sysroot, unquoted
-PASS: sysroot-prefix common root-anchored and script inside sysroot, quoted
-PASS: sysroot-prefix common root-anchored and script inside sysroot, unquoted
-PASS: sysroot-prefix common root-anchored =-prefixed script outside, quoted
-PASS: sysroot-prefix common root-anchored =-prefixed script outside, unquoted
-PASS: sysroot-prefix common root-anchored $SYSROOT-prefixed script outside, quoted
-PASS: sysroot-prefix common root-anchored $SYSROOT-prefixed script outside, unquoted
-PASS: sysroot-prefix common root-anchored =-prefixed script inside, quoted
-PASS: sysroot-prefix common root-anchored =-prefixed script inside, unquoted
-PASS: sysroot-prefix common root-anchored $SYSROOT-prefixed script inside, quoted
-PASS: sysroot-prefix common root-anchored $SYSROOT-prefixed script inside, unquoted
-FAIL: sysroot-prefix common plain =-prefixed without but -Lpath, quoted
-FAIL: sysroot-prefix common plain =-prefixed without but -Lpath, unquoted
-FAIL: sysroot-prefix common plain $SYSROOT-prefixed without but -Lpath, quoted
-FAIL: sysroot-prefix common plain $SYSROOT-prefixed without but -Lpath, unquoted
-FAIL: sysroot-prefix common full-path =-prefixed without, quoted
-FAIL: sysroot-prefix common full-path =-prefixed without, unquoted
-FAIL: sysroot-prefix common full-path $SYSROOT-prefixed without, quoted
-FAIL: sysroot-prefix common full-path $SYSROOT-prefixed without, unquoted
-UNSUPPORTED: sysroot-prefix common plain =-prefixed -Lpath, quoted
-UNSUPPORTED: sysroot-prefix common plain =-prefixed -Lpath, unquoted
-UNSUPPORTED: sysroot-prefix common plain $SYSROOT-prefixed -Lpath, quoted
-UNSUPPORTED: sysroot-prefix common plain $SYSROOT-prefixed -Lpath, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored but script outside sysroot, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored but script outside sysroot, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored and script inside sysroot, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored and script inside sysroot, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script outside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script outside, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script outside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script outside, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script inside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored =-prefixed script inside, unquoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script inside, quoted
+UNSUPPORTED: sysroot-prefix common root-anchored $SYSROOT-prefixed script inside, unquoted
+UNSUPPORTED: sysroot-prefix common plain =-prefixed without but -Lpath, quoted
+UNSUPPORTED: sysroot-prefix common plain =-prefixed without but -Lpath, unquoted
+UNSUPPORTED: sysroot-prefix common plain $SYSROOT-prefixed without but -Lpath, quoted
+UNSUPPORTED: sysroot-prefix common plain $SYSROOT-prefixed without but -Lpath, unquoted
 UNSUPPORTED: sysroot-prefix common full-path =-prefixed without, quoted
 UNSUPPORTED: sysroot-prefix common full-path =-prefixed without, unquoted
 UNSUPPORTED: sysroot-prefix common full-path $SYSROOT-prefixed without, quoted
 UNSUPPORTED: sysroot-prefix common full-path $SYSROOT-prefixed without, unquoted
+PASS: sysroot-prefix common plain =-prefixed -Lpath, quoted
+PASS: sysroot-prefix common plain =-prefixed -Lpath, unquoted
+PASS: sysroot-prefix common plain $SYSROOT-prefixed -Lpath, quoted
+PASS: sysroot-prefix common plain $SYSROOT-prefixed -Lpath, unquoted
+PASS: sysroot-prefix common full-path =-prefixed without, quoted
+PASS: sysroot-prefix common full-path =-prefixed without, unquoted
+PASS: sysroot-prefix common full-path $SYSROOT-prefixed without, quoted
+PASS: sysroot-prefix common full-path $SYSROOT-prefixed without, unquoted
 Running <srcdir>/ld/testsuite/ld-scripts/weak.exp ...
 PASS: weak symbols
 Running <srcdir>/ld/testsuite/ld-selective/sel-dump.exp ...
 PASS: Preserve default . = 0
 PASS: Preserve explicit . = 0
 Running <srcdir>/ld/testsuite/ld-selective/selective.exp ...
-ERROR: microblaze-rtems7-cc does not exist
-UNRESOLVED: selective1
-ERROR: microblaze-rtems7-cc does not exist
-UNRESOLVED: selective2
-ERROR: microblaze-rtems7-cc does not exist
-UNRESOLVED: selective3
-XFAIL: selective4
-XFAIL: selective5
-XFAIL: selective6
+UNTESTED: selective1
+UNTESTED: selective2
+UNTESTED: selective3
+UNTESTED: selective4
+UNTESTED: selective5
+UNTESTED: selective6
 Running <srcdir>/ld/testsuite/ld-sframe/sframe.exp ...
 UNSUPPORTED: no SFrame format support in the assembler, or SFrame disabled
 Running <srcdir>/ld/testsuite/ld-sh/arch/arch.exp ...
@@ -958,11 +955,10 @@ Running <srcdir>/ld/testsuite/ld-z8k/z8k.exp ...
 
 		=== ld Summary ===
 
-# of expected passes		478
-# of unexpected failures	13
-# of expected failures		17
-# of unresolved testcases	3
-# of untested testcases		22
-# of unsupported tests		223
+# of expected passes		474
+# of unexpected failures	5
+# of expected failures		14
+# of untested testcases		28
+# of unsupported tests		235
 ./ld-new 2.47.50.20260805
 

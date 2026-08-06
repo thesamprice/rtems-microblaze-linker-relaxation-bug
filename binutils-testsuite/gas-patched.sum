@@ -1,4 +1,4 @@
-Test run on Thu Aug  6 11:08:25 2026
+Test run on Thu Aug  6 11:20:45 2026
 Target is microblaze-xilinx-rtems7
 Host   is aarch64-apple-darwin24.5.0
 
@@ -413,7 +413,7 @@ Running <srcdir>/gas/testsuite/gas/microblaze/relax_size.exp ...
 Running <srcdir>/gas/testsuite/gas/microblaze/reloc_sym.exp ...
 PASS: assembling reloc_strongsym
 PASS: assembling reloc_weaksym
-FAIL: linking reloc_sym.x
+PASS: linking reloc_sym.x
 PASS: disassembling reloc_sym.x
 PASS: matching disassembly
 Running <srcdir>/gas/testsuite/gas/microblaze/special_reg.exp ...
@@ -491,8 +491,8 @@ Running <srcdir>/gas/testsuite/gas/z8k/z8k.exp ...
 
 		=== gas Summary ===
 
-# of expected passes		323
-# of unexpected failures	2
+# of expected passes		324
+# of unexpected failures	1
 # of expected failures		1
 # of unsupported tests		10
 <builddir>/gas/as-new 2.47.50.20260805

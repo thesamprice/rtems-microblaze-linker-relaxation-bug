@@ -199,13 +199,17 @@ Whole `make check`, target `microblaze-xilinx-rtems7`, upstream master:
 
 | component | baseline | patched |
 |---|---|---|
-| gas | 323 pass, 2 fail | identical |
-| binutils | 92 pass, 17 fail | identical |
-| ld | 476 pass, 13 fail | **478 pass**, 13 fail |
+| gas | 324 pass, 1 fail | identical |
+| binutils | 239 pass, 0 fail | identical |
+| ld | 472 pass, 5 fail | **474 pass**, 5 fail |
 
-The only change the patch makes to the entire testsuite is the two tests it adds; the
-32 pre-existing failures are host artifacts present either way. Raw `.sum` files and the
-full breakdown: [`binutils-testsuite/`](binutils-testsuite/).
+The only change the patch makes to the entire testsuite is the two tests it adds.
+
+The 6 pre-existing failures are **all MicroBlaze-related** — not host artifacts, as an
+earlier version of this page wrongly claimed. Two of them look like further independent
+target bugs: `bfd/elf32-microblaze.c` has no `RELOC_AGAINST_DISCARDED_SECTION` where 60
+other ELF backends do, and GAS assembles `.dc.b`/`.dc.w` of a label difference to zero.
+Breakdown and raw `.sum` files: [`binutils-testsuite/`](binutils-testsuite/).
 
 The patch also adds `ld/testsuite/ld-microblaze/` — **the first linker tests this target
 has ever had**, which is some of the reason a defect this old went unnoticed.
