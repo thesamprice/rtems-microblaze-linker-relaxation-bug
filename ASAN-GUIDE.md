@@ -182,7 +182,7 @@ trip over a toolchain bug. `ABI_FLAGS` reaches every link, so:
 [microblaze/kcu105_qemu]
 BUILD_TESTS = True
 OPTIMIZATION_FLAGS = -O2 -g
-ABI_FLAGS = -mlittle-endian -mno-xl-soft-div -mno-xl-soft-mul -Wl,-EL -B/home/you/asan/wrap/
+ABI_FLAGS = -mlittle-endian -mno-xl-soft-div -mno-xl-soft-mul -Wl,-EL -B$HOME/asan/wrap/
 ```
 
 then `./waf configure && ./waf build -k`, and collect everything ASan says:

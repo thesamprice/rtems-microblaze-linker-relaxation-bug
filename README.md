@@ -223,6 +223,21 @@ has ever had**, which is some of the reason a defect this old went unnoticed.
   and is the better long-term answer, but that is a much larger change than
   `-Wl,--no-relax`.
 
+## Contributing
+
+This repository publishes build logs, dejagnu `.sum` files and objdump output, all of
+which embed srcdir and builddir paths. Three commits leaked a home directory layout
+before there was a check for it.
+
+```sh
+git config core.hooksPath .githooks    # once, after cloning
+```
+
+`tools/check-local-paths.sh` fails on macOS and Linux home directory paths and on
+agent scratch directories. It runs as a pre-commit hook if you enable the hooks path above, and
+in CI regardless. Scrub with placeholders — `<srcdir>`, `<builddir>`, `<scratch>`,
+`<home>`, `<toolchain>` — rather than deleting the evidence.
+
 ## Environment
 
 `microblaze-rtems7` toolchain built by the RTEMS Source Builder from
