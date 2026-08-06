@@ -76,12 +76,21 @@ output-comparison test cannot force that.
 the read itself is unconditional and ASan traps it. Measured on `microblaze-xilinx-elf`,
 master `b7da195b94`:
 
-| ld built | fix | result |
+| ld built | guard | result |
 |---|---|---|
-| normally | absent | 3 pass |
+| normally | removed | 3 pass |
 | normally | present | 3 pass |
-| with ASan | absent | **`relax-addend-eh.d` FAILS**, 2 ASan reports |
+| with ASan | removed | **`relax-addend-eh.d` FAILS**, 2 ASan reports |
 | with ASan | present | 3 pass |
+
+Attribution is exact: this was measured by deleting **only** the two-line
+`ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info` guard from
+`microblaze_elf_relax_section`, leaving the other three patches in the tree. Nothing
+else varies between the rows.
+
+The other two tests pass in all four configurations — they drive the `--gc-sections`
+route, which is closed on current master, so they cannot discriminate no matter how the
+linker is built.
 
 So anyone running the binutils testsuite against an ASan-instrumented `ld` — which is
 worth doing anyway — gets a test that genuinely catches this. See
