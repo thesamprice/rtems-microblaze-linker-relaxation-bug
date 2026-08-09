@@ -62,6 +62,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | path | what |
 |---|---|
 | [`ANALYSIS.md`](ANALYSIS.md) | full root-cause writeup: mechanism, evidence, controls, reproduction |
+| [`RELAXATION-GUIDE.md`](RELAXATION-GUIDE.md) | how the surrounding code works — the `imm` mechanism, the call chain, the BFD structures, where the code came from, and what else is wrong with it |
 | [`ASAN-GUIDE.md`](ASAN-GUIDE.md) | how to build and use an ASan linker, and what can and cannot be sanitized on the target |
 | [`patches/binutils/`](patches/binutils/) | **four-patch series** — the fix plus three further MicroBlaze bugs; testsuite goes to zero failures |
 | [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
@@ -188,11 +189,27 @@ allocated by thread T0 here:
     #5 gldelf32microblaze_after_allocation eelf32microblaze.c:113
 ```
 
-**This is not a wider BFD problem.** The guarded idiom is standard elsewhere —
-`elf32-avr.c:2028`, `elf-m10200.c:642` — and MicroBlaze gets it right for the section
-being relaxed (`elf32-microblaze.c:2021`). Only its *other-sections* loop is unguarded.
-Just three files in `bfd/` have such a loop, and the two SH ones do not index `isymbuf`
-by relocation symbol inside it. MicroBlaze is the outlier; the fix does not need to grow.
+**This is not a wider BFD problem — it is a copy defect.**
+`microblaze_elf_relax_section()` was copied from `sh_elf_relax_delete_bytes()` in
+`bfd/elf32-sh.c` when the port landed in 2009 (`7ba29e2a41`), and **the copy dropped a
+bounds check the original already had**. `bfd/elf32-sh.c:1227-1228`, in the same
+other-sections loop, four lines before the same index:
+
+```c
+	  if (ELF32_R_SYM (irelscan->r_info) >= symtab_hdr->sh_info)
+	    continue;
+
+	  isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
+```
+
+That is character-for-character the proposed fix. It has been in `elf32-sh.c` since
+`252b5132c7` (1999-05-03, the CVS→git seed) — ten years before MicroBlaze was written,
+and demonstrably present in the sh file on the day the MicroBlaze copy landed. The guard
+is standard elsewhere too (`elf32-avr.c:2072`, `elf-m10200.c:636`), and MicroBlaze itself
+gets it right for the section being relaxed (`elf32-microblaze.c:2021`). Only its
+*other-sections* loop is unguarded. The fix does not need to grow — it needs to be put
+back. Provenance, the sweeps that skipped this file, and the rest of the history are in
+[`RELAXATION-GUIDE.md`](RELAXATION-GUIDE.md).
 
 ### binutils testsuite
 

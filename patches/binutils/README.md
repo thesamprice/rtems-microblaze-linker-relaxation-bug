@@ -25,6 +25,22 @@ identical to the one tested.
 documented in the rest of this repository. The other three are independent bugs found
 while testing it, and each can be taken or dropped separately.
 
+Two things to add to 0001 before sending:
+
+- **Cite `bfd/elf32-sh.c:1227-1228`.** This function was copied from
+  `sh_elf_relax_delete_bytes()` in 2009, and sh has had character-for-character this
+  patch, in the same loop, since 1999. That is the strongest possible precedent and it is
+  currently missing from the commit message.
+- **Say that the `R_MICROBLAZE_32_SYM_OP_SYM` arm is dead code.** It is the only arm of
+  the five that is not gated on `STT_SECTION`, so a reviewer will read the guard as a
+  semantic change there. It is not: that `else if` at `:2120` is nested inside the
+  `R_MICROBLAZE_32 || R_MICROBLAZE_32_NONE` test at `:2087` and can never be true. Stating
+  it makes the patch provably a pure bounds fix. (The arm being dead is itself a separate
+  bug — see `RELAXATION-GUIDE.md` §7.4 — but not one this patch should try to fix.)
+
+The code hunk also lost the explanatory comment that `ANALYSIS.md` carries. Put two lines
+back; `isymbuf` holding only `sh_info` entries is not self-evident.
+
 **0002** — `bfd/elf32-microblaze.c` had no `RELOC_AGAINST_DISCARDED_SECTION`, the idiom
 60 other ELF backends use. Relocations into discarded linkonce sections survived and
 resolved against dead symbols.
@@ -58,8 +74,42 @@ Whole `make check`, both targets, pristine master versus the series applied.
 | binutils | 239 pass, 0 fail | 239 pass, 0 fail |
 | ld | 472 pass, 5 fail | **479 pass, 0 fail** |
 
-**No test moves in the wrong direction, and `XPASS` is zero everywhere** — which matters
-because 0004 cures a test that was xfailed, and that xfail is removed in the same patch.
+**No test moves in the wrong direction on either target above, and `XPASS` is zero on
+both** — which matters because 0004 cures a test that was xfailed, and that xfail is
+removed in the same patch.
+
+### Known defect: 0003 XPASSes on `microblaze*-linux*`
+
+The two targets above are the only ones measured, and that was not enough. On
+`microblaze-xilinx-linux-gnu`, patch 0003 as written produces `XPASS: ld-elf/pr24511`.
+Linux targets use `SCRIPT_NAME=elf` (`ld/emulparams/elf32mb_linux.sh:1`), which *does*
+define `__init_array_start`, so the test genuinely passes there and the widened xfail is
+wrong for it.
+
+The fix is one line, and upstream invented the mechanism for this exact MicroBlaze split —
+`bc85bc665a` (2024-10-10, Alan Modra, *"Add noxfail option to run_dump_test"*), whose
+commit message cites *"pr23658-1e which fails on all microblaze ELF targets except
+microblaze-linux."* Follow `ld/testsuite/ld-elf/pr23658-1e.d:17-18`:
+
+```
+#xfail: ... microblaze*-* ...
+#noxfail: microblaze*-linux*
+```
+
+With `#noxfail: microblaze*-linux*` added, `ld-elf/elf.exp` on `microblaze-xilinx-linux-gnu`
+gives 327 expected passes and zero unexpected successes. **0003 should not be sent until
+this is applied.**
+
+### Known defect: 0002 can dereference a NULL howto
+
+`microblaze_elf_howto_table` (`bfd/elf32-microblaze.c:38`) is static and zero-filled, and
+`R_MICROBLAZE_TEXTREL_32_LO` (32) is the one in-range relocation type with **no HOWTO
+entry**. Patch 0002 passes `howto` straight to `_bfd_clear_contents`, which dereferences
+`howto->size` (`bfd/reloc.c:1331`). The type is reachable — relaxation rewrites
+`TEXTREL_64` into it at `:1987` and `relocate_section` handles it at `:1552` — so
+`-mpic-data-text-rel` code plus a discarded comdat section can crash the linker. Guard with
+`howto != NULL`, or supply the missing howto. Upstream is currently sensitive to
+crash-on-input bugs; this should be fixed before submission.
 
 Raw `.sum` files: [`../../binutils-testsuite/`](../../binutils-testsuite/).
 

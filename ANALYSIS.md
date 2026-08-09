@@ -240,11 +240,20 @@ gld${EMULATION_NAME}_after_allocation (void)
 The buffer is installed and read out of bounds inside one function call, and a single
 ASan trace shows both ends.
 
-**Not a wider BFD problem.** The guarded idiom is standard elsewhere
-(`elf32-avr.c:2028`, `elf-m10200.c:642`), and MicroBlaze applies it correctly to the
+**Not a wider BFD problem — a copy defect.** This function was copied from
+`sh_elf_relax_delete_bytes()` in `bfd/elf32-sh.c` when the port landed
+(`7ba29e2a41`, 2009-08-06), and the copy dropped a bounds check the original already had.
+`bfd/elf32-sh.c:1227-1228` has character-for-character the proposed fix, in the same
+other-sections loop, four lines before the same `isymbuf` index at `:1231`. It has been
+there since `252b5132c7` (1999-05-03) — ten years before MicroBlaze — and was present in
+the sh file on the day the copy was made. The guard is standard elsewhere too
+(`elf32-avr.c:2072`, `elf-m10200.c:636`), and MicroBlaze applies it correctly to the
 section being relaxed (`elf32-microblaze.c:2021`). Only the *other-sections* loop is
-unguarded. Three files in `bfd/` have such a loop; the two SH ones do not index
-`isymbuf` by relocation symbol inside it. MicroBlaze is the outlier.
+unguarded.
+
+`elf32-sh.c:1227` is the citation to use in the upstream submission — it is far stronger
+than the AVR and m10200 ones, because it is the direct ancestor of the very code being
+patched. Full provenance in [`RELAXATION-GUIDE.md`](RELAXATION-GUIDE.md).
 
 `make check-ld` on upstream master, target `microblaze-xilinx-rtems7`: 476 expected
 passes, 13 unexpected failures, and the baseline and patched result lists are
@@ -290,7 +299,7 @@ does so its input cannot be dismissed as malformed.
 
 Not investigated further.
 
-## Who needs to change## Who needs to change
+## Who needs to change
 
 **binutils** — the actual defect, patch above. Live in the Xilinx 2.36 snapshot and in
 current upstream master (`bfd/elf32-microblaze.c`, the `for (irelscan = irelocs; ...)`
