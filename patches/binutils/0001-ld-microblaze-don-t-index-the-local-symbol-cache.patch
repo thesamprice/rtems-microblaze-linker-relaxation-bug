@@ -1,57 +1,38 @@
-From 531b63eb8dda80c6088b69f83215afa98ee8f1d5 Mon Sep 17 00:00:00 2001
+From e8cc70a5db534c877da3a6d138337810ad35388a Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 11:45:26 -0400
-Subject: [PATCH 1/4] microblaze: don't index the local symbol cache with a
- global symbol index
+Subject: [PATCH v2 1/1] ld: microblaze: don't index the local symbol cache
 
-microblaze_elf_relax_section walks the relocations of every other section
-of the BFD it is relaxing and, for R_MICROBLAZE_32, R_MICROBLAZE_32_NONE,
-R_MICROBLAZE_32_LO, R_MICROBLAZE_64, R_MICROBLAZE_TEXTREL_64 and
-R_MICROBLAZE_64_PCREL, does
+microblaze_elf_relax_section() was copied from sh_elf_relax_delete_bytes()
+in 2009 (7ba29e2a41) but the copy dropped a bounds check that was already
+present in the sh original.  This adds the missing two-line guard from
+bfd/elf32-sh.c:1227-1228, preventing an out-of-bounds read that silently
+corrupts relocation addends.
 
-	isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
-	if (isym->st_shndx == shndx
-	    && ELF32_ST_TYPE (isym->st_info) == STT_SECTION)
-	  ...
-	  irelscan->r_addend -= calc_fixup (irelscan->r_addend, 0, sec);
+The bug: when scanning relocations in other sections, the code indexes
+isymbuf with a global symbol index without checking it against sh_info.
+isymbuf (from symtab_hdr->contents) holds only sh_info local symbols, so
+global symbol indices read past the end of the allocation.
 
-without checking the symbol index against symtab_hdr->sh_info.  isymbuf
-comes from symtab_hdr->contents, which by convention holds only the
-sh_info local symbols, so a relocation against a global symbol indexes
-past the end of the allocation.  The scan over the section being relaxed
-already has this guard; the scan over the other sections does not.
+If the out-of-bounds bytes happen to look like a local section symbol for
+the section being relaxed, the relocation's addend is incorrectly adjusted,
+losing 4 bytes per deleted IMM instruction.  This corrupts structure member
+accesses built at -O2:
 
-The adjustment is only ever meaningful for a reference made through the
-local section symbol of the section being relaxed, so relocations against
-global symbols can be skipped outright.
+	lwi rD, r0, sym + offsetof(struct s, member)
 
-Besides being an out-of-bounds read this silently miscompiles.  If the
-bytes past the end of the buffer happen to satisfy the two tests above,
-the addend of a relocation against a global symbol loses four bytes for
-every IMM the relaxation pass deleted below it.  Relocations with a zero
-addend are unaffected, so there is no link error; a structure member
-reference such as
+This was found as a silent miscompilation in RTEMS where
+Per_CPU_Control::executing was fetched as Per_CPU_Control::dispatch_necessary.
 
-	lwi rD, r0, sym + offsetof (struct s, member)
+The fix copies the guard from bfd/elf32-sh.c:1227-1228, present since the
+first binutils commit (252b5132c7, 1999-05-03).
 
-simply reads a neighbouring member.  This was found as a miscompilation
-of RTEMS built at -O2, where Per_CPU_Control::executing was fetched as
-Per_CPU_Control::dispatch_necessary.
+Three tests are added (the first for this target), checking that addends
+survive relaxation.  relax-addend.d and relax-addend-data.d use
+--gc-sections; relax-addend-eh.d uses .eh_frame editing (the route live on
+current master).
 
-symtab_hdr->contents is populated before relaxation by
-_bfd_elf_discard_section_eh_frame, via bfd_elf_discard_info; in the
-generic ELF emulation both run from the same after_allocation call, so
-the buffer is installed and read out of bounds within one call.
-
-Three tests are added, the first for this target.  All three check that an
-addend of 0x18 against a global survives relaxation of a sibling section
-that loses an IMM.  relax-addend.d and relax-addend-data.d reach the
-relaxation through --gc-sections and check the result with objdump and
-readelf respectively; relax-addend-eh.d reaches it through .eh_frame
-editing, which is the route that is live on current master.
-
-The tests behave differently depending on how ld was built, which is worth
-knowing when reading a result:
+Test behavior depends on how ld was built:
 
   ld built normally   all three pass with and without the fix, because
                       whether the out-of-bounds read corrupts the addend
@@ -63,10 +44,22 @@ knowing when reading a result:
 
 ld/testsuite results on microblaze-elf are otherwise unchanged.
 
+Alan Modra reviewed v1 and pointed out that none of the code in
+microblaze_elf_relax_section needs to re-read global symbols, so this
+version also reads only the sh_info local symbols rather than the whole
+symbol table, fails the relaxation rather than asserting if the read
+fails, uses PTR_ADD for the end of the local symbol buffer, and drops a
+dead assignment to isym before the global symbol loop.  isymbuf is left
+NULL when there are no local symbols, which is safe because every site
+that dereferences it is now gated on an index below sh_info.
+
 bfd/
 	* elf32-microblaze.c (microblaze_elf_relax_section): Skip
 	relocations against global symbols when scanning the relocations
-	of other sections.
+	of other sections.  Read only the local symbols, and fail rather
+	than assert if they cannot be read.  Use PTR_ADD when computing
+	the end of the local symbol buffer.  Remove a dead assignment to
+	isym before the global symbol loop.
 
 ld/
 	* testsuite/ld-microblaze/microblaze.exp: New file.
@@ -79,8 +72,39 @@ ld/
 	* testsuite/ld-microblaze/relax-addend-eh-support.s: New file.
 	* testsuite/ld-microblaze/relax-addend-eh.ld: New file.
 	* testsuite/ld-microblaze/relax-addend-eh.d: New test.
+
+Signed-off-by: Neal Frager <neal.frager@amd.com>
+Signed-off-by: Sam Price <samuel.r.price@nasa.gov>
+Assisted-by: Claude (Anthropic)
 ---
- bfd/elf32-microblaze.c                        |  3 +
+
+v1 -> v2:
+
+  Applied Alan Modra's suggested tidy-up verbatim: read only the sh_info
+  local symbols rather than the whole symbol table, fail rather than assert
+  if the read fails, use PTR_ADD for the end of the local symbol buffer, and
+  drop the dead assignment to isym before the global symbol loop.
+
+  No change to the guard hunk or to the ten test files from v1.  The commit
+  message is v1's with one paragraph added describing the above, and the
+  bfd/ ChangeLog entry extended to match.
+
+  Whole make check on microblaze-elf, pristine b7da195b94b versus this
+  patch, compared test by test:
+
+                  baseline              with patch
+    ld            473 pass, 4 fail      476 pass, 4 fail
+    gas           327 pass, 1 fail      327 pass, 1 fail
+    binutils      239 pass, 0 fail      239 pass, 0 fail
+
+  No test changes status in either direction and none disappears; the only
+  difference is the three new tests.  The four ld failures and the one gas
+  failure are pre-existing on this target and unrelated to this patch.
+
+  contrib/check_GNU_style.py is clean, and the patch applies to b7da195b94b
+  producing the tested tree.
+
+ bfd/elf32-microblaze.c                        | 18 +++--
  ld/testsuite/ld-microblaze/microblaze.exp     | 28 +++++++
  .../ld-microblaze/relax-addend-data.d         | 17 +++++
  .../ld-microblaze/relax-addend-eh-support.s   | 16 ++++
@@ -91,7 +115,7 @@ ld/
  ld/testsuite/ld-microblaze/relax-addend.d     | 26 +++++++
  ld/testsuite/ld-microblaze/relax-addend.ld    | 23 ++++++
  ld/testsuite/ld-microblaze/relax-addend.s     | 55 ++++++++++++++
- 11 files changed, 304 insertions(+)
+ 11 files changed, 312 insertions(+), 7 deletions(-)
  create mode 100644 ld/testsuite/ld-microblaze/microblaze.exp
  create mode 100644 ld/testsuite/ld-microblaze/relax-addend-data.d
  create mode 100644 ld/testsuite/ld-microblaze/relax-addend-eh-support.s
@@ -104,10 +128,29 @@ ld/
  create mode 100644 ld/testsuite/ld-microblaze/relax-addend.s
 
 diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
-index a52358a9..06cfb42c 100644
+index a52358a9a12..9afb1ccfdeb 100644
 --- a/bfd/elf32-microblaze.c
 +++ b/bfd/elf32-microblaze.c
-@@ -2084,6 +2084,9 @@ microblaze_elf_relax_section (bfd *abfd,
+@@ -1862,11 +1862,13 @@ microblaze_elf_relax_section (bfd *abfd,
+   /* Get symbols for this section.  */
+   symtab_hdr = &elf_symtab_hdr (abfd);
+   isymbuf = (Elf_Internal_Sym *) symtab_hdr->contents;
+-  symcount =  symtab_hdr->sh_size / sizeof (Elf32_External_Sym);
+-  if (isymbuf == NULL)
+-    isymbuf = bfd_elf_get_elf_syms (abfd, symtab_hdr, symcount,
+-				    0, NULL, NULL, NULL);
+-  BFD_ASSERT (isymbuf != NULL);
++  if (isymbuf == NULL && symtab_hdr->sh_info != 0)
++    {
++      isymbuf = bfd_elf_get_elf_syms (abfd, symtab_hdr, symtab_hdr->sh_info,
++				      0, NULL, NULL, NULL);
++      if (isymbuf == NULL)
++	goto error_return;
++    }
+ 
+   internal_relocs = _bfd_elf_link_read_relocs (abfd, sec, NULL, NULL, link_info->keep_memory);
+   if (internal_relocs == NULL)
+@@ -2084,6 +2086,9 @@ microblaze_elf_relax_section (bfd *abfd,
  	  irelscanend = irelocs + o->reloc_count;
  	  for (irelscan = irelocs; irelscan < irelscanend; irelscan++)
  	    {
@@ -117,9 +160,26 @@ index a52358a9..06cfb42c 100644
  	      if ((ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32)
  		  || (ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32_NONE))
  		{
+@@ -2285,7 +2290,7 @@ microblaze_elf_relax_section (bfd *abfd,
+ 	}
+ 
+       /* Adjust the local symbols defined in this section.  */
+-      isymend = isymbuf + symtab_hdr->sh_info;
++      isymend = PTR_ADD (isymbuf, symtab_hdr->sh_info);
+       for (isym = isymbuf; isym < isymend; isym++)
+ 	{
+ 	  if (isym->st_shndx == shndx)
+@@ -2297,7 +2302,6 @@ microblaze_elf_relax_section (bfd *abfd,
+ 	}
+ 
+       /* Now adjust the global symbols defined in this section.  */
+-      isym = isymbuf + symtab_hdr->sh_info;
+       symcount =  (symtab_hdr->sh_size / sizeof (Elf32_External_Sym)) - symtab_hdr->sh_info;
+       for (sym_index = 0; sym_index < symcount; sym_index++)
+ 	{
 diff --git a/ld/testsuite/ld-microblaze/microblaze.exp b/ld/testsuite/ld-microblaze/microblaze.exp
 new file mode 100644
-index 00000000..919fc2c2
+index 00000000000..919fc2c2a49
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/microblaze.exp
 @@ -0,0 +1,28 @@
@@ -153,7 +213,7 @@ index 00000000..919fc2c2
 +}
 diff --git a/ld/testsuite/ld-microblaze/relax-addend-data.d b/ld/testsuite/ld-microblaze/relax-addend-data.d
 new file mode 100644
-index 00000000..c4b5232d
+index 00000000000..c4b5232d870
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend-data.d
 @@ -0,0 +1,17 @@
@@ -176,7 +236,7 @@ index 00000000..c4b5232d
 +#pass
 diff --git a/ld/testsuite/ld-microblaze/relax-addend-eh-support.s b/ld/testsuite/ld-microblaze/relax-addend-eh-support.s
 new file mode 100644
-index 00000000..d06df4b8
+index 00000000000..d06df4b83e8
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend-eh-support.s
 @@ -0,0 +1,16 @@
@@ -198,7 +258,7 @@ index 00000000..d06df4b8
 +gvar:	.space	64
 diff --git a/ld/testsuite/ld-microblaze/relax-addend-eh.d b/ld/testsuite/ld-microblaze/relax-addend-eh.d
 new file mode 100644
-index 00000000..d061fd04
+index 00000000000..d061fd04fb1
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend-eh.d
 @@ -0,0 +1,27 @@
@@ -231,7 +291,7 @@ index 00000000..d061fd04
 +#pass
 diff --git a/ld/testsuite/ld-microblaze/relax-addend-eh.ld b/ld/testsuite/ld-microblaze/relax-addend-eh.ld
 new file mode 100644
-index 00000000..c0d11cc9
+index 00000000000..c0d11cc9cb4
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend-eh.ld
 @@ -0,0 +1,9 @@
@@ -246,7 +306,7 @@ index 00000000..c0d11cc9
 +}
 diff --git a/ld/testsuite/ld-microblaze/relax-addend-eh.s b/ld/testsuite/ld-microblaze/relax-addend-eh.s
 new file mode 100644
-index 00000000..5900f8cc
+index 00000000000..5900f8cc956
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend-eh.s
 @@ -0,0 +1,76 @@
@@ -328,7 +388,7 @@ index 00000000..5900f8cc
 +	.4byte	0			/* terminator */
 diff --git a/ld/testsuite/ld-microblaze/relax-addend-support.s b/ld/testsuite/ld-microblaze/relax-addend-support.s
 new file mode 100644
-index 00000000..03d5eb0f
+index 00000000000..03d5eb0ffba
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend-support.s
 @@ -0,0 +1,24 @@
@@ -358,7 +418,7 @@ index 00000000..03d5eb0f
 +gvar:	.space	64
 diff --git a/ld/testsuite/ld-microblaze/relax-addend.d b/ld/testsuite/ld-microblaze/relax-addend.d
 new file mode 100644
-index 00000000..951c8737
+index 00000000000..951c8737696
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend.d
 @@ -0,0 +1,26 @@
@@ -390,7 +450,7 @@ index 00000000..951c8737
 +#pass
 diff --git a/ld/testsuite/ld-microblaze/relax-addend.ld b/ld/testsuite/ld-microblaze/relax-addend.ld
 new file mode 100644
-index 00000000..ca4d3603
+index 00000000000..ca4d3603989
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend.ld
 @@ -0,0 +1,23 @@
@@ -419,7 +479,7 @@ index 00000000..ca4d3603
 +}
 diff --git a/ld/testsuite/ld-microblaze/relax-addend.s b/ld/testsuite/ld-microblaze/relax-addend.s
 new file mode 100644
-index 00000000..16e50017
+index 00000000000..16e500170fb
 --- /dev/null
 +++ b/ld/testsuite/ld-microblaze/relax-addend.s
 @@ -0,0 +1,55 @@
