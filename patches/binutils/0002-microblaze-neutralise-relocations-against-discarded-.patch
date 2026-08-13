@@ -1,4 +1,4 @@
-From 5d5f6e82dc8e84db9abec0a571903c60f10fe6c3 Mon Sep 17 00:00:00 2001
+From 3c2ae494cebbd1b376fa5fa45b3b06ad62f29709 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 12:07:11 -0400
 Subject: [PATCH] microblaze: neutralise relocations against discarded sections
@@ -26,17 +26,12 @@ The defining section is therefore looked up once before either branch,
 which covers both the final and the relocatable link without
 restructuring the function.
 
-microblaze_elf_howto_table is an array of howto pointers rather than an
-array of howtos, so it can contain NULL for a relocation type that is in
-range: R_MICROBLAZE_TEXTREL_32_LO (32) has no entry in
-microblaze_elf_howto_raw.  The type is reachable, since
-microblaze_elf_relax_section rewrites R_MICROBLAZE_TEXTREL_64 into it and
-microblaze_elf_relocate_section has a case for it, and _bfd_clear_contents
-reads howto->size, so the call is guarded.  elf32-ppc.c is the only other
-backend whose howto table is an array of pointers, and it likewise treats
-a NULL howto as a live case rather than dereferencing it.  A relocation of
-that type against a discarded section is therefore left alone rather than
-neutralised, which is the pre-existing behaviour.
+microblaze_elf_howto_table is an array of pointers, and
+R_MICROBLAZE_TEXTREL_32_LO has no entry in microblaze_elf_howto_raw, so
+howto can be NULL for a type that is in range.  Relaxation creates that
+type and _bfd_clear_contents reads howto->size, so the call is guarded, as
+elf32-ppc.c guards its own array of howto pointers.  Such a relocation is
+left alone rather than neutralised, as before.
 
 Fixes four existing tests on microblaze-elf:
 
@@ -58,11 +53,11 @@ bfd/
 Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude (Anthropic)
 ---
- bfd/elf32-microblaze.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ bfd/elf32-microblaze.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
 diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
-index 9afb1ccfdeb..2efb1015151 100644
+index 9afb1ccfdeb..effb2f71063 100644
 --- a/bfd/elf32-microblaze.c
 +++ b/bfd/elf32-microblaze.c
 @@ -1063,6 +1063,7 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
@@ -73,7 +68,7 @@ index 9afb1ccfdeb..2efb1015151 100644
        const char *sym_name;
        bfd_reloc_status_type r = bfd_reloc_ok;
        const char *errmsg = NULL;
-@@ -1085,6 +1086,41 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+@@ -1085,6 +1086,38 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
        howto = microblaze_elf_howto_table[r_type];
        r_symndx = ELF32_R_SYM (rel->r_info);
  
@@ -101,12 +96,9 @@ index 9afb1ccfdeb..2efb1015151 100644
 +	    sym_sec = hd->root.u.def.section;
 +	}
 +
-+      /* microblaze_elf_howto_table is an array of pointers with a hole in
-+	 it: R_MICROBLAZE_TEXTREL_32_LO has no entry in
-+	 microblaze_elf_howto_raw, so howto is NULL for a relocation type
-+	 that is nonetheless in range.  _bfd_clear_contents reads
-+	 howto->size, so guard the call as elf32-ppc.c does when indexing
-+	 its own array of howto pointers.  */
++      /* howto is NULL for R_MICROBLAZE_TEXTREL_32_LO, which has no entry
++	 in microblaze_elf_howto_raw, and _bfd_clear_contents reads
++	 howto->size.  elf32-ppc.c guards its howto pointers the same way.  */
 +      if (sym_sec != NULL && discarded_section (sym_sec) && howto != NULL)
 +	RELOC_AGAINST_DISCARDED_SECTION (info, input_bfd, input_section,
 +					 rel, 1, relend, R_MICROBLAZE_NONE,
