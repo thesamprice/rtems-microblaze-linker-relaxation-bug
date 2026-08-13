@@ -163,6 +163,31 @@ in the `bfd_link_relocatable` branch with no NULL check, so `ld -r` on an object
 `TEXTREL_32_LO` against a section symbol dereferences NULL today, independent of 0002.
 Worth its own one-liner.
 
+### Fixed: 0002 could dereference a NULL `sym_hashes`
+
+The same shape of mistake, found by asking whether `sym_hashes[r_symndx - sh_info]` can go
+out of bounds.
+
+**The index cannot.** `_bfd_elf_link_info_read_relocs` routes every relocation through
+`elf_link_read_relocs_from_section`, which rejects `r_symndx >= NUM_SHDR_ENTRIES
+(symtab_hdr)` with a hard error (`bfd/elflink.c:2851-2864`). `elf_sym_hashes` is allocated
+with `symcount - sh_info` entries (`bfd/elflink.c:4864`), so `r_symndx - sh_info` is
+always inside it, and the subtraction cannot wrap because the `else` branch only runs when
+`r_symndx >= sh_info`. This is genuinely unlike 0001, where nothing tied the index range to
+the buffer length.
+
+**The pointer can.** `RELOC_FOR_GLOBAL_SYMBOL` (`bfd/elf-bfd.h:3431-3436`) — the macro
+every backend uses for this lookup — guards `sym_hashes == NULL` and documents it as
+arising from "erroneous or unsupported input (mixing a.out and elf in an archive, for
+example)". 0002 hoisted its own lookup to `:1101`, ahead of MicroBlaze's
+`RELOC_FOR_GLOBAL_SYMBOL` at `:1191`, and so outran that guard.
+
+Now `else if (sym_hashes != NULL)`, leaving `sym_sec` NULL so neutralisation is skipped and
+the later macro still returns false exactly as it does today.
+
+Both defects in 0002 are the same failure mode: moving work earlier in the function moves it
+ahead of a check that already existed further down.
+
 Raw `.sum` files: [`../../binutils-testsuite/`](../../binutils-testsuite/).
 
 ## Checks run on every patch

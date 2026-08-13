@@ -1,4 +1,4 @@
-From 3c2ae494cebbd1b376fa5fa45b3b06ad62f29709 Mon Sep 17 00:00:00 2001
+From 94f91c57d20bd82479c0fe22046d6f10dcb2aab4 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 12:07:11 -0400
 Subject: [PATCH] microblaze: neutralise relocations against discarded sections
@@ -17,6 +17,10 @@ where zero is expected:
   ld-discard/zero-range
     regexp "^ 0000 (01)?000000(01)? (01)?000000(01)? 00000000 00000000 .*$"
     line   " 0000 00000000 00000002 00000000 00000000  ................"
+
+sym_hashes is checked for NULL exactly as RELOC_FOR_GLOBAL_SYMBOL does,
+because this lookup runs before that macro is reached and the macro
+documents the case as arising from erroneous input.
 
 Most backends put the check after symbol resolution and before the
 bfd_link_relocatable early exit.  This one resolves the symbol separately
@@ -48,16 +52,16 @@ bfd/
 	* elf32-microblaze.c (microblaze_elf_relocate_section): Look up
 	the section defining the symbol and neutralise relocations
 	against discarded sections, skipping relocation types with no
-	howto table entry.
+	howto table entry and objects with no symbol hash table.
 
 Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude (Anthropic)
 ---
- bfd/elf32-microblaze.c | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ bfd/elf32-microblaze.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
 diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
-index 9afb1ccfdeb..effb2f71063 100644
+index 9afb1ccfdeb..96aa50532a0 100644
 --- a/bfd/elf32-microblaze.c
 +++ b/bfd/elf32-microblaze.c
 @@ -1063,6 +1063,7 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
@@ -68,7 +72,7 @@ index 9afb1ccfdeb..effb2f71063 100644
        const char *sym_name;
        bfd_reloc_status_type r = bfd_reloc_ok;
        const char *errmsg = NULL;
-@@ -1085,6 +1086,38 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+@@ -1085,6 +1086,40 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
        howto = microblaze_elf_howto_table[r_type];
        r_symndx = ELF32_R_SYM (rel->r_info);
  
@@ -76,11 +80,13 @@ index 9afb1ccfdeb..effb2f71063 100644
 +	 against a section discarded by linkonce or comdat handling can
 +	 be neutralised.  The symbol is resolved separately in each of
 +	 the two branches below, so this has to be done here to cover
-+	 both the final and the relocatable link.  */
++	 both the final and the relocatable link.  sym_hashes is checked
++	 for NULL as RELOC_FOR_GLOBAL_SYMBOL does, since this runs before
++	 that macro is reached.  */
 +      sym_sec = NULL;
 +      if (r_symndx < symtab_hdr->sh_info)
 +	sym_sec = local_sections[r_symndx];
-+      else
++      else if (sym_hashes != NULL)
 +	{
 +	  struct elf_link_hash_entry *hd;
 +
