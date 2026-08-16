@@ -1,3 +1,5 @@
+> **See [LINUX-CANCEL-HANG-CORRECTION.md](LINUX-CANCEL-HANG-CORRECTION.md) first — the conclusion below was superseded.**
+
 # 15 — MicroBlaze read()-cancellation hang: consolidated root cause
 
 **Consolidates docs 13 and 14.** 13 established "not our patch / timing race";
