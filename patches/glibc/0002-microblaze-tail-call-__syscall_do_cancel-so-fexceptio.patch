@@ -1,0 +1,43 @@
+From: Sam Price <thesamprice@gmail.com>
+Subject: [PATCH] microblaze: tail-call __syscall_do_cancel so -fexceptions cancellation unwinds
+
+On the cancel path, __syscall_cancel_arch reaches __syscall_do_cancel with
+"brlid r15, __syscall_do_cancel", which links (overwrites r15, the return
+address into the cancellable syscall wrapper) and so makes the hand-written
+__syscall_cancel_arch a distinct stack frame that _Unwind_ForcedUnwind must
+step through.  MicroBlaze gas cannot assemble .cfi directives ("CFI is not
+supported for this target"), so this asm has no .eh_frame, and the forced
+unwind used by -fexceptions cancellation stops there: cleanup handlers /
+landing pads in the caller are never run.  nptl/tst-cancelx4 and
+nptl/tst-cancelx17 fail for every cancellation point reached this way.
+
+__syscall_do_cancel is _Noreturn, so the link is pointless.  Branch to it
+with "brid" instead, leaving r15 pointing at the syscall wrapper.  The asm
+then contributes no frame of its own: __syscall_do_cancel (ordinary C, with
+.eh_frame) is entered as if the wrapper had called it, and the unwind flows
+__syscall_do_cancel -> wrapper -> cleanup with nothing to describe in asm.
+
+Verified on qemu-system-microblazeel: nptl/tst-cancelx4's early-cancel phase
+goes from every point failing ("cleanup handler not called") to all passing.
+(The remaining in-time/async failures use the signal-frame unwinder and are
+a separate issue.)
+
+	* sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+	(__syscall_cancel_arch): Tail-call __syscall_do_cancel with brid
+	instead of brlid so the asm frame is transparent to the unwinder.
+---
+ sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S b/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+--- a/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
++++ b/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+@@ -54,7 +54,7 @@ __syscall_cancel_arch_end:
+ 	nop
+ 
+ 1:
+-	brlid	r15, __syscall_do_cancel
++	brid	__syscall_do_cancel
+ 	nop
+ 
+ END (__syscall_cancel_arch)

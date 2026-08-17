@@ -76,11 +76,33 @@ Plus a latent correctness bug found along the way:
    and the real `nptl/tst-cancel17` binary passes (was failing). Almost certainly a
    latent port bug (the offsets never matched the ABI), independent of GCC-15.
 
+7. **tst-cancelx4/x17 (-fexceptions cancellation) = the cancel-syscall asm is
+   unwindable-through only with CFI, which MicroBlaze gas cannot assemble.**
+   `__syscall_cancel_arch` reaches `__syscall_do_cancel` with
+   `brlid r15, __syscall_do_cancel` — the link overwrites r15 (the return address
+   into the syscall wrapper) and makes the hand-written asm a distinct stack frame
+   that `_Unwind_ForcedUnwind` must traverse. But MicroBlaze `gas` rejects `.cfi`
+   ("CFI is not supported for this target" — binutils 2.45.1), so this asm has no
+   `.eh_frame`; every other frame in the chain (`__syscall_do_cancel`, the wrapper,
+   the test) does. So the `-fexceptions` forced unwind stops at the asm and cleanup
+   handlers never run — **every** early-cancel point in `nptl/tst-cancelx4` failed.
+   `__syscall_do_cancel` is `_Noreturn`, so the link is pointless. **Fix: Sam's
+   `microblaze: tail-call __syscall_do_cancel` (`brlid r15,` → `brid`)** — the asm
+   contributes no frame, `__syscall_do_cancel` (C, with `.eh_frame`) is entered as
+   if the wrapper called it, and the unwind flows straight to the cleanup. Verified:
+   tst-cancelx4 early-cancel goes from all-fail to all-pass. Residual: the in-time /
+   async cancellation points (read/readv/writev/wait*/accept/recv*, and
+   tst-cancelx17) still fail — those unwind through the SIGCANCEL **signal frame**
+   (Ramin's libgcc `linux-unwind.h`), a separate path still under investigation.
+
 ## Patches in this repo
 
 `patches/glibc/`:
-- `0001-microblaze-fix-syscall_cancel-stack-arg-offsets.patch` — bug #6, NOT yet
-  mailed (a glibc patch → libc-alpha / MicroBlaze maintainers).
+- `0001-microblaze-fix-syscall_cancel-stack-arg-offsets.patch` — bug #6, MAILED
+  2026-08-16 to Neal (Cc Ramin + Sam).
+- `0002-microblaze-tail-call-__syscall_do_cancel-so-fexceptio.patch` — bug #7,
+  not yet mailed. Both are glibc patches → libc-alpha / MicroBlaze maintainers.
+  Both bugs are still present in glibc git master (HEAD).
 
 `patches/linux/`:
 - `0001-microblaze-reserve-the-ABI-argument-save-area-in-the.patch` — bug #4,
