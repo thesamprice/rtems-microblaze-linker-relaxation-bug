@@ -90,10 +90,27 @@ Plus a latent correctness bug found along the way:
    `microblaze: tail-call __syscall_do_cancel` (`brlid r15,` → `brid`)** — the asm
    contributes no frame, `__syscall_do_cancel` (C, with `.eh_frame`) is entered as
    if the wrapper called it, and the unwind flows straight to the cleanup. Verified:
-   tst-cancelx4 early-cancel goes from all-fail to all-pass. Residual: the in-time /
-   async cancellation points (read/readv/writev/wait*/accept/recv*, and
-   tst-cancelx17) still fail — those unwind through the SIGCANCEL **signal frame**
-   (Ramin's libgcc `linux-unwind.h`), a separate path still under investigation.
+   tst-cancelx4 early-cancel goes from all-fail to all-pass.
+
+   Separately, the underlying gas gap is now fixed: **`microblaze: add DWARF2 CFI
+   support to gas`** (`patches/binutils/0005-...`) defines `TARGET_USE_CFIPOP` +
+   the CIE params (RA in r15, CFA = r1), so `.cfi_*` finally assemble and hand-
+   written asm can carry `.eh_frame` like every other port. (The tail-call fix is
+   still the minimal cancellation fix; the binutils fix is the general enabler.)
+
+   Residual (still failing): the 10 in-time points
+   (read/readv/writev/wait*/accept/recv*) and tst-cancelx17. These are the
+   **side-effect syscalls**: the kernel sets IP *after* `__syscall_cancel_arch_end`,
+   so `cancellation_pc_check` is false and cancellation is **deferred** — the
+   syscall returns `-EINTR` and `internal_syscall_cancel` calls
+   `__syscall_do_cancel()` from the C wrapper. The no-side-effect syscalls
+   (select/poll/sleep/…) take the signal-frame path and **pass**. So the failure is
+   in the **deferred DWARF forced-unwind from the C wrapper** (`__syscall_do_cancel`
+   → `__libc_read` → test), which never touches `__syscall_cancel_arch` — i.e. NOT
+   an asm-CFI problem and not fixed by any of the above. Still under investigation
+   (likely a gcc/glibc C-frame `.eh_frame` detail at the deferred call site). The
+   default setjmp cancellation (tst-cancel4) passes all of these, so only
+   `-fexceptions` cancellation of side-effect syscalls is affected.
 
 ## Patches in this repo
 
