@@ -14,8 +14,8 @@ Confirmed on qemu: tst-eintr1 intermittent 2/30 without this, 0/30 with it.
 On a mainline entry.S (no argument-save reservation) Ramin's original patch
 applies directly; this variant is for the reserve-argument-save-area tree.
 ---
---- a/arch/microblaze/kernel/entry.S	2026-08-17 10:43:02.968202000 +0000
-+++ b/arch/microblaze/kernel/entry.S	2026-08-17 10:43:02.916202000 +0000
+--- a/arch/microblaze/kernel/entry.S	2026-08-17 11:39:03.136040005 +0000
++++ b/arch/microblaze/kernel/entry.S	2026-08-17 11:39:03.103040005 +0000
 @@ -456,6 +456,7 @@
  C_ENTRY(ret_from_trap):
  	swi	r3, r1, PT_R3
