@@ -112,7 +112,10 @@ Plus a latent correctness bug found along the way:
 - `ramin-0001-libgcc-microblaze-signal-frame-unwinding.patch` — bug #2 (Ramin,
   gcc `4ef64ad1a`), for reference.
 
-Bug #1 (entry.S arg-save) and bug #3 (`ret_from_trap`) are tracked/sent separately.
+- `0003-microblaze-reserve-the-ABI-argument-save-area-in-entr.patch` — bug #1
+  (entry.S argument-save reservation; the GCC-15 boot fix).
+- `0004-microblaze-ret_from_trap-do-not-clobber-r4-on-rt_sigr.patch` — bug #3
+  (Ramin's `ret_from_trap` r4 fix, adapted to the argument-save tree).
 
 ## Reproducers (`linux-cancel-hang/`)
 

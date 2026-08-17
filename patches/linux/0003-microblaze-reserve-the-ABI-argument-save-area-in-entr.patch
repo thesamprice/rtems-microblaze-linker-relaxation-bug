@@ -1,0 +1,221 @@
+From: Sam Price <thesamprice@gmail.com>
+Subject: [PATCH] microblaze: reserve the ABI argument save area when calling C from entry.S
+
+The MicroBlaze ABI has the caller reserve, in its own frame, an argument
+save ("home") area at [sp+4, sp+4 + MAX_ARGS_IN_REGISTERS*4) that a callee
+may spill its incoming register arguments (r5-r10) into.  entry.S calls the
+kernel C handlers with r1 still pointing at pt_regs, so that home area is
+pt_regs itself: a handler that spills its first argument lands on
+pt_regs+4 (PT_R1, the saved user stack pointer).  With GCC 15 (IRA change
+3b9b8d6cfdf5) the handlers spill for real, so init's first *at syscall
+writes AT_FDCWD over the saved user SP and the kernel panics
+("Attempted to kill init", r1=0xFFFFFF9C).
+
+Lower r1 by C_ARG_SIZE across every call from entry.S to C, recomputing the
+pt_regs pointer passed to the handler as r1 + C_ARG_SIZE, and restore r1
+afterwards.  C_ARG_SIZE is the link word (4) + six argument words (24) = 28,
+rounded up to 32 for stack alignment (28 is also sufficient and boots).
+
+Confirmed by a boot A/B with GCC-15 spilling for real: stock entry.S dies
+with r1=0xFFFFFF9C; with the reservation, init survives and userspace runs.
+---
+--- a/arch/microblaze/kernel/entry.S
++++ b/arch/microblaze/kernel/entry.S
+@@ -45,6 +45,16 @@
+ #endif /* DEBUG */
+ 
+ #define C_ENTRY(name)	.globl name; .align 4; name
++
++/*
++ * The MicroBlaze ABI has the caller reserve stack space for the arguments
++ * it passes in registers, and lets the callee spill them there: a callee
++ * may write to [caller_sp + 4, caller_sp + 4 + MAX_ARGS_IN_REGISTERS * 4).
++ * We call C with r1 pointing at pt_regs, so that area would be pt_regs
++ * itself.  Lower r1 across such calls.  Link word + 6 argument words,
++ * rounded up for stack alignment.
++ */
++#define C_ARG_SIZE	32
+ 
+ /*
+  * Various ways of setting and clearing BIP in flags reg.
+@@ -381,8 +391,10 @@
+ 
+ 	addik	r3, r0, -ENOSYS
+ 	swi	r3, r1, PT_R3
++	addik	r1, r1, -C_ARG_SIZE
+ 	brlid	r15, do_syscall_trace_enter
+-	addik	r5, r1, PT_R0
++	addik	r5, r1, PT_R0 + C_ARG_SIZE
++	addik	r1, r1, C_ARG_SIZE
+ 
+ 	# do_syscall_trace_enter returns the new syscall nr.
+ 	addk	r12, r0, r3
+@@ -446,8 +458,10 @@
+ 	andi	r11, r11, _TIF_WORK_SYSCALL_MASK
+ 	beqi	r11, 1f
+ 
++	addik	r1, r1, -C_ARG_SIZE
+ 	brlid	r15, do_syscall_trace_leave
+-	addik	r5, r1, PT_R0
++	addik	r5, r1, PT_R0 + C_ARG_SIZE
++	addik	r1, r1, C_ARG_SIZE
+ 1:
+ 	/* We're returning to user mode, so check for various conditions that
+ 	 * trigger rescheduling. */
+@@ -467,8 +481,10 @@
+ 	beqi	r11, 4f;		/* Signals to handle, handle them */
+ 
+ 	addik	r5, r1, 0;		/* Arg 1: struct pt_regs *regs */
++	addik	r1, r1, -C_ARG_SIZE
+ 	bralid	r15, do_notify_resume;	/* Handle any signals */
+ 	add	r6, r30, r0;		/* Arg 2: int in_syscall */
++	addik	r1, r1, C_ARG_SIZE
+ 	add	r30, r0, r0		/* no more restarts */
+ 	bri	1b
+ 
+@@ -535,12 +551,15 @@
+ 	/* FIXME this can be store directly in PT_ESR reg.
+ 	 * I tested it but there is a fault */
+ 	/* where the trap should return need -8 to adjust for rtsd r15, 8 */
+-	addik	r15, r0, ret_from_exc - 8
++	addik	r15, r0, 8f-8
+ 	mfs	r6, resr
+ 	mfs	r7, rfsr;		/* save FSR */
+ 	mts	rfsr, r0;	/* Clear sticky fsr */
++	addik	r1, r1, -C_ARG_SIZE
+ 	rted	r0, full_exception
+-	addik	r5, r1, 0		 /* parameter struct pt_regs * regs */
++	addik	r5, r1, C_ARG_SIZE	 /* parameter struct pt_regs * regs */
++8:	addik	r1, r1, C_ARG_SIZE
++	bri	ret_from_exc
+ 
+ /*
+  * Unaligned data trap.
+@@ -569,11 +588,20 @@
+ 	swi	r17, r1, PT_PC;
+ 	tovirt(r1,r1)
+ 	/* where the trap should return need -8 to adjust for rtsd r15, 8 */
+-	addik	r15, r0, ret_from_exc-8
++	/*
++	 * Return through a trampoline rather than straight to
++	 * ret_from_exc: the stack adjustment has to be undone, and
++	 * ret_from_exc is reached from three other sites which do not
++	 * make it.
++	 */
++	addik	r15, r0, 9f-8
+ 	mfs	r3, resr		/* ESR */
+ 	mfs	r4, rear		/* EAR */
++	addik	r1, r1, -C_ARG_SIZE
+ 	rtbd	r0, _unaligned_data_exception
+-	addik	r7, r1, 0		/* parameter struct pt_regs * regs */
++	addik	r7, r1, C_ARG_SIZE	/* parameter struct pt_regs * regs */
++9:addik	r1, r1, C_ARG_SIZE
++	bri	ret_from_exc
+ 
+ /*
+  * Page fault traps.
+@@ -599,11 +627,14 @@
+ 	swi	r17, r1, PT_PC;
+ 	tovirt(r1,r1)
+ 	/* where the trap should return need -8 to adjust for rtsd r15, 8 */
+-	addik	r15, r0, ret_from_exc-8
++	addik	r15, r0, 7f-8
+ 	mfs	r6, rear		/* parameter unsigned long address */
+ 	mfs	r7, resr		/* parameter unsigned long error_code */
++	addik	r1, r1, -C_ARG_SIZE
+ 	rted	r0, do_page_fault
+-	addik	r5, r1, 0		/* parameter struct pt_regs * regs */
++	addik	r5, r1, C_ARG_SIZE	/* parameter struct pt_regs * regs */
++7:	addik	r1, r1, C_ARG_SIZE
++	bri	ret_from_exc
+ 
+ C_ENTRY(page_fault_instr_trap):
+ 	SAVE_STATE		/* Save registers.*/
+@@ -611,11 +642,14 @@
+ 	swi	r17, r1, PT_PC;
+ 	tovirt(r1,r1)
+ 	/* where the trap should return need -8 to adjust for rtsd r15, 8 */
+-	addik	r15, r0, ret_from_exc-8
++	addik	r15, r0, 6f-8
+ 	mfs	r6, rear		/* parameter unsigned long address */
+ 	ori	r7, r0, 0		/* parameter unsigned long error_code */
++	addik	r1, r1, -C_ARG_SIZE
+ 	rted	r0, do_page_fault
+-	addik	r5, r1, 0		/* parameter struct pt_regs * regs */
++	addik	r5, r1, C_ARG_SIZE	/* parameter struct pt_regs * regs */
++6:	addik	r1, r1, C_ARG_SIZE
++	bri	ret_from_exc
+ 
+ /* Entry point used to return from an exception.  */
+ C_ENTRY(ret_from_exc):
+@@ -652,8 +686,10 @@
+ 	 * the normal entry sequence, so that it may be safely restored
+ 	 * (in a possibly modified form) after do_notify_resume returns. */
+ 	addik	r5, r1, 0;		/* Arg 1: struct pt_regs *regs */
++	addik	r1, r1, -C_ARG_SIZE
+ 	bralid	r15, do_notify_resume;	/* Handle any signals */
+ 	addi	r6, r0, 0;		/* Arg 2: int in_syscall */
++	addik	r1, r1, C_ARG_SIZE
+ 	bri	1b
+ 
+ /* Finally, return to user state.  */
+@@ -728,9 +764,11 @@
+ 2:
+ 	lwi	CURRENT_TASK, r0, TOPHYS(PER_CPU(CURRENT_SAVE));
+ 	tovirt(r1,r1)
++	addik	r1, r1, -C_ARG_SIZE
+ 	addik	r15, r0, irq_call;
+ irq_call:rtbd	r0, do_IRQ;
+-	addik	r5, r1, 0;
++	addik	r5, r1, C_ARG_SIZE;
++	addik	r1, r1, C_ARG_SIZE
+ 
+ /* MS: we are in virtual mode */
+ ret_from_irq:
+@@ -751,8 +789,10 @@
+ 	beqid	r11, no_intr_resched
+ /* Handle a signal return; Pending signals should be in r18. */
+ 	addik	r5, r1, 0; /* Arg 1: struct pt_regs *regs */
++	addik	r1, r1, -C_ARG_SIZE
+ 	bralid	r15, do_notify_resume;	/* Handle any signals */
+ 	addi	r6, r0, 0; /* Arg 2: int in_syscall */
++	addik	r1, r1, C_ARG_SIZE
+ 	bri	1b
+ 
+ /* Finally, return to user state. */
+@@ -986,6 +1026,7 @@
+ #ifdef CONFIG_KGDB
+ 	addi	r5, r1, 0 /* pass pt_reg address as the first arg */
+ 	addik	r15, r0, dbtrap_call; /* return address */
++	addik	r1, r1, -C_ARG_SIZE
+ 	rtbd	r0, microblaze_kgdb_break
+ 	nop;
+ #endif
+@@ -1011,9 +1052,16 @@
+ 	set_vms;
+ 	addik	r5, r1, 0;
+ 	addik	r15, r0, dbtrap_call;
++	addik	r1, r1, -C_ARG_SIZE
+ dbtrap_call: /* Return point for kernel/user entry + 8 because of rtsd r15, 8 */
+ 	rtbd	r0, sw_exception
+ 	nop
++	/*
++	 * dbtrap_call+8: both microblaze_kgdb_break and sw_exception
++	 * return here, and both were entered with the argument save
++	 * area reserved.
++	 */
++	addik	r1, r1, C_ARG_SIZE
+ 
+ 	/* MS: The first instruction for the second part of the gdb/kgdb */
+ 	set_bip; /* Ints masked for state restore */
+@@ -1037,8 +1085,10 @@
+ 	beqi	r11, 4f;		/* Signals to handle, handle them */
+ 
+ 	addik	r5, r1, 0;		/* Arg 1: struct pt_regs *regs */
++	addik	r1, r1, -C_ARG_SIZE
+ 	bralid	r15, do_notify_resume;	/* Handle any signals */
+ 	addi  r6, r0, 0;	/* Arg 2: int in_syscall */
++	addik	r1, r1, C_ARG_SIZE
+ 	bri	1b
+ 
+ /* Finally, return to user state.  */

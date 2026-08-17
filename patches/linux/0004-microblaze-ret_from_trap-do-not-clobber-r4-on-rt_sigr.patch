@@ -1,0 +1,50 @@
+From: Sam Price <thesamprice@gmail.com>
+Subject: [PATCH] microblaze: ret_from_trap: do not clobber r4 on rt_sigreturn
+
+ret_from_trap stores r3/r4 into pt_regs unconditionally as the syscall
+return path.  For rt_sigreturn that overwrites the r4 just restored from the
+signal frame, which corrupts atomic sequences that keep an address in r4
+across an lwx/swx window (e.g. __sync_val_compare_and_swap) -> segfaults
+(nptl/tst-eintr1).  This is Ramin Moussavi's fix (LKML, Fixes: 791d0a169b91)
+adapted to the entry.S that reserves the ABI argument save area: rt_sigreturn
+returns through a trampoline that restores r1 (lowered by C_ARG_SIZE at
+dispatch) and re-enters ret_from_trap past the r3/r4 stores.
+
+Confirmed on qemu: tst-eintr1 intermittent 2/30 without this, 0/30 with it.
+On a mainline entry.S (no argument-save reservation) Ramin's original patch
+applies directly; this variant is for the reserve-argument-save-area tree.
+---
+--- a/arch/microblaze/kernel/entry.S	2026-08-17 10:43:02.968202000 +0000
++++ b/arch/microblaze/kernel/entry.S	2026-08-17 10:43:02.916202000 +0000
+@@ -456,6 +456,7 @@
+ C_ENTRY(ret_from_trap):
+ 	swi	r3, r1, PT_R3
+ 	swi	r4, r1, PT_R4
++ret_from_trap_sig:	/* rt_sigreturn enters here, past the r3/r4 stores */
+ 
+ 	lwi	r11, r1, PT_MODE;
+ /* See if returning to kernel mode, if so, skip resched &c.  */
+@@ -549,12 +550,23 @@
+ 
+ C_ENTRY(sys_rt_sigreturn_wrapper):
+ 	addik	r30, r0, 0		/* no restarts */
++	/*
++	 * rt_sigreturn restores the full register set, so it must skip the
++	 * r3/r4 syscall-return stores at the head of ret_from_trap that would
++	 * otherwise overwrite the just-restored r4.  Return through a
++	 * trampoline that restores r1 (the dispatch lowered it by C_ARG_SIZE)
++	 * and enters ret_from_trap past those stores.
++	 */
++	addi	r15, r0, sys_rt_sigreturn_tramp-8
+ 	brid	sys_rt_sigreturn	/* Do real work */
+ 	/*
+ 	 * The dispatch lowered r1 by C_ARG_SIZE before branching here, so
+ 	 * the pt_regs base is that far above the current stack pointer.
+ 	 */
+ 	addik	r5, r1, C_ARG_SIZE;	/* add user context as 1st arg */
++sys_rt_sigreturn_tramp:
++	addik	r1, r1, C_ARG_SIZE
++	bri	ret_from_trap_sig
+ 
+ /*
+  * HW EXCEPTION rutine start
