@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Price <thesamprice@gmail.com>
+Date: Sat, 16 Aug 2026 12:00:00 -0400
+Subject: [PATCH] microblaze: reserve the ABI argument save area in the signal
+ frame
+
+The MicroBlaze ABI has the caller reserve stack space for the arguments
+it passes in registers and permits the callee to spill its incoming
+argument registers there: a callee may write to [sp+4, sp+28)
+(REG_PARM_STACK_SPACE = MAX_ARGS_IN_REGISTERS * UNITS_PER_WORD) and uses
+[sp+0] as its linkage slot.
+
+setup_rt_frame() enters the signal handler with the handler's stack
+pointer set to the frame base:
+
+	regs->r1 = (unsigned long) frame;
+	regs->r6 = (unsigned long) &frame->info;
+
+Because struct rt_sigframe places the siginfo first, &frame->info ==
+frame, so the handler runs with r1 == &siginfo: its argument save area
+aliases the siginfo the kernel just filled in.
+
+This is latent until the handler spills across a call, and glibc's
+SIGCANCEL handler does exactly that.  sigcancel_handler() saves the
+siginfo pointer (its second argument, r6) across its __getpid() call.
+With r1 == &siginfo and the handler's own frame lowered by 32, the store
+lands at &siginfo + 8, which is siginfo->si_code:
+
+	swi	r6, r1, 40	; r1 == SP-32, so SP+8 == &si_code
+
+The handler then reloads si_code, its "si->si_code != SI_TKILL" sanity
+check fails against the overwritten value, and it returns without acting
+on the cancellation.  A pthread_cancel() of a thread blocked in a
+cancellable syscall (e.g. read()) is silently dropped; the SA_RESTART
+syscall restarts and the thread hangs.
+
+Observed with a cancel-of-blocked-read() reproducer under
+qemu-system-microblazeel (machine petalogix-s3adsp1800), tracing the
+handler non-perturbingly: si_code is SI_TKILL (-6) at handler entry, and
+at the check it reads back the siginfo pointer (0x48800060) instead --
+the handler bails and pthread_join() never returns.
+
+Like GCC 15 exposing this on the syscall/exception/interrupt entry paths
+(the register allocator now spills incoming arguments, after commit
+3b9b8d6cfdf5 "ira: Scale save/restore costs of callee save registers with
+block frequency"), the same GCC change is what makes the userspace signal
+handler spill across its call.  This is the signal-frame analogue of the
+kernel-entry argument-save-area fix ("microblaze: reserve the ABI
+argument save area when calling C from entry.S"): any boundary that hands
+code a stack pointer aliasing live data lets a spilling callee corrupt
+that data.  Here the callee is the userspace handler and the live data is
+the siginfo.
+
+Reserve the argument save area at the base of the signal frame so the
+handler's stack pointer sits below the siginfo.  regs->r1 still points at
+the frame base (now the reserved area), regs->r6 / regs->r7 point above
+it, and restore_sigcontext() reaches the ucontext through the same
+struct, so all offsets stay consistent; the handler's spills now land in
+the reserved area instead of the siginfo.
+
+Signed-off-by: Sam Price <thesamprice@gmail.com>
+---
+ arch/microblaze/kernel/signal.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/microblaze/kernel/signal.c b/arch/microblaze/kernel/signal.c
+index 60c1f8e50ffb..1111111111111 100644
+--- a/arch/microblaze/kernel/signal.c
++++ b/arch/microblaze/kernel/signal.c
+@@ -49,6 +49,15 @@
+ };
+ 
+ struct rt_sigframe {
++	/*
++	 * MicroBlaze ABI argument-save/linkage area.  setup_rt_frame()
++	 * enters the handler with r1 == this frame; per the ABI a callee
++	 * may store its incoming register arguments into [sp+0, sp+28).
++	 * Keep that below the siginfo so a handler spilling across a call
++	 * (e.g. glibc's SIGCANCEL handler across getpid()) cannot corrupt
++	 * si_code / si_pid.  Analogue of the entry.S arg-save-area fix.
++	 */
++	unsigned long arg_save[8];
+ 	struct siginfo info;
+ 	struct ucontext uc;
+ 	unsigned long tramp[2];	/* signal trampoline */
+-- 
+2.45.1
