@@ -6,9 +6,10 @@ wrong** — the timing sensitivity was the observer effect on a race that does n
 exist; the assembly is fine. This file is the corrected, final account.
 
 Neal Frager surfaced the failures (glibc testsuite under QEMU after the MicroBlaze
-GCC-15 kernel finally booted). They turned out to be **four distinct, pre-existing
+GCC-15 kernel finally booted). They turned out to be **several distinct, pre-existing
 bugs**, none caused by Sam's entry.S argument-save fix — that fix merely lets a
-GCC-15 kernel boot far enough to reach them.
+GCC-15 kernel boot far enough to reach them. Four kernel/gcc bugs, one latent MSR
+correctness bug, and one glibc bug (below).
 
 ## The four bugs and their fixes
 
@@ -54,7 +55,32 @@ Plus a latent correctness bug found along the way:
    `FIX_EFLAGS`). Verified: ucontext-MSR propagation 0/132 -> 130/132, no
    cancel-min regression.
 
+6. **tst-cancel17 (aio_suspend) = glibc `__syscall_cancel_arch` reads stack args
+   from the wrong offset.** `sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S`
+   loads the cancellable syscall's 5th/6th arguments (its 7th/8th params, passed on
+   the stack) from `r1+56`/`r1+60`, but the MicroBlaze ABI puts the 7th stack arg at
+   `r1+28` (link word at `r1+0` + six register-arg save slots `r1+4..r1+24`) and the
+   8th at `r1+32` — where the compiler-generated callers store them (`__GI___pread`:
+   `swi r11,r1,28`). So every cancellable syscall passing args on the stack reads
+   uninitialised caller stack. The visible victim is **pread64/pwrite64**, whose 5th
+   arg is the high word of the 64-bit offset: a valid offset 0 becomes garbage, so
+   `pread64(pipe,..,0)` returns **EINVAL** (kernel `pos<0` check) instead of ESPIPE.
+   That defeats the POSIX-AIO ESPIPE→`read()` fallback in `rt/aio_misc.c`, so
+   `aio_read` completes immediately with EINVAL and `aio_suspend` returns before it
+   can block — nothing to cancel. **Fix: Sam's
+   `microblaze: fix syscall_cancel stack-arg offsets`** (`r1+56/60` → `r1+28/32`).
+   Isolated with a raw non-cancellable `INTERNAL_SYSCALL_CALL(pread64,..,0,0)` from
+   the *same* AIO helper thread returning `-ESPIPE` while the cancellable `__pread`
+   returned EINVAL, then disassembling `__GI___pread` vs the stub. **Verified on
+   qemu:** with the fix `pread64(pipe,..,0)` returns ESPIPE, the AIO request blocks,
+   and the real `nptl/tst-cancel17` binary passes (was failing). Almost certainly a
+   latent port bug (the offsets never matched the ABI), independent of GCC-15.
+
 ## Patches in this repo
+
+`patches/glibc/`:
+- `0001-microblaze-fix-syscall_cancel-stack-arg-offsets.patch` — bug #6, NOT yet
+  mailed (a glibc patch → libc-alpha / MicroBlaze maintainers).
 
 `patches/linux/`:
 - `0001-microblaze-reserve-the-ABI-argument-save-area-in-the.patch` — bug #4,
@@ -70,8 +96,10 @@ Bug #1 (entry.S arg-save) and bug #3 (`ret_from_trap`) are tracked/sent separate
 
 `repro/`: `cancel-min.c` (read-cancel), `cancel-diag.c`, `pc-probe.c`,
 `mb-msr2.c` (ucontext-MSR round-trip, the #5 A/B), `mb-eintr.c` (r4-in-CAS
-segfault), `mb-msrtest.c`, `mb-r19test.c`. `canceltrace.c` is the non-perturbing
-QEMU TCG plugin used to trace the handler under `-icount`.
+segfault), `mb-msrtest.c`, `mb-r19test.c`, `mb-aiosusp.c` (the #6 aio_suspend
+cancel A/B: prints CANCELED/not-canceled), `mb-preadctx.c` and `mb-aiohelper.c`
+(pread-on-pipe probes that isolated #6 to the cancellable path). `canceltrace.c`
+is the non-perturbing QEMU TCG plugin used to trace the handler under `-icount`.
 
 ## Residual (low priority)
 
