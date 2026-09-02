@@ -1,0 +1,59 @@
+From 32dd60282ec18a0d1f731ebfb300027e0a40d996 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 18:38:29 -0400
+Subject: [PATCH] elf: Terminate the .eh_frame section of ld.so
+
+ld.so is linked from librtld.os alone, so unlike libc.so and every
+other shared object glibc builds it never gets sofini.os, and its
+.eh_frame ends in the last FDE's CFI opcodes with no zero
+terminator.  On MicroBlaze the section ends "05 9c 04 9d 03 9f 01 00".
+
+That goes unnoticed wherever ld.so has an .eh_frame_hdr search
+table, because the unwinder then never walks the section linearly.
+MicroBlaze cannot have one: GCC uses DW_EH_PE_aligned pointers in PIC
+code there, and ld refuses to build the table for that encoding
+("FDE encoding ... prevents .eh_frame_hdr table being created").
+libgcc falls back to linear_search_fdes, which stops only at a
+zero-length entry, so any unwind that reaches a frame in ld.so walks
+past the end of .eh_frame into whatever is mapped next until it
+trips on garbage and aborts in read_encoded_value_with_base.
+
+The frame it reaches is __libc_start_main's return address, which
+_dl_start_user sets to _dl_fini - 8, so every _Unwind_Backtrace or
+forced unwind that goes through main aborts on MicroBlaze
+(elf/tst-unwind-main).
+
+Link a terminator into ld.so.  sofini.os as built for libc cannot be
+used directly: with symbol-hacks.h it carries undefined references
+to __GI_memcpy and friends that ld.so does not define, and the -z
+defs sanity check rejects it.  Build an rtld flavour, rtld-sofini.os,
+from the same source and link it last.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ elf/Makefile | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/elf/Makefile b/elf/Makefile
+index 4d1032bb2a..8b10d7f591 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -1677,7 +1677,14 @@ generated += librtld.map librtld.mk rtld-libc.a librtld.os.map
+ 
+ z-now-yes = -Wl,-z,now
+ 
+-$(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
++# The .eh_frame terminator.  sofini.os as built for libc carries the
++# symbol-hacks redirections to __GI_* symbols that ld.so cannot resolve,
++# so build an rtld flavour of it.  It must come last in the link.
++libof-rtld-sofini := rtld
++$(objpfx)rtld-sofini.os: sofini.c $(before-compile)
++	$(compile-command.c)
++
++$(objpfx)ld.so: $(objpfx)librtld.os $(objpfx)rtld-sofini.os $(ld-map)
+ # Link into a temporary file so that we don't touch $@ at all
+ # if the sanity check below fails.
+ 	$(LINK.o) -nostdlib -nostartfiles -shared -o $@.new		\
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,102 @@
+From 9cc864c26c1d5cc5b6dd0cdd645d5ce4090d3efa Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 17:43:51 -0400
+Subject: [PATCH] libgcc: microblaze: locate the signal frame from the
+ handler's CFA
+
+microblaze_fallback_frame_state finds the kernel's rt_sigframe by
+walking back from the sigreturn trampoline by sizeof (ucontext_t),
+the C library's type.  Two things break that.  Under glibc uc_sigmask
+is 128 bytes instead of the kernel's 8, so ucontext_t is 304 bytes
+against a 184-byte frame member and the computed sigcontext is 120
+bytes too low.  And qemu-user keeps the trampoline on a separate
+page rather than in the frame, so there is nothing in front of it to
+find.  Either way every register read from the frame is garbage: an
+unwind that reaches a signal handler frame stops there, backtrace()
+from a handler stops at the handler, and pthread_cancel cannot unwind
+out of a cancelled system call.
+
+The handler is entered with r1 pointing at the rt_sigframe, both by
+the kernel (regs->r1 = frame) and by qemu-user, so the handler's CFA
+is the frame.  Locate the sigcontext from there: past the siginfo_t
+and the head of the kernel's struct ucontext.  Keep the trampoline
+match only to recognise the frame, and probe the 8-bytes-ahead form
+first, since that is where r15 always points.
+
+libgcc/ChangeLog:
+	* config/microblaze/linux-unwind.h (microblaze_fallback_frame_state):
+	Locate struct sigcontext from the CFA using the kernel's
+	rt_sigframe layout instead of from the trampoline and
+	sizeof (ucontext_t).  Check the trampoline 8 bytes ahead first.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ libgcc/config/microblaze/linux-unwind.h | 37 +++++++++++++------------
+ 1 file changed, 20 insertions(+), 17 deletions(-)
+
+diff --git a/libgcc/config/microblaze/linux-unwind.h b/libgcc/config/microblaze/linux-unwind.h
+index b54704a06..ad588e91d 100644
+--- a/libgcc/config/microblaze/linux-unwind.h
++++ b/libgcc/config/microblaze/linux-unwind.h
+@@ -28,7 +28,7 @@
+    data appropriately.  See unwind-dw2.c for the structs.  */
+ 
+ #include <signal.h>
+-#include <sys/ucontext.h>
++#include <asm/sigcontext.h>
+ #include <asm/unistd.h>
+ 
+ #define MD_FALLBACK_FRAME_STATE_FOR microblaze_fallback_frame_state
+@@ -48,30 +48,33 @@ microblaze_fallback_frame_state (struct _Unwind_Context *context,
+   if ((unsigned long) pc < 4096)
+     return _URC_END_OF_STACK;
+ 
+-  /* The kernel writes the signal trampoline onto the stack
+-     (struct rt_sigframe.tramp):
++  /* The kernel writes the signal trampoline into the last member of
++     its rt_sigframe:
+ 
+ 	addik r12, r0, __NR_rt_sigreturn
+ 	brki  r14, 0x8
+ 
+-     and sets the saved r15 to the trampoline address minus 8 (the
+-     handler returns with "rtsd r15, 8"), so the unwound return
+-     address points 8 bytes before the trampoline.  */
+-  if (pc[0] == (0x31800000 | __NR_rt_sigreturn) && pc[1] == 0xb9cc0008)
++     and sets the handler's r15 to the trampoline address minus 8 (the
++     handler returns with "rtsd r15, 8"), so the unwound return address
++     normally points 8 bytes before the trampoline.  qemu-user places
++     the same two instructions on a separate trampoline page instead
++     and points r15 8 bytes before it, so look 8 bytes ahead first.  */
++  if (pc[2] == (0x31800000 | __NR_rt_sigreturn) && pc[3] == 0xb9cc0008)
++    ;
++  else if (pc[0] == (0x31800000 | __NR_rt_sigreturn) && pc[1] == 0xb9cc0008)
+     ;
+-  else if (pc[2] == (0x31800000 | __NR_rt_sigreturn) && pc[3] == 0xb9cc0008)
+-    pc += 2;
+   else
+     return _URC_END_OF_STACK;
+ 
+-  /* The trampoline is the last member of the kernel's rt_sigframe and
+-     the ucontext sits directly in front of it.  Anchor there rather
+-     than at the CFA so the layout of the frame head does not matter
+-     (the kernel may insert an ABI argument-home gap at the front).
+-     uClibc's ucontext_t matches the kernel's struct ucontext.  */
+-  ucontext_t *uc = (ucontext_t *) ((_Unwind_Ptr) pc - sizeof (ucontext_t));
+-
+-  sc = (struct sigcontext *) &uc->uc_mcontext;
++  /* The handler is entered with r1 pointing at the rt_sigframe, so the
++     handler's CFA is the frame: a siginfo_t, then the kernel's struct
++     ucontext (uc_flags, uc_link, uc_stack, then the sigcontext).  Do not
++     locate it from the trampoline, which need not sit in the frame, and
++     do not use the C library's ucontext_t, whose uc_sigmask (128 bytes
++     under glibc, 8 in the kernel's) makes its size differ from the
++     kernel's frame member.  */
++  sc = (struct sigcontext *) ((_Unwind_Ptr) context->cfa + sizeof (siginfo_t)
++			      + 2 * sizeof (unsigned long) + sizeof (stack_t));
+ 
+   new_cfa = sc->regs.r1;
+   fs->regs.cfa_how = CFA_REG_OFFSET;
+-- 
+2.39.5 (Apple Git-154)
+

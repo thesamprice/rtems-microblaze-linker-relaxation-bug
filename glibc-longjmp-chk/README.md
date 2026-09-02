@@ -291,6 +291,62 @@ sets `BIND_NOW` even with `-z lazy`, so `RTLD_LAZY` tests (`dblload`,
 unsupported on this target. Cancellation and signal-frame backtraces need the
 gcc 16 libgcc.
 
+## Round three: making unwinding actually work
+
+The CFI patch made frames visible but the unwinder still failed on every
+dynamic MicroBlaze program. Chasing that with a gcc-master toolchain built in
+the container produced three more fixes and one correction to patch 0005.
+
+**glibc 0007, `ld.so` has no `.eh_frame` terminator.** `ld.so` is linked from
+`librtld.os` alone, so unlike every other shared object it never gets
+`sofini.os`, and its `.eh_frame` ends in CFI opcodes ("05 9c 04 9d 03 9f 01
+00"). Everywhere else the `.eh_frame_hdr` binary-search table hides this; on
+MicroBlaze gcc's `DW_EH_PE_aligned` encoding prevents the table, libgcc walks
+the section linearly, and any unwind that reaches `__libc_start_main`'s return
+address (`_dl_fini - 8`, inside `ld.so`) runs off the end into whatever is
+mapped next and aborts in `read_encoded_value_with_base` with encoding `0xff`.
+That was the `elf/tst-unwind-main` abort and the reason `_Unwind_Backtrace`
+through `main` never worked. `sofini.os` as built for libc cannot be linked
+into `ld.so` (it carries the `__GI_*` symbol-hacks redirections), so the patch
+builds an rtld flavour, `rtld-sofini.os`, and links it last. `tst-unwind-main`
+passes with the shipped libgcc.
+
+**gcc 0001, the signal-frame fallback reads the wrong place**
+(`patches/gcc/0001-libgcc-microblaze-signal-frame-glibc-layout.patch`).
+`libgcc/config/microblaze/linux-unwind.h` in gcc master locates the kernel's
+`rt_sigframe` by walking back `sizeof (ucontext_t)` from the sigreturn
+trampoline. glibc's `ucontext_t` is 304 bytes (128-byte sigset) against the
+kernel's 184-byte frame member, and qemu-user keeps the trampoline on a
+separate page anyway, so the registers came from garbage and every unwind
+stopped at a signal handler. The patch anchors on the handler's CFA, which is
+the frame address in both the kernel and qemu, and probes the trampoline 8
+bytes ahead first, where r15 always points. Verified: `debug/tst-backtrace4`
+goes 3 to 6 frames, `tst-backtrace5` and `6` to 13, `nptl/tst-cleanupx4`
+passes, and `tst-cancelx4` gets through its `read` cancellation.
+
+**Correction to 0005.** The first version of the CFI patch broke 31 `nptl`
+cancellation tests (`tst-cancel2`, `tst-mutex8`, `tst-join5`, ... all timing
+out) in the all-patches run. `__syscall_cancel_arch`'s cancel path does
+`brlid r15, __syscall_do_cancel` without saving r15; once the frame had an FDE
+saying the return address is in r15, the unwinder found the `brlid`'s own
+address with an unchanged CFA and looped forever, where previously the missing
+FDE ended the walk and glibc fell back to its longjmp path. 0005 now saves
+r15 in a frame on that path, with CFI, and marks r15 undefined in
+`__startcontext`. All sampled tests pass again.
+
+**Two more binutils facts from this round.** The Buildroot gcc ignores `-B`
+for the linker and always runs its own `ld`, so the patched binutils has to
+replace the toolchain's `as` and `ld` (done via symlinks in the container).
+And gcc master links MicroBlaze executables with `--eh-frame-hdr`, which the
+Bootlin gcc 14 does not; that is already fixed upstream.
+
+**Full run on all glibc patches plus patched binutils, before the 0005
+correction** (`evidence/full-check-results-all-patches.txt`): 4739 PASS,
+493 FAIL, 160 UNSUPPORTED, 4 XFAIL on 5396 results. Against the first run:
+138 tests fixed, 43 newly failing, 31 of those the cancellation regression
+above. A final clean run with the corrected 0005, patch 0007 and the fixed
+libgcc at runtime is recorded below when it finishes.
+
 ## Reproducing
 
 `evidence/build.sh`, `evidence/tests.sh` and `evidence/check.sh` are the exact

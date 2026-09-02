@@ -1,4 +1,4 @@
-From f157d826f581cbd1fe8f4417cc08ef90333eb266 Mon Sep 17 00:00:00 2001
+From 5638e9f443cb46d0f944841d865357436aec3f80 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 12:50:07 -0400
 Subject: [PATCH] microblaze: Add CFI to the assembly sources
@@ -22,22 +22,32 @@ the frames of _dl_runtime_resolve, _dl_runtime_profile, _mcount and
 the reentrant PIC SYSCALL_ERROR_HANDLER, and mark r15 undefined in
 _start and in the child branch of clone, which have no caller.
 
+The cancel path of __syscall_cancel_arch calls __syscall_do_cancel with
+brlid, which overwrites r15 without saving it.  That never mattered
+while the function had no unwind information; with an FDE saying the
+return address is in r15 the unwinder finds the address of that brlid,
+the CFA does not move, and pthread cancellation loops forever.  Save
+r15 in a frame first and describe it.  Likewise mark r15 undefined in
+__startcontext, the outermost frame of a context made by makecontext.
+
 Full cancellation unwinding on MicroBlaze also needs libgcc's
 MD_FALLBACK_FRAME_STATE_FOR for the signal frame, which is in GCC
 master (libgcc/config/microblaze/linux-unwind.h) but not in GCC 14.
 
 Assisted-by: Claude <noreply@anthropic.com>
 ---
- config.h.in                                 |  3 ++
- sysdeps/microblaze/_mcount.S                |  6 ++++
- sysdeps/microblaze/configure                | 36 +++++++++++++++++++
- sysdeps/microblaze/configure.ac             | 22 ++++++++++++
- sysdeps/microblaze/dl-trampoline.S          |  8 +++++
- sysdeps/microblaze/start.S                  |  6 ++++
- sysdeps/microblaze/sysdep.h                 | 38 ++++++++++++++++++++-
- sysdeps/unix/sysv/linux/microblaze/clone.S  |  2 ++
- sysdeps/unix/sysv/linux/microblaze/sysdep.h |  6 ++++
- 9 files changed, 126 insertions(+), 1 deletion(-)
+ config.h.in                                   |  3 ++
+ sysdeps/microblaze/_mcount.S                  |  6 +++
+ sysdeps/microblaze/configure                  | 36 ++++++++++++++++++
+ sysdeps/microblaze/configure.ac               | 22 +++++++++++
+ sysdeps/microblaze/dl-trampoline.S            |  8 ++++
+ sysdeps/microblaze/start.S                    |  6 +++
+ sysdeps/microblaze/sysdep.h                   | 38 ++++++++++++++++++-
+ sysdeps/unix/sysv/linux/microblaze/clone.S    |  2 +
+ .../unix/sysv/linux/microblaze/setcontext.S   |  3 ++
+ .../sysv/linux/microblaze/syscall_cancel.S    |  7 ++++
+ sysdeps/unix/sysv/linux/microblaze/sysdep.h   |  6 +++
+ 11 files changed, 136 insertions(+), 1 deletion(-)
  mode change 100755 => 100644 sysdeps/microblaze/configure
 
 diff --git a/config.h.in b/config.h.in
@@ -316,6 +326,38 @@ index 00b610e7ad..0343fa68ff 100644
  	lwi	r12,r1,0		; // fn
  	lwi	r5,r1,4			; // arg
  	brald	r15,r12
+diff --git a/sysdeps/unix/sysv/linux/microblaze/setcontext.S b/sysdeps/unix/sysv/linux/microblaze/setcontext.S
+index fc00b87fff..576f4a2446 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/setcontext.S
++++ b/sysdeps/unix/sysv/linux/microblaze/setcontext.S
+@@ -84,6 +84,9 @@ weak_alias (__setcontext, setcontext)
+ 	nop
+ 
+ ENTRY (__startcontext)
++	/* This is the outermost frame of the context; there is nothing to
++	   unwind to.  */
++	cfi_undefined (r15)
+ 	/* makecontext put uc_link in r19, which the function preserved.  */
+ 	beqid	r19,1f
+ 	addk	r5,r19,r0
+diff --git a/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S b/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+index 64b74948f2..b654db3cf1 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
++++ b/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+@@ -54,6 +54,13 @@ __syscall_cancel_arch_end:
+ 	nop
+ 
+ 1:
++	/* r15 still holds this function's return address.  __syscall_do_cancel
++	   never returns, but the unwinder has to get past this frame, so save
++	   r15 where the CFI says it is before the call clobbers it.  */
++	addik	r1,r1,-8
++	cfi_adjust_cfa_offset (8)
++	swi	r15,r1,0
++	cfi_rel_offset (r15, 0)
+ 	brlid	r15, __syscall_do_cancel
+ 	nop
+ 
 diff --git a/sysdeps/unix/sysv/linux/microblaze/sysdep.h b/sysdeps/unix/sysv/linux/microblaze/sysdep.h
 index 8179cca4e4..e251652358 100644
 --- a/sysdeps/unix/sysv/linux/microblaze/sysdep.h

@@ -1,6 +1,6 @@
-From a756e309085c2cf1c82401b845fb114bc3e38ba8 Mon Sep 17 00:00:00 2001
+From 2e3f311addaa5d7a2db16ed42e614487f897b86e Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Wed, 2 Sep 2026 12:50:07 -0400
+Date: Wed, 2 Sep 2026 18:38:29 -0400
 Subject: [PATCH] microblaze: Use the generic unwinder-based backtrace
 
 The MicroBlaze backtrace walks the stack by scanning backwards from
