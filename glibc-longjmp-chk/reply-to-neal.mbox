@@ -1,0 +1,174 @@
+From: Sam Price <thesamprice@gmail.com>
+To: Neal Frager <neal.frager@amd.com>
+Cc: Gopi Kumar Bulusu <gopi@sankhya.com>
+Subject: Re: glibc microblaze ____longjmp_chk.S / native gdb infinite loop
+
+Hi Neal, Gopi,
+
+I had my AI agent (Claude) take a look at this today. I'm on mobile and
+have not been able to verify the delta myself yet, so please treat the
+patch below as "reproduced and tested by the agent, not yet eyeballed by
+me". Gopi's diagnosis holds up: this is a glibc bug, not a gdb bug, and
+it is not something a missing glibc patch would explain. Upstream master
+and the Xilinx glibc fork carry the identical file.
+
+What the file does
+
+  sysdeps/unix/sysv/linux/microblaze/____longjmp_chk.S has been this
+  since the 2012 port:
+
+      ENTRY (____longjmp_chk)
+              rtsd    r15,0
+              nop
+
+  ____longjmp_chk is the machine half of __longjmp_chk, which is what
+  longjmp/siglongjmp become under _FORTIFY_SOURCE. It never restores the
+  jump buffer. Worse, "rtsd r15,0" returns to the address of the calling
+  brald itself rather than past its delay slot ("rtsd r15,8" is the
+  normal return), so __longjmp_chk calls the stub, the stub returns to
+  the call, and the two instructions ping-pong forever. 100% CPU, no
+  message. That is the infinite loop you are seeing.
+
+Why gdb hits it
+
+  gdb defines _FORTIFY_SOURCE=2 for itself (gdbsupport/common-defs.h)
+  and uses longjmp to get out of readline's callback when a command
+  throws (gdb/event-top.c gdb_rl_callback_handler -> throw_exception_sjlj
+  -> longjmp in gdbsupport/common-exceptions.cc). So the first error a
+  native gdb handles is the last thing it does. Any fortified program
+  that longjmps (bash, vim, ...) hits the same wall.
+
+Reproduction
+
+  Bootlin microblazeel--glibc--stable-2025.08-1 (glibc 2.41) under
+  qemu-microblazeel. objdump of the sysroot's libc.so.6 shows the stub,
+  and a qemu -d in_asm trace shows the last translated blocks alternating
+  between the brald in __longjmp_chk and the rtsd. A 10-line
+  setjmp/longjmp program built with -O2 -D_FORTIFY_SOURCE=2 hangs;
+  with -U_FORTIFY_SOURCE it works.
+
+  glibc's own tests already cover this. On a cross build of glibc master
+  (10ed541ad1) run under qemu-user, debug/tst-longjmp_chk,
+  tst-longjmp_chk2 and tst-longjmp_chk3 all time out. Nobody has run the
+  suite on MicroBlaze; build-many-glibcs.py only compiles it.
+
+Fix
+
+  Delete the stub and add sysdeps/microblaze/jmpbuf-offsets.h defining
+  JB_FRAME_ADDRESS, so the generic
+  sysdeps/unix/sysv/linux/____longjmp_chk.c gets picked up, the same way
+  riscv and loongarch do. That version does the frame comparison, the
+  sigaltstack fallback and the __fortify_fail call. With it, the same
+  three tests pass under qemu (tst-longjmp_chk2 exercises the alternate
+  stack path, tst-longjmp_chk3 checks that a bad jump aborts). A full
+  make check on the patched build and a second build with
+  --enable-fortify-source=2 are running now; I'll follow up with those
+  results.
+
+The patch (against glibc master, formatted for libc-alpha) is below and
+attached. If AMD would rather submit it, please go ahead; otherwise I
+can send it to libc-alpha once I've had a chance to look at it on a real
+screen.
+
+Thanks,
+Sam
+
+---8<---
+From 7c327d4505 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 1 Sep 2026
+Subject: [PATCH] microblaze: Implement ____longjmp_chk using the generic Linux version
+
+The MicroBlaze ____longjmp_chk has been a placeholder since the port
+was added in 2012:
+
+	ENTRY (____longjmp_chk)
+		rtsd	r15,0
+		nop
+
+It never jumps.  Worse, "rtsd r15,0" returns to the address of the
+call instruction itself rather than past its delay slot, so
+__longjmp_chk calls ____longjmp_chk, which returns to the call, which
+calls it again, forever.  Every longjmp or siglongjmp compiled with
+_FORTIFY_SOURCE hangs on MicroBlaze.  GDB defines _FORTIFY_SOURCE=2
+by default (gdbsupport/common-defs.h) and uses longjmp to propagate
+errors out of the readline callback, so a native gdb spins forever
+on the first error it handles.
+
+Remove the stub and provide JB_FRAME_ADDRESS so that the generic
+sysdeps/unix/sysv/linux/____longjmp_chk.c is used instead, the same
+way riscv and loongarch do.
+
+Tested on a microblazeel-linux-gnu cross build run under qemu-user:
+debug/tst-longjmp_chk, tst-longjmp_chk2 and tst-longjmp_chk3 time
+out before this change and pass after it.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ sysdeps/microblaze/jmpbuf-offsets.h                | 22 ++++++++++++++++
+ .../unix/sysv/linux/microblaze/____longjmp_chk.S   | 29 ----------------------
+ 2 files changed, 22 insertions(+), 29 deletions(-)
+ create mode 100644 sysdeps/microblaze/jmpbuf-offsets.h
+ delete mode 100644 sysdeps/unix/sysv/linux/microblaze/____longjmp_chk.S
+
+diff --git a/sysdeps/microblaze/jmpbuf-offsets.h b/sysdeps/microblaze/jmpbuf-offsets.h
+new file mode 100644
+--- /dev/null
++++ b/sysdeps/microblaze/jmpbuf-offsets.h
+@@ -0,0 +1,22 @@
++/* Private macros for accessing __jmp_buf contents.  MicroBlaze version.
++   Copyright (C) 2026 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public License as
++   published by the Free Software Foundation; either version 2.1 of the
++   License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <jmpbuf-unwind.h>
++
++/* Helper for generic ____longjmp_chk().  */
++#define JB_FRAME_ADDRESS(buf) ((void *) _jmpbuf_sp (buf))
+diff --git a/sysdeps/unix/sysv/linux/microblaze/____longjmp_chk.S b/sysdeps/unix/sysv/linux/microblaze/____longjmp_chk.S
+deleted file mode 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/____longjmp_chk.S
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/* Copyright (C) 1997-2026 Free Software Foundation, Inc.
+-
+-   This file is part of the GNU C Library.
+-
+-   The GNU C Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public License as
+-   published by the Free Software Foundation; either version 2.1 of the
+-   License, or (at your option) any later version.
+-
+-   The GNU C Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, see
+-   <https://www.gnu.org/licenses/>.  */
+-
+-#include <sysdep.h>
+-
+-	.text
+-ENTRY (__revisit_longjmp_chk)
+-	rtsd	r15,0
+-	nop
+-PSEUDO_END (__revisit_longjmp_chk)
+-ENTRY (____longjmp_chk)
+-	rtsd	r15,0
+-	nop
+-PSEUDO_END (____longjmp_chk)

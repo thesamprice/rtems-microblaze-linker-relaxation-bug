@@ -1,0 +1,111 @@
+Hi Neal,
+
+Follow-up with the test results I promised, and two more MicroBlaze glibc
+bugs the run turned up. Three patches are attached, each a separate
+commit against glibc master (10ed541ad1). Same caveat as before: this
+was done with my AI agent and I have not verified the deltas myself yet.
+
+Setup
+-----
+glibc master cross-built for microblazeel-linux-gnu with the Bootlin
+2025.08-1 toolchain (gcc 14.3.0, binutils 2.43.1), run under
+qemu-microblazeel 7.2 in a Debian 12 container. Nobody runs glibc's
+testsuite on MicroBlaze; build-many-glibcs.py only compiles it, so
+expect a lot of first-time noise below.
+
+Patch 1: ____longjmp_chk (the gdb hang)
+---------------------------------------
+Unchanged from what I sent yesterday. Baseline: debug/tst-longjmp_chk,
+tst-longjmp_chk2 and tst-longjmp_chk3 all time out. Patched: all three
+pass. I also built a second tree with --enable-fortify-source=2, which
+is how distros and Buildroot build glibc and which routes every test's
+own longjmp through the checked path: all 12 setjmp/ tests pass, and
+debug/tst-fortify, whose harness longjmps out of a SIGABRT handler
+hundreds of times per run, now gets through every check (it stops at a
+ptsname_r call that qemu does not emulate, at fortify level 0 as well).
+
+Patch 2: libm test configuration
+--------------------------------
+The first full run had 933 libm tests abort on
+"libm-test-support.c:604: assert (ran == 1)". MicroBlaze is soft-float
+on the generic <bits/fenv.h>, which defines no FE_* macros, and nothing
+told the test harness. arc, riscv, loongarch and or1k carry a
+nofpu/math-tests-exceptions.h and math-tests-rounding.h for exactly
+this; MicroBlaze never got them. With the two headers added, math/ is
+1162 PASS, 0 FAIL.
+
+Patch 3: destructors never run in dynamically linked programs
+-------------------------------------------------------------
+This one matters beyond the testsuite. sysdeps/microblaze/start.S has
+always passed a null rtld_fini to __libc_start_main. The dynamic linker
+does hand over _dl_fini (its _dl_start_user leaves _dl_fini - 8 in r15
+before jumping to _start), but _start never looked at it. Before glibc
+2.34 that only lost shared-object destructors, because _start still
+passed __libc_csu_fini which ran the executable's own fini_array. Since
+2.34 (commit 035c012e32) _dl_fini is what runs those too, so in a
+dynamically linked MicroBlaze program no destructor runs at all:
+__attribute__((destructor)), .fini_array, the _fini of every DSO.
+Static programs are fine.
+
+Reproducer with the Bootlin glibc 2.41: a program with a constructor,
+an atexit handler and a destructor prints "destructor ran" when linked
+static and not when linked dynamic. C++ static destructors in shared
+libraries, gcov data written from a DSO, anything of that kind is
+silently skipped on MicroBlaze today.
+
+The fix uses r15 when it is non-zero. The kernel's ELF_PLAT_INIT for
+MicroBlaze zeroes every register at exec (qemu does too), so zero r15
+reliably means "started by the kernel". Verified with glibc's own
+tests: elf/tst-array1-cmp and tst-initorder-cmp go FAIL -> PASS,
+tst-array1-static-cmp stays PASS.
+
+Full make check, patches 1 and 2 applied
+----------------------------------------
+5372 results: 4619 PASS, 588 FAIL, 161 UNSUPPORTED, 4 XFAIL.
+(nptl/ and rt/ were run separately: the timezone zic data build hangs
+under qemu, and glibc orders nptl/rt after everything else, so a
+timezone failure skips them.)
+
+The 588 failures by cause:
+
+  191  destructors never run: 111 mtrace *-mem leak reports, 72
+       tst-dso-ordering, 8 elf/*-cmp. Patch 3, found by this run, is
+       not in it.
+   82  timeouts under emulation: the 20 s test-driver limit, and
+       tst-printf-format's per-conversion watchdog on 309-digit doubles
+       (552 of those 576 pass).
+   54  tests that spawn a child or re-exec ld.so. This is an artifact
+       of my host: qemu-user reads the host auxv AT_FLAGS to decide
+       whether binfmt_misc launched it with preserve-argv0, and Rosetta
+       (which runs the amd64 container on Apple Silicon) sets that bit,
+       so every guest loses argv[0]. Does not happen on a Linux host.
+   38  hangs: every LD_AUDIT and profiling test never finishes under
+       qemu-user; killed at a 10 min cap.
+   31  container tests: unshare() not permitted inside Docker.
+   19  debug/tst-fortify*: ptsname_r on posix_openpt, see above.
+   13  getcontext/setcontext/swapcontext: MicroBlaze has only the
+       generic ENOSYS stubs.
+   61  other qemu-user gaps: pty, getdents EOVERFLOW, THP/hugetlb malloc
+       tunables, PI/robust futexes, mqueue/aio, network, gprof, root.
+    5  backtrace() does not walk signal frames on MicroBlaze.
+   35  nptl/: pthread_cancel and -fexceptions cleanup tests
+       (tst-cancel*, tst-cancelx*, tst-cleanupx4, tst-once*, tst-tls3*,
+       tst-rwlock*) fail or the cancelled child aborts. Not touched by
+       these patches, and the one group I would look at next:
+       cancellation unwinding on MicroBlaze may be broken.
+   59  not yet looked at individually: 26 in elf/ (circleload1,
+       constload1, dblload, tst-tls-ie*, tst-thp-*, tst-unwind-main),
+       5 in string/ (test-strncmp, test-strnlen, test-strcasecmp,
+       test-strncasecmp, test-mempcpy), and a handful in libio, misc,
+       posix, stdlib, stdio-common, time.
+
+Two things for anyone repeating this: build glibc on a case-sensitive
+filesystem (stamp.os and stamp.oS collide on a macOS bind mount), and
+if you run under Rosetta, wrap qemu so the program path is passed
+twice, or the guest never sees argv[0].
+
+Happy for AMD to take any or all of these to libc-alpha. Otherwise I
+will send them once I have looked at them on a real screen.
+
+Thanks,
+Sam
