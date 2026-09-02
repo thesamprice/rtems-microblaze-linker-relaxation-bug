@@ -236,6 +236,61 @@ through glibc's own tests in the fortify tree with only `csu/` rebuilt:
 `tst-array1-static-cmp` stays PASS, and the destructor test prints
 "destructor ran" dynamically linked.
 
+## Round two: four more patches from the failure list
+
+Working through the remaining failures produced three more glibc patches
+and two binutils patches, each an independent commit.
+
+**0004, ucontext.** MicroBlaze only ever had the generic ENOSYS stubs for
+`getcontext`, `setcontext`, `swapcontext` and `makecontext`.
+`sysdeps/unix/sysv/linux/microblaze/{get,set,swap}context.S` and
+`makecontext.c` implement them: r1, r2, r13, r15 and the callee-saved
+r19-r31 go into `uc_mcontext.regs`, the resume address into the `pc` slot,
+`makecontext` lays out the 28-byte ABI area plus stack arguments and keeps
+`uc_link` in r19 for `__startcontext`. All 13 `stdlib/tst-setcontext*` and
+`tst-swapcontext*` tests go from FAIL to PASS.
+
+**0005, CFI in the assembly, and binutils 0006, gas CFI support.** No
+hand-written MicroBlaze assembly in glibc has unwind information because the
+assembler rejects `.cfi_*` for this target ("CFI is not supported for this
+target"); gcc writes its own tables. `pthread_cancel` with `-fexceptions`
+cleanup handlers unwinds from inside `__syscall_cancel_arch`, so the handlers
+never run (`nptl/tst-cancelx4`: "cleanup handler not called"). The binutils
+patch (`patches/binutils/0006-gas-microblaze-cfi-directives.patch`) enables
+CFI in gas with gcc's conventions (CFA r1, return column r15, data alignment
+-4) plus a testsuite case. The glibc patch adds a configure probe, makes the
+`cfi_*` macros no-ops on older assemblers, emits `cfi_startproc`/`cfi_endproc`
+from `ENTRY`/`END`, describes the frames of `_dl_runtime_resolve`, `_mcount`
+and the PIC syscall error handler, and marks r15 undefined in `_start` and
+the `clone` child.
+
+**binutils 0007, bfd drops the address of assembler frames in shared
+objects.** With CFI in place, every gas FDE in `libc.so` covered `pc=0`. The
+`.eh_frame` editor converts an absolute FDE pointer to PC-relative and asks
+the backend to apply the relocation statically instead of emitting a dynamic
+one (`_bfd_elf_section_offset` returning -2). `elf32-microblaze.c` skipped
+without applying, and on a RELA target the addend only exists in the
+relocation, so the field stayed zero. gcc frames never hit this because gcc
+uses `DW_EH_PE_aligned` for PIC MicroBlaze, which the editor leaves alone;
+that is also why `.eh_frame` is writable with hundreds of `R_MICROBLAZE_REL`
+relocations in every MicroBlaze DSO and `.eh_frame_hdr` has no search table.
+The fix mirrors every other backend. Note the Buildroot gcc ignores `-B` for
+the linker and always runs its own `ld`, so the patched one has to replace it.
+
+**0006, generic backtrace.** `sysdeps/microblaze/backtrace.c` walked the
+stack by scanning backwards for an `addik r1,r1,-N` prologue instruction. It
+stops after a few frames and reports `__backtrace` itself first, failing
+`debug/tst-backtrace2` and `3` with no signal involved. Dropped in favour of
+the generic `_Unwind_Backtrace` version: 2 and 3 pass. 4 to 6 unwind through
+a signal frame and need libgcc's `MD_FALLBACK_FRAME_STATE_FOR` for
+MicroBlaze, which exists in gcc master but not in gcc 14.
+
+**What is still not fixable from glibc or binutils.** Lazy binding: `ld`
+sets `BIND_NOW` even with `-z lazy`, so `RTLD_LAZY` tests (`dblload`,
+`lateglobal`, `resolvfail`, `tst-latepthread`, `nptl/tst-tls3`, ...) are
+unsupported on this target. Cancellation and signal-frame backtraces need the
+gcc 16 libgcc.
+
 ## Reproducing
 
 `evidence/build.sh`, `evidence/tests.sh` and `evidence/check.sh` are the exact
