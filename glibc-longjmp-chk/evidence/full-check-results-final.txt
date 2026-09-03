@@ -1,0 +1,494 @@
+# FINAL: glibc master (10ed541ad1) + patches 0001-0007, binutils master + gas CFI + bfd eh_frame fix (as/ld replaced in the Bootlin toolchain), Bootlin gcc 14.3 for compiling, libgcc_s from gcc 17 (user branch) with the signal-frame fix at runtime
+# full make -k check + nptl/rt, 2026-09-02 23:05 to 2026-09-03 01:22 UTC, all .out/.test-result removed first
+
+    435 FAIL
+   4787 PASS
+    160 UNSUPPORTED
+      4 XFAIL
+
+## Per directory: FAIL/total
+argp              0/10  
+assert            0/14  
+catgets           0/10  
+conform           0/20  
+csu               0/2   
+ctype             1/7   
+debug            21/54  
+dirent            4/19  
+dlfcn             5/27  
+elf             158/427 
+gmon              8/14  
+gnulib            0/1   
+hesiod            0/1   
+iconv             0/23  
+iconvdata         0/26  
+inet              1/25  
+intl              0/6   
+io                8/87  
+libio             4/119 
+locale            0/12  
+localedata        0/91  
+login             2/17  
+malloc           22/354 
+manual            0/2   
+math              0/1163
+misc             15/126 
+nis               0/1   
+nptl             49/423 
+nptl_db           0/6   
+nss               3/61  
+posix            28/192 
+resolv           29/64  
+resource          0/6   
+rt               12/50  
+setjmp            0/12  
+signal            0/20  
+socket            4/17  
+stdio-common     28/1419
+stdlib            5/153 
+string            7/96  
+sunrpc            2/13  
+support           6/29  
+sysvipc           0/10  
+termios           1/5   
+time             11/72  
+timezone          0/3   
+wcsmbs            1/70  
+wctype            0/7   
+
+## Every FAIL
+ctype/tst-ctype-tls-dlopen-static | exit status 1 | Timed out: killed the child process
+debug/tst-fortify-c-default-1-def | exit status 1 | Test checking routines at fortify level 1
+debug/tst-fortify-c-default-1-time64 | exit status 1 | Test checking routines at fortify level 1
+debug/tst-fortify-c-default-2-def | exit status 1 | Test checking routines at fortify level 2
+debug/tst-fortify-c-default-2-time64 | exit status 1 | Test checking routines at fortify level 2
+debug/tst-fortify-c-default-3-def | exit status 1 | Test checking routines at fortify level 3
+debug/tst-fortify-c-default-3-time64 | exit status 1 | Test checking routines at fortify level 3
+debug/tst-fortify-c-lfs-1-def | exit status 1 | Test checking routines at fortify level 1
+debug/tst-fortify-c-lfs-2-def | exit status 1 | Test checking routines at fortify level 2
+debug/tst-fortify-c-lfs-3-def | exit status 1 | Test checking routines at fortify level 3
+debug/tst-fortify-cc-default-1-def | exit status 1 | Test checking routines at fortify level 1
+debug/tst-fortify-cc-default-1-time64 | exit status 1 | Test checking routines at fortify level 1
+debug/tst-fortify-cc-default-2-def | exit status 1 | Test checking routines at fortify level 2
+debug/tst-fortify-cc-default-2-time64 | exit status 1 | Test checking routines at fortify level 2
+debug/tst-fortify-cc-default-3-def | exit status 1 | Test checking routines at fortify level 3
+debug/tst-fortify-cc-default-3-time64 | exit status 1 | Test checking routines at fortify level 3
+debug/tst-fortify-cc-lfs-1-def | exit status 1 | Test checking routines at fortify level 1
+debug/tst-fortify-cc-lfs-2-def | exit status 1 | Test checking routines at fortify level 2
+debug/tst-fortify-cc-lfs-3-def | exit status 1 | Test checking routines at fortify level 3
+debug/tst-fortify | exit status 1 | Test checking routines at fortify level 0
+debug/tst-sprintf-fortify-rdonly-static | exit status 1 | Timed out: killed the child process
+debug/tst-sprintf-fortify-rdonly | exit status 1 | cannot open temporary file '/tmp/tst-sprintf-fortify-rdonly-.y2zwTf': Too many open files
+dirent/list | exit status 1 | .
+dirent/tst-closedir-leaks-mem | exit status 1 | Memory not freed:
+dirent/tst-closedir-leaks | exit status 1 | error: support_readdir_check.c:27: readdir: Value too large for defined data type
+dirent/tst-scandir | exit status 1 | scandir failed on /tmp/tst-scandir.vKnZyC: Value too large for defined data type
+dlfcn/tststatic | exit status 1 | Timed out: killed the child process
+dlfcn/tststatic2 | exit status 1 | nonexistent: modstatic2-nonexistent.so: cannot open shared object file: No such file or directory
+dlfcn/tststatic3 | exit status 1 | Timed out: killed the child process
+dlfcn/tststatic4 | exit status 1 | Timed out: killed the child process
+dlfcn/tststatic5 | exit status 1 | Timed out: killed the child process
+elf/circleload1 | exit status 1 | This is what is in memory now:
+elf/constload1 | exit status 1 | 
+elf/dblload | exit status 1 | cannot open dblloadmod1.so: /build-cfi/elf/dblloadmod3.so: undefined symbol: baz
+elf/dblunload | exit status 1 | cannot load dblloadmod1.so: /build-cfi/elf/dblloadmod3.so: undefined symbol: baz
+elf/lateglobal | exit status 1 | main: cannot open ltglobmod2.so: /build-cfi/elf/ltglobmod2.so: undefined symbol: bar
+elf/reldep6 | exit status 137 | 
+elf/resolvfail | exit status 1 | cannot load testobj1.so: /build-cfi/elf/testobj1.so: undefined symbol: foo
+elf/tst-addr1 | exit status 1 | found symbol (null) in /build-cfi/elf/tst-addr1
+elf/tst-audit-tlsdesc-dlopen | exit status 137 | 
+elf/tst-audit-tlsdesc-dlopen2 | exit status 137 | info: TLS-using modules loaded from auditor
+elf/tst-audit-tlsdesc | exit status 137 | 
+elf/tst-audit1 | exit status 137 | version: 2
+elf/tst-audit11 | exit status 137 | 
+elf/tst-audit12 | exit status 137 | 
+elf/tst-audit13 | exit status 137 | 
+elf/tst-audit14 | exit status 137 | info: tst-auditlogmod-1.so loaded
+elf/tst-audit14a | exit status 137 | info: tst-auditlogmod-1.so loaded
+elf/tst-audit15 | exit status 137 | info: tst-auditlogmod-1.so loaded
+elf/tst-audit16 | exit status 137 | info: tst-auditlogmod-1.so loaded
+elf/tst-audit17 | exit status 137 | 
+elf/tst-audit18 | exit status 1 | error: subprocess failed: tst-audit18
+elf/tst-audit19a | exit status 137 | 
+elf/tst-audit19b | exit status 1 | error: subprocess failed: tst-audit18b
+elf/tst-audit2 | exit status 137 | version: 2
+elf/tst-audit20 | exit status 137 | 
+elf/tst-audit21 | exit status 137 | 
+elf/tst-audit23 | exit status 1 | error: subprocess failed: tst-audit22
+elf/tst-audit24a | exit status 137 | 
+elf/tst-audit24b | exit status 137 | 
+elf/tst-audit24c | exit status 137 | 
+elf/tst-audit24d | exit status 137 | 
+elf/tst-audit25a | exit status 1 | error: subprocess failed: tst-audit25a
+elf/tst-audit25b | exit status 1 | error: subprocess failed: tst-audit25a
+elf/tst-audit28 | exit status 137 | 
+elf/tst-audit8 | exit status 137 | version: 2
+elf/tst-audit9 | exit status 137 | 
+elf/tst-auditmany | exit status 137 | info: 1, la_objopen: map=0x3f7f4058 name=/build-cfi/elf/tst-auditmanymod2.so cookie=0x3f7f42bc:0x3f7
+elf/tst-bz15311 | exit status 1 | FAIL: tst-bz15311(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-bz28937 | exit status 1 | FAIL: tst-bz28937(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dl-debug-exclude | exit status 1 | usage: qemu-microblazeel [options] program [arguments...]
+elf/tst-dl-hash | exit status 1 | Timed out: killed the child process
+elf/tst-dl-llp-stack | exit status 1 | tst-dl-llp-stack.c:143: numeric comparison failure
+elf/tst-dl_find_object-static | exit status 1 | info: main program unwind data: 0x100c1518 (0)
+elf/tst-dlopen-auditdup | exit status 137 | info: la_objopen: ""
+elf/tst-dlopen-sgid | exit status 127 | 
+elf/tst-dlopen-tlsreinit3 | exit status 137 | version: 2
+elf/tst-dlopen-tlsreinit4 | exit status 137 | version: 2
+elf/tst-dso-ordering-all2-0 | exit status 1 | FAIL: tst-dso-ordering-all2-0(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all3-0 | exit status 1 | FAIL: tst-dso-ordering-all3-0(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all3-1 | exit status 1 | FAIL: tst-dso-ordering-all3-1(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all3-2 | exit status 1 | FAIL: tst-dso-ordering-all3-2(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all3-3 | exit status 1 | FAIL: tst-dso-ordering-all3-3(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-0 | exit status 1 | FAIL: tst-dso-ordering-all4-0(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-1 | exit status 1 | FAIL: tst-dso-ordering-all4-1(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-10 | exit status 1 | FAIL: tst-dso-ordering-all4-10(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-11 | exit status 1 | FAIL: tst-dso-ordering-all4-11(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-12 | exit status 1 | FAIL: tst-dso-ordering-all4-12(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-13 | exit status 1 | FAIL: tst-dso-ordering-all4-13(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-14 | exit status 1 | FAIL: tst-dso-ordering-all4-14(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-15 | exit status 1 | FAIL: tst-dso-ordering-all4-15(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-16 | exit status 1 | FAIL: tst-dso-ordering-all4-16(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-17 | exit status 1 | FAIL: tst-dso-ordering-all4-17(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-18 | exit status 1 | FAIL: tst-dso-ordering-all4-18(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-19 | exit status 1 | FAIL: tst-dso-ordering-all4-19(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-2 | exit status 1 | FAIL: tst-dso-ordering-all4-2(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-20 | exit status 1 | FAIL: tst-dso-ordering-all4-20(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-21 | exit status 1 | FAIL: tst-dso-ordering-all4-21(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-22 | exit status 1 | FAIL: tst-dso-ordering-all4-22(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-23 | exit status 1 | FAIL: tst-dso-ordering-all4-23(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-24 | exit status 1 | FAIL: tst-dso-ordering-all4-24(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-25 | exit status 1 | FAIL: tst-dso-ordering-all4-25(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-26 | exit status 1 | FAIL: tst-dso-ordering-all4-26(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-27 | exit status 1 | FAIL: tst-dso-ordering-all4-27(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-28 | exit status 1 | FAIL: tst-dso-ordering-all4-28(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-29 | exit status 1 | FAIL: tst-dso-ordering-all4-29(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-3 | exit status 1 | FAIL: tst-dso-ordering-all4-3(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-30 | exit status 1 | FAIL: tst-dso-ordering-all4-30(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-31 | exit status 1 | FAIL: tst-dso-ordering-all4-31(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-32 | exit status 1 | FAIL: tst-dso-ordering-all4-32(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-33 | exit status 1 | FAIL: tst-dso-ordering-all4-33(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-34 | exit status 1 | FAIL: tst-dso-ordering-all4-34(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-35 | exit status 1 | FAIL: tst-dso-ordering-all4-35(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-36 | exit status 1 | FAIL: tst-dso-ordering-all4-36(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-37 | exit status 1 | FAIL: tst-dso-ordering-all4-37(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-38 | exit status 1 | FAIL: tst-dso-ordering-all4-38(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-39 | exit status 1 | FAIL: tst-dso-ordering-all4-39(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-4 | exit status 1 | FAIL: tst-dso-ordering-all4-4(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-40 | exit status 1 | FAIL: tst-dso-ordering-all4-40(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-41 | exit status 1 | FAIL: tst-dso-ordering-all4-41(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-42 | exit status 1 | FAIL: tst-dso-ordering-all4-42(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-43 | exit status 1 | FAIL: tst-dso-ordering-all4-43(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-44 | exit status 1 | FAIL: tst-dso-ordering-all4-44(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-45 | exit status 1 | FAIL: tst-dso-ordering-all4-45(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-46 | exit status 1 | FAIL: tst-dso-ordering-all4-46(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-47 | exit status 1 | FAIL: tst-dso-ordering-all4-47(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-48 | exit status 1 | FAIL: tst-dso-ordering-all4-48(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-49 | exit status 1 | FAIL: tst-dso-ordering-all4-49(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-5 | exit status 1 | FAIL: tst-dso-ordering-all4-5(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-50 | exit status 1 | FAIL: tst-dso-ordering-all4-50(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-51 | exit status 1 | FAIL: tst-dso-ordering-all4-51(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-52 | exit status 1 | FAIL: tst-dso-ordering-all4-52(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-53 | exit status 1 | FAIL: tst-dso-ordering-all4-53(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-54 | exit status 1 | FAIL: tst-dso-ordering-all4-54(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-55 | exit status 1 | FAIL: tst-dso-ordering-all4-55(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-56 | exit status 1 | FAIL: tst-dso-ordering-all4-56(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-6 | exit status 1 | FAIL: tst-dso-ordering-all4-6(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-7 | exit status 1 | FAIL: tst-dso-ordering-all4-7(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-8 | exit status 1 | FAIL: tst-dso-ordering-all4-8(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering-all4-9 | exit status 1 | FAIL: tst-dso-ordering-all4-9(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering1 | exit status 1 | FAIL: tst-dso-ordering1(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering10 | exit status 1 | FAIL: tst-dso-ordering10(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering2 | exit status 1 | FAIL: tst-dso-ordering2(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering3 | exit status 1 | FAIL: tst-dso-ordering3(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering4 | exit status 1 | FAIL: tst-dso-ordering4(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering5 | exit status 1 | FAIL: tst-dso-ordering5_1-a_bc(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering6 | exit status 1 | FAIL: tst-dso-ordering6(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering7 | exit status 1 | FAIL: tst-dso-ordering7(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering8 | exit status 1 | FAIL: tst-dso-ordering8(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-dso-ordering9 | exit status 1 | FAIL: tst-dso-ordering9_1-abcde(GLIBC_TUNABLES=glibc.rtld.dynamic_sort=1) execution test
+elf/tst-env-setuid-static | exit status 127 | 
+elf/tst-env-setuid-tunables | exit status 127 | [0] Spawned test for glibc.malloc.check=2:glibc.malloc.mmap_threshold=4096
+elf/tst-execstack-needed | exit status 1 | Timed out: killed the child process
+elf/tst-execstack-prog-static-tunable | exit status 1 | Timed out: killed the child process
+elf/tst-execstack-prog-static | exit status 1 | Timed out: killed the child process
+elf/tst-execstack-prog | exit status 1 | Timed out: killed the child process
+elf/tst-execstack-tunable | exit status 1 | executable stacks allowed
+elf/tst-getauxval-static | exit status 1 | info: first missing type: 27
+elf/tst-global1 | exit status 1 | cannot open testobj6
+elf/tst-initfinilazyfail | exit status 1 | error: subprocess failed: constructor
+elf/tst-latepthread | exit status 1 | error: dlopen failed: /build-cfi/elf/tst-latepthreadmod.so: undefined symbol: this_function_is_not_d
+elf/tst-ld_profile | exit status 1 | tst-ld_profile.c:67: error: string comparison failed
+elf/tst-nolink-libc-1 | exit status 126 | /bin/sh: 1: /build-cfi/elf/tst-nolink-libc-1: Exec format error
+elf/tst-nolink-libc-2 | exit status 126 | /bin/sh: 1: /build-cfi/elf/tst-nolink-libc-2: Exec format error
+elf/tst-p_align2 | exit status 1 | foo: 0x3f7f7000
+elf/tst-ptrguard1-static | exit status 1 | differences 1 defaults 0
+elf/tst-ptrguard1 | exit status 1 | differences 1 defaults 0
+elf/tst-rtld-dash-dash | exit status 1 | /build-cfi/elf/ld.so --inhibit-cache exit status: 126
+elf/tst-rtld-does-not-exist | exit status 1 | /build-cfi/elf/ld.so --inhibit-cache exit status: 126
+elf/tst-rtld-no-malloc-audit | exit status 137 | version: 2
+elf/tst-rtld-run-static | exit status 1 | error: subprocess failed: no --argv0
+elf/tst-single_threaded-static-dlopen | exit status 1 | Timed out: killed the child process
+elf/tst-sprof-basic | exit status 137 | 
+elf/tst-stackguard1-static | exit status 1 | differences 1 defaults 0
+elf/tst-stackguard1 | exit status 1 | differences 1 defaults 0
+elf/tst-thp-1-no-s-code-pde | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-thp-1-no-s-code-static | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-thp-1-no-s-code | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-thp-1-pde | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-thp-1-static | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-thp-1 | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-thp-align | exit status 1 | ../sysdeps/unix/sysv/linux/tst-thp-align-check.h:59: numeric comparison failure
+elf/tst-tls-ie-dlmopen | exit status 1 | maintls[1000]:	 0x3f7f8f28 .. 0x3f7f9310
+elf/tst-tls-ie | exit status 1 | maintls[1000]:	 0x3f7f8f28 .. 0x3f7f9310
+elf/tst-tls20 | exit status 1 | Timed out: killed the child process
+elf/tst-tls9-static | exit status 1 | Timed out: killed the child process
+elf/tst-tunables-enable_secure-env | exit status 1 | error: subprocess failed: tst-tunables-enable_secure-env
+elf/tst-tunables-enable_secure | exit status 1 | [0] Spawned test for GLIBC_TUNABLES=glibc.malloc.check=2:glibc.rtld.enable_secure=1
+elf/tst-tunables | exit status 1 | [0] Spawned test for GLIBC_TUNABLES=glibc.malloc.check=2
+gmon/tst-gmon-gprof | exit status 1 | /build-cfi/gmon/tst-gmon.data.*: No such file or directory
+gmon/tst-gmon-pie-gprof | exit status 1 | /build-cfi/gmon/tst-gmon-pie.data.*: No such file or directory
+gmon/tst-gmon-pie | exit status 127 | 
+gmon/tst-gmon-static-gprof | exit status 1 | /build-cfi/gmon/tst-gmon-static.data.*: No such file or directory
+gmon/tst-gmon-static | exit status 1 | 
+gmon/tst-gmon | exit status 1 | 
+gmon/tst-mcleanup | exit status 1 | 
+gmon/tst-mcount-overflow-check | exit status 1 | FAIL: expected message not in output: mcount: call graph buffer size limit exceeded, gmon.out will n
+inet/tst-idna_name_classify | exit status 1 | info: C locale tests
+io/tst-faccessat-setuid | exit status 1 | Testing with UID/GID:
+io/tst-fts-bz22944 | exit status 1 | tst-fts-bz22944.c:90: numeric comparison failure
+io/tst-fts-lfs | exit status 1 | tst-fts.SMtsQP =>
+io/tst-fts-newflags | exit status 1 | error: tst-fts-newflags.c:82: not true: found_cycle
+io/tst-fts-time64-y2038 | exit status 1 | tst-fts.gJgc6E =>
+io/tst-fts-time64 | exit status 1 | tst-fts.aEIaUS =>
+io/tst-fts | exit status 1 | tst-fts.AKUzxe =>
+io/tst-ttyname_r | exit status 2 | 1st ttyname_r returned with res 38
+libio/tst-asprintf-null | exit status 1 | tst-asprintf-null.c:45: numeric comparison failure
+libio/tst-fgetc-after-eof | exit status 1 | error: support_openpty.c:67: grantpt: Function not implemented
+libio/tst-popen-fork | exit status 1 | error: xwaitpid.c:31: waitpid: Interrupted system call
+libio/tst-vtables | exit status 1 | tst-vtables-common.c:396: error: blob comparison failed
+login/tst-grantpt | exit status 1 | tst-grantpt.c:40: numeric comparison failure
+login/tst-ptsname | exit status 1 | ptsname_r: expected: return = 0
+malloc/tst-dynarray-at-fail | exit status 1 | error: test test_empty (0) unexpected standard error data
+malloc/tst-dynarray-fail-mem | exit status 1 | Memory not freed:
+malloc/tst-dynarray-fail | exit status 1 | info: RLIMIT_AS limit: 3276672 bytes
+malloc/tst-malloc-fork-deadlock-malloc-check | exit status 1 | error: waitpid: Interrupted system call
+malloc/tst-malloc-fork-deadlock-malloc-hugetlb1 | exit status 1 | error: error: nanosleep: Interrupted system call
+malloc/tst-malloc-fork-deadlock-malloc-largetcache | exit status 1 | error: waitpid: Interrupted system call
+malloc/tst-malloc-fork-deadlock | exit status 1 | error: waitpid: Interrupted system call
+malloc/tst-malloc-tcache-leak-malloc-largetcache | exit status 1 | INFO: 16 (bytes) are in use before starting threads.
+malloc/tst-malloc-tcache-leak | exit status 1 | INFO: 16 (bytes) are in use before starting threads.
+malloc/tst-malloc-thread-fail-malloc-check | exit status 1 | Timed out: killed the child process
+malloc/tst-malloc-thread-fail-malloc-hugetlb1 | exit status 1 | Timed out: killed the child process
+malloc/tst-malloc-thread-fail-malloc-largetcache | exit status 1 | Timed out: killed the child process
+malloc/tst-malloc-thread-fail | exit status 1 | Timed out: killed the child process
+malloc/tst-mallocfork2-malloc-largetcache | exit status 1 | Timed out: killed the child process
+malloc/tst-mallocfork2 | exit status 1 | Timed out: killed the child process
+malloc/tst-mallocfork3-malloc-largetcache | exit status 1 | warning: thread seems to be stuck
+malloc/tst-mallocfork3 | exit status 1 | warning: thread seems to be stuck
+malloc/tst-safe-linking-malloc-hugetlb1 | exit status 1 | ++ tcache ++
+malloc/tst-safe-linking-malloc-largetcache | exit status 1 | ++ tcache ++
+malloc/tst-safe-linking-threaded-main | exit status 1 | ++ tcache ++
+malloc/tst-safe-linking-threaded-worker | exit status 1 | ++ tcache ++
+malloc/tst-safe-linking | exit status 1 | ++ tcache ++
+misc/test-errno-linux | exit status 1 | FAIL: mincore: errno is: 12 (Cannot allocate memory) expected one of LIST (22)
+misc/tst-align-clone-internal | exit status 1 | in main
+misc/tst-clone2-internal | exit status 1 | error: ../sysdeps/unix/sysv/linux/tst-clone2-internal.c:85: clone failed: Success
+misc/tst-clone2 | exit status 1 | error: ../sysdeps/unix/sysv/linux/tst-clone2.c:86: clone failed: Invalid argument
+misc/tst-clone3-internal | exit status 1 | error: ../sysdeps/unix/sysv/linux/tst-clone3-internal.c:91: clone failed: Success
+misc/tst-clone3 | exit status 1 | error: ../sysdeps/unix/sysv/linux/tst-clone3.c:91: clone failed: Invalid argument
+misc/tst-getpid1-internal | exit status 1 | clone failed: Success
+misc/tst-ldbl-errorfptr | exit status 1 | FAIL: fp=0x10001340 error_sym=0x10003570
+misc/tst-linux-mremap1 | exit status 1 | Timed out: killed the child process
+misc/tst-misalign-clone | exit status 1 | in do_test
+misc/tst-select-time64 | exit status 1 | error: subprocess failed: tst-select-child
+misc/tst-select | exit status 1 | error: subprocess failed: tst-select-child
+misc/tst-sigcontext-get_pc | exit status 1 | info: address in signal handler: 0x3f61d758
+misc/tst-ttyname-direct | exit status 1 | info:  entering chroot 1
+misc/tst-ttyname-namespace | exit status 1 | info:  entering chroot 2
+nptl/tst-align-clone | exit status 1 | in main
+nptl/tst-audit-threads | exit status 137 | 
+nptl/tst-cancel17 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-cancel24-static | exit status 1 | exception not caught
+nptl/tst-cancel31 | exit status 1 | Timed out: killed the child process
+nptl/tst-cancel4 | exit status 1 | got size 4608
+nptl/tst-cancel5 | exit status 1 | got size 4608
+nptl/tst-cancel7 | exit status 1 | error: tst-cancel7.c:125: sem_wait: Interrupted system call
+nptl/tst-cancelx17 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-cancelx4 | exit status 1 | got size 4608
+nptl/tst-cancelx5 | exit status 1 | got size 4608
+nptl/tst-cancelx7 | exit status 1 | error: tst-cancel7.c:125: sem_wait: Interrupted system call
+nptl/tst-cond24 | exit status 1 | Testing pthread_cond_wait
+nptl/tst-cond25 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-create-detached | exit status 1 | Timed out: killed the child process
+nptl/tst-exec4 | exit status 1 | execv failed
+nptl/tst-getpid1 | exit status 1 | clone failed: Invalid argument
+nptl/tst-guard1 | exit status 1 | debug: fork: test0: user provided stack without guard
+nptl/tst-mutexpi12 | exit status 1 | thread 96: failed to release the lock
+nptl/tst-mutexpi7 | exit status 1 | thread 34: failed to release the lock
+nptl/tst-oddstacklimit | exit status 126 | 
+nptl/tst-pthread-exited | exit status 1 | Timed out: killed the child process
+nptl/tst-pthread-timedlock-lockloop | exit status 124 | 
+nptl/tst-pthread_cancel-exited | exit status 1 | Timed out: killed the child process
+nptl/tst-pthread_kill-exited | exit status 1 | Timed out: killed the child process
+nptl/tst-robust-fork | exit status 1 | Timed out: killed the child process
+nptl/tst-robust1 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust11 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust2 | exit status 1 | 1: parent: mutex_lock m1 returned wrong code
+nptl/tst-robust3 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust4 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust5 | exit status 1 | 1: parent: mutex_lock m1 returned wrong code
+nptl/tst-robust6 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust7 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust8 | exit status 1 | Timed out: killed the child process
+nptl/tst-robust9 | exit status 1 | thread2 got the lock.
+nptl/tst-robustpi1 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-robustpi2 | exit status 1 | 1: parent: mutex_lock m1 returned wrong code
+nptl/tst-robustpi3 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-robustpi4 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-robustpi5 | exit status 1 | 1: parent: mutex_lock m1 returned wrong code
+nptl/tst-robustpi6 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-robustpi7 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-robustpi8 | exit status 1 | Didn't expect signal from child: got `Aborted'
+nptl/tst-stackguard1-static | exit status 1 | differences 1 defaults 0
+nptl/tst-stackguard1 | exit status 1 | differences 1 defaults 0
+nptl/tst-tls3-malloc | exit status 1 | dlopen failed
+nptl/tst-tls3 | exit status 1 | dlopen failed
+nptl/tst-tsd6 | exit status 127 | Bail out! ERROR:../../plugins/core.c:221:qemu_plugin_vcpu_init_hook: assertion failed: (success)
+nss/tst-getaddrinfo4 | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+nss/tst-nss-files-hosts-getent | exit status 1 | Timed out: killed the child process
+nss/tst-nss-files-hosts-multi | exit status 1 | Timed out: killed the child process
+posix/test-errno | exit status 1 | FAIL: accept: errno is: 14 (Bad address) expected: 9 (Bad file descriptor)
+posix/tst-exec-static | exit status 1 | 
+posix/tst-exec | exit status 1 | 
+posix/tst-execvpe5 | exit status 2 | 
+posix/tst-glob-bz34453 | exit status 1 | Timed out: killed the child process
+posix/tst-libc-message | exit status 1 | tst-libc-message.c:44: error: string comparison failed
+posix/tst-posix_spawn-setsid-pidfd | exit status 1 | ../posix/tst-posix_spawn-setsid.c:115: numeric comparison failure
+posix/tst-posix_spawn-setsid | exit status 1 | tst-posix_spawn-setsid.c:121: numeric comparison failure
+posix/tst-regcomp-truncated | exit status 1 | Timed out: killed the child process
+posix/tst-regex | exit status 1 | INFO: Testing C.UTF-8.
+posix/tst-regex2 | exit status 1 | test 0 pattern 0: 1.691802921s
+posix/tst-spawn-chdir-pidfd | exit status 1 | ../posix/tst-spawn-chdir.c:192: numeric comparison failure
+posix/tst-spawn-pidfd | exit status 1 | ../posix/tst-spawn.c:238: numeric comparison failure
+posix/tst-spawn-static | exit status 1 | tst-spawn.c:244: numeric comparison failure
+posix/tst-spawn | exit status 1 | tst-spawn.c:244: numeric comparison failure
+posix/tst-spawn2-pidfd | exit status 1 | error: ../posix/tst-spawn2.c:49: posix_spawn: Invalid argument
+posix/tst-spawn2 | exit status 1 | error: tst-spawn2.c:49: posix_spawn: Success
+posix/tst-spawn3-pidfd | exit status 1 | cannot open temporary file '/tmp/tst-spawn3.NSbiD3': Too many open files
+posix/tst-spawn3 | exit status 1 | cannot open temporary file '/tmp/tst-spawn3.8jJ5o3': Too many open files
+posix/tst-spawn4-pidfd | exit status 1 | error: ../posix/tst-spawn4.c:48: not true: status == ENOEXEC
+posix/tst-spawn4 | exit status 1 | error: tst-spawn4.c:48: not true: status == ENOEXEC
+posix/tst-spawn5-pidfd | exit status 1 | ../posix/tst-spawn5.c:168: numeric comparison failure
+posix/tst-spawn5 | exit status 1 | tst-spawn5.c:171: numeric comparison failure
+posix/tst-spawn6-pidfd | exit status 1 | error: ../posix/tst-spawn6.c:217: not true: grantpt (ptmx) == 0
+posix/tst-spawn6 | exit status 1 | error: tst-spawn6.c:217: not true: grantpt (ptmx) == 0
+posix/tst-spawn7-pidfd | exit status 1 | ../posix/tst-spawn7.c:89: numeric comparison failure
+posix/tst-spawn7 | exit status 1 | tst-spawn7.c:92: numeric comparison failure
+posix/tst-wait4-time64 | exit status 1 | tst-wait-skeleton.c:141: numeric comparison failure
+resolv/tst-bug18665-tcp | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-bug18665 | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-getaddrinfo-eai-again-timeout | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-ns_name_length_uncompressed | exit status 1 | Timed out: killed the child process
+resolv/tst-resolv-af-unspec-noerror-nodata | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-ai_idn-nolibidn2 | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-aliases | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-basic | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-binary | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-byaddr | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-canonname | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-dns-section | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-edns | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-getaddrinfo-fqdn | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-gethostbyname_r-unaligned | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-invalid-cname | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-invalid-ptr | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-network | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-noaaaa-vc | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-noaaaa | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-nondecimal | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-querymatch-short | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-res_init-failure | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-search | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-semi-failure | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-short-response | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-trailing | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-trustad | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+resolv/tst-resolv-txnid-collision | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Success
+rt/tst-aio | exit status 1 | aio_read test ok
+rt/tst-aio6-time64 | exit status 1 | Didn't expect signal from child: got `Aborted'
+rt/tst-aio64 | exit status 1 | aio_read test ok
+rt/tst-aio9 | exit status 1 | Didn't expect signal from child: got `Aborted'
+rt/tst-bz28213 | exit status 1 | error: tst-bz28213.c:59: not true: mq_notify (m, &sev) == 0
+rt/tst-mqueue3 | exit status 1 | mq_notify failed
+rt/tst-mqueue5 | exit status 1 | mq_notify (q, { SIGEV_NONE }) failed with: Function not implemented
+rt/tst-mqueue6 | exit status 1 | mq_notify (q, { SIGEV_THREAD }) failed with: Function not implemented
+rt/tst-mqueue7 | exit status 1 | execv failed: Exec format error
+rt/tst-mqueue8-time64 | exit status 1 | tf: mq_receive returned
+rt/tst-mqueue8 | exit status 1 | tf: mq_receive returned
+rt/tst-mqueue8x | exit status 1 | tf: mq_receive returned
+socket/tst-socket-timestamp-compat-time64 | exit status 1 | error: ../sysdeps/unix/sysv/linux/tst-socket-timestamp-compat.c:120: not true: r != -1
+socket/tst-socket-timestamp-compat | exit status 1 | error: ../sysdeps/unix/sysv/linux/tst-socket-timestamp-compat.c:120: not true: r != -1
+socket/tst-socket-timestamp-time64 | exit status 1 | ../sysdeps/unix/sysv/linux/tst-socket-timestamp.c:333: numeric comparison failure
+socket/tst-socket-timestamp | exit status 1 | ../sysdeps/unix/sysv/linux/tst-socket-timestamp.c:333: numeric comparison failure
+stdio-common/tst-freopen5 | exit status 1 | tst-freopen5.c:106: numeric comparison failure
+stdio-common/tst-printf-format-d-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-d-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-f-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-f-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-p-double-E | exit status 1 | Verifying E
+stdio-common/tst-printf-format-p-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-p-double-G | exit status 1 | Verifying G
+stdio-common/tst-printf-format-p-double-e | exit status 1 | Verifying e
+stdio-common/tst-printf-format-p-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-p-double-g | exit status 1 | Verifying g
+stdio-common/tst-printf-format-s-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-s-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-sn-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-sn-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-v-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-v-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-vd-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-vd-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-vf-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-vf-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-vs-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-vs-double-f | exit status 1 | Verifying f
+stdio-common/tst-printf-format-vsn-double-F | exit status 1 | Verifying F
+stdio-common/tst-printf-format-vsn-double-f | exit status 1 | Verifying f
+stdio-common/tst-read-offset | exit status 1 | BUFSIZ = 8192, blksize = 4096
+stdio-common/tst-vfprintf-width-prec-mem | exit status 1 | Memory not freed:
+stdio-common/tst-vfprintf-width-prec | exit status 1 | error: asprintf: incorrect result 999999999
+stdlib/bug-fmtmsg1 | exit status 1 | usage: qemu-microblazeel [options] program [arguments...]
+stdlib/tst-arc4random-thread | exit status 1 | info: outer_threads=1 inner_threads=4
+stdlib/tst-qsort3 | exit status 1 | Timed out: killed the child process
+stdlib/tst-qsort4 | exit status 1 | Timed out: killed the child process
+stdlib/tst-secure-getenv | exit status 127 | 
+string/test-memcpy | exit status 1 |                        	memcpy
+string/test-mempcpy | exit status 1 |                        	mempcpy
+string/test-strcasecmp | exit status 1 | C                      	strcasecmp
+string/test-strcmp | exit status 1 |                        	__strcmp_default	strcmp
+string/test-strncasecmp | exit status 1 |                       C	strncasecmp
+string/test-strncmp | exit status 1 |                        	__strncmp_default	strncmp
+string/test-strnlen | exit status 1 |                     	__strnlen_default
+sunrpc/tst-svc_register | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+sunrpc/tst-udp-garbage | exit status 1 | warning: unshare (CLONE_NEWUTS) failed: Operation not permitted
+support/tst-support-openpty | exit status 1 | error: support_openpty.c:67: grantpt: Function not implemented
+support/tst-support_blob_repeat | exit status 1 | Timed out: killed the child process
+support/tst-support_capture_subprocess | exit status 1 | error: tst-support_capture_subprocess.c:310: not true: WEXITSTATUS (result.status) == test.status
+support/tst-support_readdir | exit status 1 | error: support_readdir_check.c:27: readdir: Value too large for defined data type
+support/tst-support_spawn_wrap | exit status 1 | error: subprocess failed: no arguments
+support/tst-xdirent | exit status 1 | error: support_readdir_check.c:27: readdir: Value too large for defined data type
+termios/tst-termios-linux | exit status 1 | error: support_openpty.c:67: grantpt: Function not implemented
+time/bug-mktime4 | exit status 124 | 
+time/tst-ctime-time64 | exit status 1 | Timed out: killed the child process
+time/tst-getdate | exit status 1 | Timed out: killed the child process
+time/tst-gmtime-time64 | exit status 1 | Timed out: killed the child process
+time/tst-mktime | exit status 1 | Wednesday
+time/tst-mktime2 | exit status 1 | info: setting TZ=America/Sao_Paulo
+time/tst-mktime3 | exit status 1 | Timed out: killed the child process
+time/tst-mktime4-time64 | exit status 1 | Timed out: killed the child process
+time/tst-strftime4-time64 | exit status 1 | Timed out: killed the child process
+time/tst-timegm-time64 | exit status 1 | Timed out: killed the child process
+time/tst-y2039-time64 | exit status 1 | 2039-04-30 02:28:16 PDT
+wcsmbs/tst-fgetwc-after-eof | exit status 1 | error: support_openpty.c:67: grantpt: Function not implemented

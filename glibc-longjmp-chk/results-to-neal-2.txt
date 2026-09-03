@@ -1,0 +1,99 @@
+Hi Neal,
+
+Second and final batch from the MicroBlaze glibc testsuite work. Same
+caveat as before: done with my AI agent, and I have only skimmed the
+deltas so far. Ten patches attached, each an independent commit against
+master: seven for glibc, two for binutils, one for gcc.
+
+Where it ended up
+-----------------
+Full glibc make check on a clean tree with everything applied
+(patched binutils replacing the toolchain's as/ld, gcc 14.3 compiling,
+gcc-master libgcc_s with the fix below at runtime), under qemu-user:
+
+  first run   4619 PASS   588 FAIL   161 UNSUPPORTED
+  final run   4787 PASS   435 FAIL   160 UNSUPPORTED
+
+159 tests that failed at the start pass now, 6 timing-sensitive ones
+flipped the other way, and the first run additionally had 933 libm
+aborts. Of the 435 left, about 340 are the qemu/Docker/Rosetta
+environment (argv[0] loss on every spawned guest, unshare, pty,
+futex-PI, mqueue, timeouts), 14 are lazy binding which MicroBlaze ld
+does not support, and about 40 I have not looked at individually.
+The full per-test list with first lines of output is in the repo
+evidence/ directory if you want it.
+
+The patches
+-----------
+glibc
+  0001  ____longjmp_chk: use the generic Linux version (the gdb hang;
+        unchanged from what I sent yesterday)
+  0002  libm tests: soft-float has no exceptions or rounding modes
+        (933 aborts -> 0)
+  0003  _start passes _dl_fini to __libc_start_main, so destructors
+        run in dynamically linked programs at all (nothing ran since
+        glibc 2.34; 116 tests, and every C++ static destructor in a
+        DSO on MicroBlaze)
+  0004  getcontext/setcontext/swapcontext/makecontext, previously
+        ENOSYS stubs (13 tests)
+  0005  CFI in the MicroBlaze assembly, gated on a configure probe
+        for assembler support; also saves r15 on the cancel path of
+        __syscall_cancel_arch, which brlid was clobbering (with an FDE
+        present that made cancellation unwinding loop)
+  0006  backtrace(): drop the prologue-scanning implementation for the
+        generic _Unwind_Backtrace one
+  0007  ld.so has no .eh_frame terminator: it is linked from
+        librtld.os alone and never gets sofini.os. Harmless where an
+        .eh_frame_hdr table exists; MicroBlaze cannot have one (gcc's
+        DW_EH_PE_aligned encoding), libgcc searches linearly, runs off
+        the end of ld.so's .eh_frame and aborts. This one is generic
+        code and was the reason every _Unwind_Backtrace through main
+        aborted on MicroBlaze (elf/tst-unwind-main). Links an rtld
+        flavour of sofini.os last.
+
+binutils
+  0006  gas: accept .cfi_* directives for MicroBlaze (CFA r1, return
+        column r15, data alignment -4, matching gcc). Until now gas
+        said "CFI is not supported for this target" and no hand-written
+        assembly on MicroBlaze could carry unwind information. Includes
+        a testsuite case. Known limitation: advance_loc deltas are
+        folded to constants, so an imm relaxed away between two CFI
+        points inside a function would shift the later one; glibc's
+        assembly has no such case, but the RISC-V-style relocatable
+        deltas would be the durable answer.
+  0007  bfd: when the .eh_frame editor asks the backend to apply a
+        relocation statically (section offset -2), elf32-microblaze.c
+        skipped without applying. RELA target, addend lives in the
+        reloc, so every assembler-generated FDE in a MicroBlaze shared
+        object pointed at pc=0. Mirrors what every other backend does.
+
+gcc
+  0001  libgcc/config/microblaze/linux-unwind.h anchors the signal
+        frame at trampoline - sizeof (ucontext_t). glibc's ucontext_t
+        is 304 bytes against the kernel's 184-byte frame member, and
+        qemu-user keeps the trampoline on a separate page anyway, so
+        the registers came from garbage and no unwind got past a
+        signal handler. Anchor on the handler's CFA instead (r1 is the
+        frame address in both the kernel and qemu). With it,
+        backtrace() from a signal handler blocked in read() walks all
+        13 frames, and pthread_cancel cleanup handlers run under
+        -fexceptions.
+
+Findings without a patch
+------------------------
+- Lazy binding: ld sets BIND_NOW even with -z lazy; RTLD_LAZY tests
+  are unsupported on MicroBlaze by design of its PLT.
+- The Buildroot gcc ignores -B for the linker and always runs its own
+  ld; anyone testing the binutils patches has to replace it.
+- gcc master links MicroBlaze executables with --eh-frame-hdr; the
+  Bootlin gcc 14 does not, which alone kills unwinding in dynamic
+  executables. Already fixed upstream.
+- glibc and binutils upstream have nothing MicroBlaze-related since
+  the bases I used, so none of this collides with pending work; your
+  two earlier ld fixes are in.
+
+As before, happy for AMD to carry any of these to the lists; otherwise
+I will send them once I have gone through them properly.
+
+Thanks,
+Sam

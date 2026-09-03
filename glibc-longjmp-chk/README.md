@@ -347,6 +347,54 @@ correction** (`evidence/full-check-results-all-patches.txt`): 4739 PASS,
 above. A final clean run with the corrected 0005, patch 0007 and the fixed
 libgcc at runtime is recorded below when it finishes.
 
+## Final full run, everything applied
+
+glibc master with patches 0001-0007, binutils master with the gas and bfd
+patches (replacing the toolchain's `as` and `ld`), the Bootlin gcc 14.3 for
+compiling, and the gcc 17 `libgcc_s` with the signal-frame fix at runtime.
+Clean build directory, every `.out` and result removed first.
+`evidence/full-check-results-final.txt`, buckets in
+`evidence/full-check-failure-buckets-final.txt`.
+
+| | First run | Final run |
+|---|---|---|
+| PASS | 4619 | 4787 |
+| FAIL | 588 | 435 |
+| UNSUPPORTED | 161 | 160 |
+| XFAIL | 4 | 4 |
+
+159 tests that failed in the first run pass now; 6 fail that passed before,
+all of them timing (`string/test-memcpy`, `test-strcmp`, `tst-mutexpi12`,
+`tst-wait4-time64`, `tst-support_blob_repeat`, one tcache test), and the
+first run had 933 libm aborts hiding most of `math/` besides. Counting from
+the very first attempt, about 1090 tests moved from FAIL to PASS across the
+seven glibc patches.
+
+What the 435 remaining failures are:
+
+| Count | Cause |
+|---|---|
+| 139 | host artifact: under Rosetta every spawned or re-exec'd guest loses argv[0] (`tst-dso-ordering`, `posix/tst-spawn*`, `tst-exec*`, the `ld.so` command-line tests, ...). Gone on a Linux host. |
+| 93 | emulation speed and clock: 20 s test-driver timeouts, `tst-printf-format`'s per-conversion watchdog, `string/` alignment loops, `time/` tests needing zoneinfo the hung `zic` never built |
+| 41 | `LD_AUDIT`, `sprofil`, `gprof` tests never finish under qemu-user |
+| 31 | container tests, `unshare()` not permitted inside Docker |
+| 22 | pty and tty under qemu-user, including all `tst-fortify` variants at `ptsname_r` |
+| 16 | malloc THP, hugetlb, tcache and fork tests under qemu-user |
+| 14 | PI and robust futex operations under qemu-user |
+| 14 | unsupported on MicroBlaze: lazy binding (`ld` forces `BIND_NOW`) and the TLS-surplus tests |
+| 10 | POSIX message queues, aio, timers under qemu-user |
+| 9 | `getdents` EOVERFLOW under qemu-user |
+| 9 | `nptl/tst-cancel*` leftovers: `select` returning EINVAL under cancellation (qemu), the static and C++ variants |
+| 37 | not examined individually: 12 `elf/` (`reldep6`, `tst-thp-*`, `tst-p_align2`, two `dynamic_sort` script tests), 7 `nptl/` (`tst-cond24/25`, `tst-guard1`, `tst-tls3*`, `tst-tsd6`), and a handful elsewhere |
+
+What the patches fixed, per test family, all verified in this run:
+
+- longjmp_chk: 3 (plus gdb) — 0001
+- libm: 933 — 0002
+- destructors: 108 mtrace leak checks, 8 `elf/*-cmp`, `nptl/tst-fini1` — 0003
+- ucontext: 13 — 0004
+- unwinding: `tst-unwind-main`, `tst-backtrace2` through `6`, `nptl/tst-cleanupx4`, and the 31 cancellation tests the first CFI version had broken — 0005, 0006, 0007 with the binutils and gcc fixes
+
 ## Reproducing
 
 `evidence/build.sh`, `evidence/tests.sh` and `evidence/check.sh` are the exact
