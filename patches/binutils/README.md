@@ -35,6 +35,7 @@ failures. 0003 and 0004 have not been re-tested since 0001 changed.
 | 0005 | break equal-range `addr2line` function ties by DIE offset, not pointer | non-reproducible `-f`/`-i` output; adds 1 regression pin | independent; not sent upstream |
 | 0006 | gas: accept `.cfi_*` directives for MicroBlaze (CFA r1, return column r15, data align -4) | needed for any unwind info in hand-written asm; see `glibc-longjmp-chk/README.md` | independent; not sent upstream |
 | 0007 | bfd: apply the relocation statically when the .eh_frame editor returns -2 | assembler FDEs in shared objects otherwise point at pc=0 | independent; not sent upstream |
+| 0008 | bfd: keep the PLT address of address-taken functions in non-PIC executables (canonical PLT) | `&strlen` in an executable differed from `dlsym` / libc's own pointer; fixes glibc `misc/tst-ldbl-errorfptr`, `elf/tst-addr1` | independent; not sent upstream |
 
 They are no longer sent as one series. 0001 went to the list on its own, as recommended
 below, and 0002 is now numbered as a standalone `[PATCH]` rather than `2/4`.

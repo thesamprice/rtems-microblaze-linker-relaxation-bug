@@ -395,6 +395,40 @@ What the patches fixed, per test family, all verified in this run:
 - ucontext: 13 — 0004
 - unwinding: `tst-unwind-main`, `tst-backtrace2` through `6`, `nptl/tst-cleanupx4`, and the 31 cancellation tests the first CFI version had broken — 0005, 0006, 0007 with the binutils and gcc fixes
 
+## The 37 failures not classified by the final run, examined
+
+| Tests | Verdict |
+|---|---|
+| `nptl/tst-cond24`, `tst-cond25` | qemu: the child dies on `pthread_mutex_lock.c:443 assertion failed: robust \|\| (oldval & FUTEX_OWNER_DIED) == 0`, a PI mutex under `pthread_cond_wait`. qemu-user's `FUTEX_LOCK_PI` emulation. Same bucket as the 14 PI/robust tests. |
+| `nptl/tst-tls3`, `tst-tls3-malloc` | `dlopen` fails with `undefined symbol: b`; lazy binding, unsupported on MicroBlaze. |
+| `nptl/tst-tsd6`, `stdlib/tst-arc4random-thread` | qemu itself crashes: `plugins/core.c:221: qemu_plugin_vcpu_init_hook: assertion failed`. |
+| `nptl/tst-guard1` | 28 guard-page probes that should fault succeed. The host VM's page granularity does not let qemu protect a 4 KB guest guard page. Environment. |
+| `nptl/tst-oddstacklimit`, `elf/tst-dlopen-sgid`, `stdlib/tst-secure-getenv` | exit 126/127: need setuid, a real filesystem, or a shell wrapper. Environment. |
+| `elf/tst-bz15311`, `tst-bz28937` | `dynamic_sort` script tests, run through `support/test-run-command` which `execv`s `ld.so`: the Rosetta argv[0] artifact. |
+| `elf/tst-thp-1*`, `tst-thp-align`, `tst-p_align2` | transparent-hugepage and `p_align > page size` mapping alignment under qemu. Environment. |
+| `elf/reldep6`, `dlfcn/tststatic2` | hang (10 min cap) and static `dlopen` timeout. Not examined further. |
+| `stdio-common/tst-freopen5` | expects `EFBIG` writing past 4 GB on a 32-bit `off_t` stream; qemu-user opens host files with `O_LARGEFILE` so the write succeeds. Environment. |
+| `stdio-common/tst-vfprintf-width-prec`, `-mem`, `libio/tst-asprintf-null` | expect a 1 GB or 20 MB `asprintf` to fail; under qemu the allocation succeeds. Environment. |
+| `stdio-common/tst-read-offset`, `posix/tst-regex`, `tst-regex2`, `debug/tst-sprintf-fortify-rdonly` | timeouts and `EMFILE` under emulation. |
+| `misc/tst-select` | `select` does not decrement the timeout in the interrupted child under qemu. Environment. |
+| `dirent/tst-closedir-leaks-mem` | two small leaks, one a `strndup`; not examined further. |
+| `misc/tst-ldbl-errorfptr` | **a real MicroBlaze bug: function-pointer equality across executable and libc**, see below. |
+
+**binutils 0008, canonical PLT entries.** In a non-PIC executable `&strlen`
+is the executable's PLT stub while `dlsym (RTLD_DEFAULT, "strlen")`, and any
+function pointer libc hands out, is the real function; C requires them to
+compare equal. Other targets solve this with canonical PLT entries: the
+linker leaves the PLT address as the value of the executable's undefined
+symbol, and `ld.so` resolves every reference in the process to it.
+`elf32-microblaze.c` records `pointer_equality_needed` in `check_relocs` and
+points the symbol at the PLT in `allocate_dynrelocs`, then
+`finish_dynamic_symbol` zeroes the value unconditionally ("Zero the value").
+`patches/binutils/0008-bfd-microblaze-canonical-plt-pointer-equality.patch`
+keeps it unless the symbol is weak or never had a pointer-equality
+relocation, as arm does. Present in the shipped 2.41 toolchain too. It fixes
+`misc/tst-ldbl-errorfptr` and `elf/tst-addr1` (`dladdr` on a PLT address
+found no symbol).
+
 ## Reproducing
 
 `evidence/build.sh`, `evidence/tests.sh` and `evidence/check.sh` are the exact
