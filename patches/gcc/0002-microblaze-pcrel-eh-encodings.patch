@@ -1,0 +1,56 @@
+From dc6759151637eef479c18fd00a101b138222e796 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 23:28:59 -0400
+Subject: [PATCH] microblaze: use PC-relative encodings for .eh_frame pointers
+
+MicroBlaze is the last Linux target still using DW_EH_PE_aligned for
+PIC exception tables.  Absolute pointers in .eh_frame mean that every
+shared object carries a writable .eh_frame and a dynamic relocation
+per FDE (711 R_MICROBLAZE_REL entries in glibc's libc.so), and that ld
+cannot build the .eh_frame_hdr binary search table ("FDE encoding in
+... prevents .eh_frame_hdr table being created"), so the unwinder
+walks every FDE in an object on each frame.
+
+The reason was purely an assembler limitation: gas for MicroBlaze did
+not accept "sym - ." across sections.  binutils 2.46 does, emitting
+R_MICROBLAZE_32_PCREL, so use the encodings every other ELF target
+uses: pcrel|sdata4 for code pointers, indirect|pcrel|sdata4 for
+global (personality) pointers.  With that, .eh_frame links read-only
+without dynamic relocations, the .eh_frame_hdr table is built, and
+unwinding through a shared object works unchanged (verified with
+_Unwind_Backtrace across a DSO on glibc under qemu-user).
+
+Requires binutils with the matching gas/ld change; older assemblers
+reject the "sym - ." expressions.
+
+gcc/ChangeLog:
+	* config/microblaze/microblaze.h (ASM_PREFERRED_EH_DATA_FORMAT):
+	Use DW_EH_PE_pcrel | DW_EH_PE_sdata4, indirect for global
+	pointers, instead of DW_EH_PE_aligned.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ gcc/config/microblaze/microblaze.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/gcc/config/microblaze/microblaze.h b/gcc/config/microblaze/microblaze.h
+index fc8c4b871..ce0b7635f 100644
+--- a/gcc/config/microblaze/microblaze.h
++++ b/gcc/config/microblaze/microblaze.h
+@@ -205,8 +205,12 @@ extern enum pipeline_type microblaze_pipe;
+ /* Select a format to encode pointers in exception handling data.  CODE
+    is 0 for data, 1 for code labels, 2 for function pointers.  GLOBAL is
+    true if the symbol may be affected by dynamic relocations.  */
++/* PC-relative pointers keep .eh_frame read-only, need no dynamic
++   relocations, and let the linker build the .eh_frame_hdr search table
++   (it refuses to for DW_EH_PE_aligned).  Requires an assembler that
++   accepts "sym - ." across sections (binutils 2.46).  */
+ #define ASM_PREFERRED_EH_DATA_FORMAT(CODE,GLOBAL) \
+-  ((flag_pic || GLOBAL) ? DW_EH_PE_aligned : DW_EH_PE_absptr)
++  (((GLOBAL) ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4)
+ 
+ /* Use DWARF 2 debugging information by default.  */
+ #define DWARF2_DEBUGGING_INFO
+-- 
+2.39.5 (Apple Git-154)
+

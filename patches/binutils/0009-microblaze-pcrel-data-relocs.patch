@@ -1,0 +1,211 @@
+From 9580e4def46f89ae28502f16c42a01f172502463 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 23:05:43 -0400
+Subject: [PATCH] microblaze: support "sym - ." across sections, and relax
+ R_MICROBLAZE_32_PCREL
+
+MicroBlaze gas rejects "sym - ." when sym lives in another section
+("operation combines symbols in different segments") because it does
+not define DIFF_EXPR_OK.  That is the form of every PC-relative
+.eh_frame pointer, so neither GCC nor the CFI directives can use
+DW_EH_PE_pcrel on this target; GCC uses DW_EH_PE_aligned for PIC
+instead.  The consequences are visible in every MicroBlaze shared
+object: a writable .eh_frame full of R_MICROBLAZE_REL relocations
+(711 in libc.so), no .eh_frame_hdr search table ("FDE encoding ...
+prevents .eh_frame_hdr table being created"), and a linear FDE walk
+on every unwind.
+
+Define DIFF_EXPR_OK so the expression is accepted, and have
+cons_fix_new_microblaze recognise "sym - ." (the subtrahend is the
+current location) with sym in another section and emit an
+R_MICROBLAZE_32_PCREL fixup with the plain addend.  Also let
+tc_gen_reloc honour fx_pcrel on a BFD_RELOC_32 fixup.  With
+CFI_DIFF_EXPR_OK following DIFF_EXPR_OK, the .cfi_* directives emit
+PC-relative FDE pointers as well, and ld builds the .eh_frame_hdr
+table for them.
+
+R_MICROBLAZE_32_PCREL was the only howto in the table marked
+partial_inplace, although MicroBlaze is a RELA target and nothing
+generated the relocation before.  With partial_inplace set,
+bfd_install_relocation rewrites the addend as "addend - offset" when
+gas installs the relocation, so "sym - . + 100" came out 100 short
+of its own section offset.  Make it a normal RELA howto.
+
+Linker relaxation adjusts the addends of R_MICROBLAZE_32 and
+R_MICROBLAZE_32_SYM_OP_SYM relocations in other sections that point
+into a relaxed section; treat R_MICROBLAZE_32_PCREL the same way, or
+the .eh_frame pointers would go stale when an imm is deleted.
+
+gas/ChangeLog:
+	* config/tc-microblaze.h (DIFF_EXPR_OK): Define.
+	* config/tc-microblaze.c (cons_fix_new_microblaze): Emit
+	BFD_RELOC_32_PCREL for "sym - ." across sections.
+	(tc_gen_reloc): Emit BFD_RELOC_32_PCREL for a PC-relative
+	BFD_RELOC_32 fixup.
+	* testsuite/gas/microblaze/reloc_pcrel.s,
+	* testsuite/gas/microblaze/reloc_pcrel.d,
+	* testsuite/gas/microblaze/reloc_pcrel.exp: New test.
+	* testsuite/gas/microblaze/cfi.d: Expect DW_EH_PE_pcrel|sdata4.
+
+bfd/ChangeLog:
+	* elf32-microblaze.c (microblaze_elf_howto_raw)
+	<R_MICROBLAZE_32_PCREL>: Clear partial_inplace.
+	(microblaze_elf_relax_section): Adjust R_MICROBLAZE_32_PCREL
+	addends against the relaxed section.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ bfd/elf32-microblaze.c                       |  3 ++-
+ gas/config/tc-microblaze.c                   | 21 +++++++++++++++++++-
+ gas/config/tc-microblaze.h                   |  7 +++++++
+ gas/testsuite/gas/microblaze/cfi.d           |  2 +-
+ gas/testsuite/gas/microblaze/reloc_pcrel.d   | 11 ++++++++++
+ gas/testsuite/gas/microblaze/reloc_pcrel.exp |  5 +++++
+ gas/testsuite/gas/microblaze/reloc_pcrel.s   | 11 ++++++++++
+ 7 files changed, 57 insertions(+), 3 deletions(-)
+ create mode 100644 gas/testsuite/gas/microblaze/reloc_pcrel.d
+ create mode 100644 gas/testsuite/gas/microblaze/reloc_pcrel.exp
+ create mode 100644 gas/testsuite/gas/microblaze/reloc_pcrel.s
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index 0b0c4bc288b..3315fd65193 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -79,7 +79,7 @@ static reloc_howto_type microblaze_elf_howto_raw[] =
+ 	  complain_overflow_bitfield, /* Complain on overflow.  */
+ 	  bfd_elf_generic_reloc,/* Special Function.  */
+ 	  "R_MICROBLAZE_32_PCREL",	/* Name.  */
+-	  true,			/* Partial Inplace.  */
++	  false,		/* Partial Inplace.  */
+ 	  0,			/* Source Mask.  */
+ 	  0xffffffff,		/* Dest Mask.  */
+ 	  true),		/* PC relative offset?  */
+@@ -2138,6 +2138,7 @@ microblaze_elf_relax_section (bfd *abfd,
+ 		continue;
+ 
+ 	      if ((ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32)
++		  || (ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32_PCREL)
+ 		  || (ELF32_R_TYPE (irelscan->r_info) == (int) R_MICROBLAZE_32_NONE))
+ 		{
+ 		  isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
+diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
+index 2ff4f152e75..c6fb5f7621a 100644
+--- a/gas/config/tc-microblaze.c
++++ b/gas/config/tc-microblaze.c
+@@ -2501,10 +2501,14 @@ tc_gen_reloc (asection * section ATTRIBUTE_UNUSED, fixS * fixp)
+ 
+   switch (fixp->fx_r_type)
+     {
++    case BFD_RELOC_32:
++      /* "sym - ." is parsed as a plain 32-bit fixup and turned
++	 PC-relative by fixup_segment; honour that.  */
++      code = fixp->fx_pcrel ? BFD_RELOC_32_PCREL : BFD_RELOC_32;
++      break;
+     case BFD_RELOC_NONE:
+     case BFD_RELOC_MICROBLAZE_32_NONE:
+     case BFD_RELOC_MICROBLAZE_64_NONE:
+-    case BFD_RELOC_32:
+     case BFD_RELOC_MICROBLAZE_32_LO:
+     case BFD_RELOC_MICROBLAZE_32_LO_PCREL:
+     case BFD_RELOC_RVA:
+@@ -2614,6 +2618,21 @@ cons_fix_new_microblaze (fragS * frag,
+ 			 expressionS *exp,
+ 			 bfd_reloc_code_real_type r)
+ {
++  /* "sym - ." where sym is in another section: a PC-relative pointer,
++     as used by .eh_frame with DW_EH_PE_pcrel.  Emit R_MICROBLAZE_32_PCREL
++     with the plain addend; the linker computes S + A - P.  */
++  if (exp->X_op == O_subtract && exp->X_add_symbol && exp->X_op_symbol
++      && size == 4 && now_seg != absolute_section
++      && S_GET_SEGMENT (exp->X_op_symbol) == now_seg
++      && symbol_get_frag (exp->X_op_symbol) == frag
++      && S_GET_VALUE (exp->X_op_symbol) == frag->fr_address + (valueT) where
++      && S_GET_SEGMENT (exp->X_add_symbol) != now_seg)
++    {
++      fix_new (frag, where, size, exp->X_add_symbol, exp->X_add_number,
++	       1, BFD_RELOC_32_PCREL);
++      return;
++    }
++
+   if ((exp->X_op == O_subtract) && (exp->X_add_symbol) &&
+       (exp->X_op_symbol) && (now_seg != absolute_section) && (size == 4)
+       && (!S_IS_LOCAL (exp->X_op_symbol)))
+diff --git a/gas/config/tc-microblaze.h b/gas/config/tc-microblaze.h
+index fe0dd94da68..eac952f45db 100644
+--- a/gas/config/tc-microblaze.h
++++ b/gas/config/tc-microblaze.h
+@@ -108,6 +108,13 @@ extern void 	 cons_fix_new_microblaze       (fragS *, int, int,
+ 						bfd_reloc_code_real_type);
+ #define EXTERN_FORCE_RELOC -1
+ 
++/* Allow "sym - ." across sections: it becomes a PC-relative fixup and an
++   R_MICROBLAZE_32_PCREL relocation, which is what PC-relative
++   .eh_frame pointers are made of.  This also makes the CFI directives
++   emit PC-relative FDE pointers.  */
++#define DIFF_EXPR_OK
++
++
+ /* CFI directives.  The stack grows down in 4-byte units and r1 is the
+    stack pointer; r15 holds the return address.  These match what GCC
+    uses for MicroBlaze (DWARF_FRAME_RETURN_COLUMN and the default data
+diff --git a/gas/testsuite/gas/microblaze/cfi.d b/gas/testsuite/gas/microblaze/cfi.d
+index 4f2efa7a3c1..e17901064ef 100644
+--- a/gas/testsuite/gas/microblaze/cfi.d
++++ b/gas/testsuite/gas/microblaze/cfi.d
+@@ -11,7 +11,7 @@ Contents of the .eh_frame section:
+   Code alignment factor: 1
+   Data alignment factor: -4
+   Return address column: 15
+-  Augmentation data:     0b
++  Augmentation data:     1b
+   DW_CFA_def_cfa: r1 ofs 0
+ 
+ 0+0014 0+0014 0+0018 FDE cie=0+0000 pc=0+0000..0+0010
+diff --git a/gas/testsuite/gas/microblaze/reloc_pcrel.d b/gas/testsuite/gas/microblaze/reloc_pcrel.d
+new file mode 100644
+index 00000000000..f2857a7ea89
+--- /dev/null
++++ b/gas/testsuite/gas/microblaze/reloc_pcrel.d
+@@ -0,0 +1,11 @@
++#objdump: -r
++#name: MicroBlaze PC-relative data relocations
++#source: reloc_pcrel.s
++
++.*: +file format .*
++
++RELOCATION RECORDS FOR \[\.rodata\]:
++OFFSET +TYPE +VALUE
++0+0000 R_MICROBLAZE_32_PCREL +f
++0+0004 R_MICROBLAZE_32_PCREL +\.text\+0x0+0008
++0+0008 R_MICROBLAZE_32_PCREL +f\+0x0+0064
+diff --git a/gas/testsuite/gas/microblaze/reloc_pcrel.exp b/gas/testsuite/gas/microblaze/reloc_pcrel.exp
+new file mode 100644
+index 00000000000..73f210a4c4a
+--- /dev/null
++++ b/gas/testsuite/gas/microblaze/reloc_pcrel.exp
+@@ -0,0 +1,5 @@
++# "sym - ." across sections on MicroBlaze.
++
++if [istarget microblaze*-*-*] {
++    run_dump_test "reloc_pcrel"
++}
+diff --git a/gas/testsuite/gas/microblaze/reloc_pcrel.s b/gas/testsuite/gas/microblaze/reloc_pcrel.s
+new file mode 100644
+index 00000000000..154bbefce0c
+--- /dev/null
++++ b/gas/testsuite/gas/microblaze/reloc_pcrel.s
+@@ -0,0 +1,11 @@
++	.text
++	.globl	f
++f:	nop
++	nop
++.Lloc:	nop
++	.section .rodata
++	.globl	p
++p:	.4byte	f - .
++	.4byte	.Lloc - .
++	.4byte	f - . + 100
++	.4byte	p - .
+-- 
+2.39.5 (Apple Git-154)
+

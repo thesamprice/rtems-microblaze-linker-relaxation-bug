@@ -429,6 +429,85 @@ relocation, as arm does. Present in the shipped 2.41 toolchain too. It fixes
 `misc/tst-ldbl-errorfptr` and `elf/tst-addr1` (`dladdr` on a PLT address
 found no symbol).
 
+## Round four: PC-relative exception tables
+
+Every MicroBlaze shared object carries a writable `.eh_frame` with one dynamic
+relocation per FDE (711 `R_MICROBLAZE_REL` entries in `libc.so`), and `ld`
+prints "FDE encoding in ... prevents .eh_frame_hdr table being created" while
+linking it, so libgcc falls back to a linear walk over every FDE of an object
+on every frame it unwinds. The cause is gcc's `ASM_PREFERRED_EH_DATA_FORMAT`
+for MicroBlaze, which picks `DW_EH_PE_aligned` (absolute pointers) for PIC
+because the assembler could not do better: gas for MicroBlaze rejects
+`sym - .` when `sym` is in another section ("operation combines symbols in
+different segments"), and that expression is what every PC-relative
+`.eh_frame` pointer is. MicroBlaze is the last Linux target still doing this.
+
+**binutils 0009** (`patches/binutils/0009-microblaze-pcrel-data-relocs.patch`)
+makes the assembler and linker able to express it:
+
+- gas defines `DIFF_EXPR_OK`, and `cons_fix_new_microblaze` recognises
+  "`sym - .`" with `sym` in another section and creates an
+  `R_MICROBLAZE_32_PCREL` fixup carrying the plain addend. `tc_gen_reloc`
+  honours `fx_pcrel` on a 32-bit fixup.
+- bfd: `R_MICROBLAZE_32_PCREL` was the only entry in the howto table with
+  `partial_inplace` set, on a RELA target where nothing had ever generated
+  it. `bfd_install_relocation` treats such a relocation REL-style and rewrites
+  the addend as "addend minus the relocation's own offset", which is why the
+  first attempts produced `sym + 84` for `sym - . + 100` at offset 16 and
+  section-symbol addends short by the field's offset. Cleared.
+- bfd: linker relaxation adjusts the addends of `R_MICROBLAZE_32` and
+  `R_MICROBLAZE_32_SYM_OP_SYM` relocations in other sections when it deletes
+  an `imm` before their target; `R_MICROBLAZE_32_PCREL` now gets the same
+  treatment, otherwise FDE pointers go stale under `-relax`.
+- gas testsuite: new `gas/microblaze/reloc_pcrel`; `cfi.d` updated because
+  the `.cfi_*` directives (patch 0006) switch to the PC-relative encoding
+  automatically once `DIFF_EXPR_OK` is defined (`CFI_DIFF_EXPR_OK` follows it).
+
+**gcc 0002** (`patches/gcc/0002-microblaze-pcrel-eh-encodings.patch`) changes
+`ASM_PREFERRED_EH_DATA_FORMAT` to `pcrel|sdata4`, `indirect|pcrel|sdata4` for
+global pointers, as on every other ELF target. It requires the binutils change;
+older assemblers reject the expressions.
+
+What was verified (`evidence/pcrel-verify5.log`, `evidence/pcrel-gcc.log`,
+scripts alongside):
+
+| Check | Result |
+|---|---|
+| gas: `f - .`, `.Lloc - .`, `f - . + 100` in `.rodata` | `R_MICROBLAZE_32_PCREL` with addends `f+0`, `.text+8`, `f+0x64`; same-section `p - .` folds to a constant |
+| `ld -shared` on such an object | no dynamic relocation; stored value equals `f - p` |
+| `ld -relax` with an `imm` deleted before the target | stored value still equals `f - p` |
+| gas CFI FDE in a DSO | augmentation `0x1b`, FDE `pc` equals the function's address, `.eh_frame_hdr` table present (`011b033b`) |
+| gcc 17 with the new encoding, PIC object | emits `.4byte $LFB0-.`, assembles to `R_MICROBLAZE_32_PCREL` |
+| DSO from it | `.eh_frame_hdr` table with one entry per FDE, FDE addresses equal `lib_leaf`/`lib_mid` |
+| `_Unwind_Backtrace` from an executable through the DSO (patched glibc) | 7 frames, identical to the old encoding |
+| `.eh_frame` read-only | flags `A` when only new objects are linked. With gcc 17's own `crtendS.o` (built before the change) the output stays `WA` |
+| binutils testsuites | `ld-microblaze` + `ld-elf/eh*`: 6 passes, 0 failures. gas `microblaze`, `elf`, `all`: 269 passes; 4 failures unrelated to the patch, see below |
+
+Two caveats. gcc emits `.section .eh_frame,"aw"` unless its configure found
+`HAVE_LD_RO_RW_SECTION_MIXING`; my gcc build lacks it only because configure
+could not find objdump (I ran the probe by hand: MicroBlaze `ld` does mix, so
+a normal build gets `EH_TABLES_CAN_BE_READ_ONLY` and a read-only `.eh_frame`).
+And the unwind probe aborts on the unpatched Bootlin glibc 2.41 with either
+toolchain, which is glibc 0007 (`ld.so` without an `.eh_frame` terminator),
+not the encoding.
+
+Not done: rebuilding gcc's libgcc and crt files with the new `cc1`, then glibc
+with it, and rerunning the suite. That is the natural next step before either
+patch goes upstream.
+
+The four remaining gas failures (`difference of two undefined symbols`,
+`simple forward references`, `forward references`, `all end`) are present on
+the unpatched assembler as well. `diff1` is excluded for `microblaze-*-*` in
+`gas/all/gas.exp` but the little-endian triplet `microblazeel-*` slips past
+that pattern; the forward-reference tests show 1- and 2-byte constant fixups
+written as zero, an old MicroBlaze `md_apply_fix` problem; `end` is about
+quoted symbol names. None involve the new relocation.
+
+One more thing worth knowing: the runtest pattern for a subset is relative to
+the testsuite root, `runtest --tool gas --srcdir .../gas/testsuite
+"gas/microblaze/*.exp"`. `make check-gas RUNTESTFLAGS="microblaze/*.exp"`
+silently runs nothing.
+
 ## Reproducing
 
 `evidence/build.sh`, `evidence/tests.sh` and `evidence/check.sh` are the exact
