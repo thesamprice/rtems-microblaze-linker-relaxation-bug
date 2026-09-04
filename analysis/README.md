@@ -74,4 +74,7 @@ bug (0002). The remaining work is the exception-handling and glibc-runtime serie
 See [HARDWARE-TESTING.md](HARDWARE-TESTING.md): how to build the patched
 binutils, gcc and glibc natively on a Linux host and exercise each fix on a
 MicroBlaze board, without the qemu-user / Docker test harness used during
-development.
+development. [TEST-PLAN.md](TEST-PLAN.md) is the checklist version: which
+suites to run in which order, the exact `make check` targets, and a sample
+DejaGnu board file and glibc test-wrapper for driving the tests onto real
+hardware.
