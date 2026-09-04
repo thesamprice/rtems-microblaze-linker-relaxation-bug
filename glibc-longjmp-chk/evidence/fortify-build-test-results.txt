@@ -1,0 +1,166 @@
+# glibc master + patch, configured --enable-fortify-source=2; setjmp/ and debug/ tests under qemu-microblazeel
+
+## setjmp/
+PASS: setjmp/bug269-setjmp
+original exit status 0
+PASS: setjmp/check-installed-headers-c
+original exit status 0
+PASS: setjmp/check-installed-headers-cxx
+original exit status 0
+PASS: setjmp/check-obsolete-constructs
+original exit status 0
+PASS: setjmp/check-wrapper-headers
+original exit status 0
+PASS: setjmp/jmpbug
+original exit status 0
+PASS: setjmp/test-as-const-jmp_buf-macros
+original exit status 0
+PASS: setjmp/tst-setjmp-check
+original exit status 0
+PASS: setjmp/tst-setjmp-fp
+original exit status 0
+PASS: setjmp/tst-setjmp-static
+original exit status 0
+PASS: setjmp/tst-setjmp
+original exit status 0
+PASS: setjmp/tst-sigsetjmp
+original exit status 0
+
+## debug/
+PASS: debug/backtrace-tst
+original exit status 0
+PASS: debug/check-installed-headers-c
+original exit status 0
+PASS: debug/check-installed-headers-cxx
+original exit status 0
+PASS: debug/check-obsolete-constructs
+original exit status 0
+PASS: debug/check-wrapper-headers
+original exit status 0
+PASS: debug/test-stpcpy_chk
+original exit status 0
+PASS: debug/test-strcpy_chk
+original exit status 0
+PASS: debug/tst-backtrace1
+original exit status 0
+FAIL: debug/tst-backtrace2
+original exit status 1
+FAIL: debug/tst-backtrace3
+original exit status 1
+FAIL: debug/tst-backtrace4
+original exit status 1
+FAIL: debug/tst-backtrace5
+original exit status 1
+FAIL: debug/tst-backtrace6
+original exit status 1
+PASS: debug/tst-chk-cancel
+original exit status 0
+FAIL: debug/tst-fortify-c-default-1-def
+original exit status 1
+FAIL: debug/tst-fortify-c-default-1-time64
+original exit status 1
+FAIL: debug/tst-fortify-c-default-2-def
+original exit status 1
+FAIL: debug/tst-fortify-c-default-2-time64
+original exit status 1
+FAIL: debug/tst-fortify-c-default-3-def
+original exit status 1
+FAIL: debug/tst-fortify-c-default-3-time64
+original exit status 1
+FAIL: debug/tst-fortify-c-lfs-1-def
+original exit status 1
+FAIL: debug/tst-fortify-c-lfs-2-def
+original exit status 1
+FAIL: debug/tst-fortify-c-lfs-3-def
+original exit status 1
+PASS: debug/tst-fortify-c-nongnu-1-def
+original exit status 0
+PASS: debug/tst-fortify-c-nongnu-1-time64
+original exit status 0
+PASS: debug/tst-fortify-c-nongnu-2-def
+original exit status 0
+PASS: debug/tst-fortify-c-nongnu-2-time64
+original exit status 0
+PASS: debug/tst-fortify-c-nongnu-3-def
+original exit status 0
+PASS: debug/tst-fortify-c-nongnu-3-time64
+original exit status 0
+FAIL: debug/tst-fortify-cc-default-1-def
+original exit status 1
+FAIL: debug/tst-fortify-cc-default-1-time64
+original exit status 1
+FAIL: debug/tst-fortify-cc-default-2-def
+original exit status 1
+FAIL: debug/tst-fortify-cc-default-2-time64
+original exit status 1
+FAIL: debug/tst-fortify-cc-default-3-def
+original exit status 1
+FAIL: debug/tst-fortify-cc-default-3-time64
+original exit status 1
+FAIL: debug/tst-fortify-cc-lfs-1-def
+original exit status 1
+FAIL: debug/tst-fortify-cc-lfs-2-def
+original exit status 1
+FAIL: debug/tst-fortify-cc-lfs-3-def
+original exit status 1
+PASS: debug/tst-fortify-cc-nongnu-1-def
+original exit status 0
+PASS: debug/tst-fortify-cc-nongnu-1-time64
+original exit status 0
+PASS: debug/tst-fortify-cc-nongnu-2-def
+original exit status 0
+PASS: debug/tst-fortify-cc-nongnu-2-time64
+original exit status 0
+PASS: debug/tst-fortify-cc-nongnu-3-def
+original exit status 0
+PASS: debug/tst-fortify-cc-nongnu-3-time64
+original exit status 0
+FAIL: debug/tst-fortify-syslog
+original exit status 1
+PASS: debug/tst-fortify-wide
+original exit status 0
+FAIL: debug/tst-fortify
+original exit status 1
+PASS: debug/tst-longjmp_chk
+original exit status 0
+PASS: debug/tst-longjmp_chk2
+original exit status 0
+PASS: debug/tst-longjmp_chk3
+original exit status 0
+PASS: debug/tst-realpath-chk
+original exit status 0
+FAIL: debug/tst-sprintf-fortify-rdonly-static
+original exit status 1
+FAIL: debug/tst-sprintf-fortify-rdonly
+original exit status 1
+PASS: debug/tst-sprintf-fortify-unchecked
+original exit status 0
+
+## first line of each FAIL
+debug/tst-backtrace2: Failure on line 60
+debug/tst-backtrace3: Failure on line 66
+debug/tst-backtrace4: Obtained backtrace with 3 functions (want at least 6)
+debug/tst-backtrace5: Failure on line 58
+debug/tst-backtrace6: Failure on line 58
+debug/tst-fortify-c-default-1-def: Failure on line 1722
+debug/tst-fortify-c-default-1-time64: Failure on line 1722
+debug/tst-fortify-c-default-2-def: Failure on line 1722
+debug/tst-fortify-c-default-2-time64: Failure on line 1722
+debug/tst-fortify-c-default-3-def: Failure on line 1722
+debug/tst-fortify-c-default-3-time64: Failure on line 1722
+debug/tst-fortify-c-lfs-1-def: Failure on line 1722
+debug/tst-fortify-c-lfs-2-def: Failure on line 1722
+debug/tst-fortify-c-lfs-3-def: Failure on line 1722
+debug/tst-fortify-cc-default-1-def: Failure on line 1722
+debug/tst-fortify-cc-default-1-time64: Failure on line 1722
+debug/tst-fortify-cc-default-2-def: Failure on line 1722
+debug/tst-fortify-cc-default-2-time64: Failure on line 1722
+debug/tst-fortify-cc-default-3-def: Failure on line 1722
+debug/tst-fortify-cc-default-3-time64: Failure on line 1722
+debug/tst-fortify-cc-lfs-1-def: Failure on line 1722
+debug/tst-fortify-cc-lfs-2-def: Failure on line 1722
+debug/tst-fortify-cc-lfs-3-def: Failure on line 1722
+debug/tst-fortify-syslog: error: test-container.c:835: Cannot create testroot lock.
+debug/tst-fortify: Failure on line 1722
+debug/tst-sprintf-fortify-rdonly-static: Timed out: killed the child process
+debug/tst-sprintf-fortify-rdonly: error: tst-sprintf-fortify-rdonly.c:112: not true: nfiles != 0

@@ -1,0 +1,299 @@
+From: Samuel Price <thesamprice@gmail.com>
+Subject: [PATCH] bfd/dwarf2: break equal-range function ties by DIE offset, not pointer
+
+lookup_address_in_function_table picks, among the functions whose range
+contains the address, the one with the smallest range.  When two of them
+have the same range length -- a function whose whole body came from one
+inlined call, so the DW_TAG_inlined_subroutine covers exactly the same
+range as the DW_TAG_subprogram containing it -- the tie was broken by
+comparing the two struct funcinfo pointers.
+
+Those come from bfd_zalloc.  Addresses increase within an objalloc chunk,
+but a new chunk can land below the old one, so which of the two functions
+won depended on where malloc happened to put things, and addr2line
+reported a different function from run to run on the same binary.
+
+Observed on an RTEMS riscv32 image: 23 of 200 runs of
+
+  addr2line -a -f -C -i -e hello.exe < addrs
+
+differed from the other 177, in 12 distinct ways, with no diff in the
+file and line columns -- only in which function was named, and in how
+many inlined frames -i then unwound.  It reproduces sequentially too,
+about 1 run in 200; concurrency only makes the heap vary more.  This is
+not memory unsafety: an asan build reports nothing and MallocScribble
+changes nothing, because the pointers being compared are perfectly valid.
+
+The comment said the comparison was there to return the same match as the
+algorithm that preceded 089e3718bd8, which walked unit->function_table.
+That list is built by prepending, so among equals it kept the one parsed
+last, which is the one with the greater DW_AT offset.  unit_offset says
+that directly and does not move with the heap.  All the candidates in
+this loop belong to one comp_unit, so the offsets are unique.
+
+It also picks the right one.  An inlined subroutine's DIE is a child of
+the subprogram's, hence always later, so the innermost routine now wins
+every time -- what the comment above the loop says the code should do.
+
+bfd/
+	* dwarf2.c (lookup_address_in_function_table): Break equal
+	best_fit_len ties on funcinfo->unit_offset rather than on the
+	funcinfo pointer.
+
+binutils/
+	* testsuite/binutils-all/dw2-inline-tie.S: New test.
+	* testsuite/binutils-all/dw2-inline-tie.d: New test.
+	* testsuite/binutils-all/addr2line.exp: Run it.
+
+---
+diff --git a/bfd/dwarf2.c b/bfd/dwarf2.c
+index 4c88add7bc7..208b6db29a5 100644
+--- a/bfd/dwarf2.c
++++ b/bfd/dwarf2.c
+@@ -3365,9 +3365,16 @@ lookup_address_in_function_table (struct comp_unit *unit,
+ 	  if (arange->high - arange->low < best_fit_len
+ 	      /* The following comparison is designed to return the same
+ 		 match as the previous algorithm for routines which have the
+-		 same best fit length.  */
++		 same best fit length.  That algorithm walked the function
++		 table, which is built by prepending, so among equals it kept
++		 the one parsed last.  Order by DW_AT offset, which says that
++		 directly.  Comparing the funcinfo pointers instead made the
++		 result depend on the addresses bfd_zalloc happened to return:
++		 they increase within an objalloc chunk but a new chunk can
++		 land below the old one, so a tie could be resolved either way
++		 from run to run and the reported function changed.  */
+ 	      || (arange->high - arange->low == best_fit_len
+-		  && funcinfo > best_fit))
++		  && funcinfo->unit_offset > best_fit->unit_offset))
+ 	    {
+ 	      best_fit = funcinfo;
+ 	      best_fit_len = arange->high - arange->low;
+diff --git a/binutils/testsuite/binutils-all/addr2line.exp b/binutils/testsuite/binutils-all/addr2line.exp
+index cc3c851a15b..646890f8e85 100644
+--- a/binutils/testsuite/binutils-all/addr2line.exp
++++ b/binutils/testsuite/binutils-all/addr2line.exp
+@@ -19,6 +19,13 @@ set opts ""
+ set dot ""
+ set exe [exeext]
+ 
++# Which function is reported when two of them cover the same range.  Needs
++# hand written DWARF: whether a compiler emits the tie at all depends on its
++# inlining decisions.
++if { [is_elf_format] } {
++    run_dump_test "dw2-inline-tie"
++}
++
+ # powerpc64 function symbols are on descriptors rather than code.
+ # MUSL uses the ELFv2 ABI for PowerPC, so the problem does not apply there.
+ if { [istarget powerpc64-*-*] && ![istarget powerpc64-*-musl] } {
+diff --git a/binutils/testsuite/binutils-all/dw2-inline-tie.S b/binutils/testsuite/binutils-all/dw2-inline-tie.S
+new file mode 100644
+index 00000000000..4177d9476a4
+--- /dev/null
++++ b/binutils/testsuite/binutils-all/dw2-inline-tie.S
+@@ -0,0 +1,186 @@
++/* Copyright (C) 2026 Free Software Foundation, Inc.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
++
++/* A function whose whole body came from one inlined call, so the
++   DW_TAG_inlined_subroutine covers exactly the same range as the
++   DW_TAG_subprogram containing it.  Two entries in the function table then
++   have the same address range, and lookup_address_in_function_table has to
++   break the tie.  It must pick the inlined routine -- the innermost one, and
++   the one later in the DIE stream -- and it must pick it every time.
++
++   Historically the tie was broken by comparing the two funcinfo pointers,
++   which made the answer depend on the addresses bfd_zalloc happened to
++   return.  */
++
++	.text
++	.globl outer_fn
++	.type outer_fn, %function
++outer_fn:
++.Lfunc_begin:
++	.4byte	0
++	.4byte	0
++.Lfunc_end:
++	.size	outer_fn, .-outer_fn
++
++/* A pointer, purely so that the CU header's address_size below and the
++   DW_FORM_addr attributes agree with the target without the test having to
++   know how wide a pointer is.  */
++
++	.section .debug_ptrsize
++.Lptr_begin:
++	.dc.a	0
++.Lptr_end:
++
++	.section .debug_info
++.Lcu_begin:
++	.4byte	.Lcu_end - .Lcu_start		/* Length of Compilation Unit */
++.Lcu_start:
++	.2byte	4				/* DWARF Version */
++	.4byte	.Labbrev_begin			/* Offset into abbrev section */
++	.byte	.Lptr_end - .Lptr_begin		/* Pointer size */
++
++	/* CU die */
++	.uleb128	1			/* Abbrev: DW_TAG_compile_unit */
++	.ascii		"dw2-inline-tie.c\0"	/* DW_AT_name */
++	.byte		1			/* DW_AT_language (C) */
++	.4byte		.Lline_begin		/* DW_AT_stmt_list */
++	.dc.a		.Lfunc_begin		/* DW_AT_low_pc */
++	.dc.a		.Lfunc_end		/* DW_AT_high_pc */
++
++	/* The containing function.  */
++	.uleb128	2			/* Abbrev: DW_TAG_subprogram */
++	.ascii		"outer_fn\0"		/* DW_AT_name */
++	.dc.a		.Lfunc_begin		/* DW_AT_low_pc */
++	.dc.a		.Lfunc_end		/* DW_AT_high_pc */
++
++	/* Inlined into it, over exactly the same range.  */
++	.uleb128	3			/* Abbrev: DW_TAG_inlined_subroutine */
++	.ascii		"inlined_fn\0"		/* DW_AT_name */
++	.dc.a		.Lfunc_begin		/* DW_AT_low_pc */
++	.dc.a		.Lfunc_end		/* DW_AT_high_pc */
++
++	.byte		0			/* End of children of outer_fn */
++	.byte		0			/* End of children of CU */
++.Lcu_end:
++
++	.section .debug_abbrev
++.Labbrev_begin:
++	.uleb128	1			/* Abbrev code */
++	.uleb128	0x11			/* DW_TAG_compile_unit */
++	.byte		1			/* has_children */
++	.uleb128	0x3			/* DW_AT_name */
++	.uleb128	0x8			/* DW_FORM_string */
++	.uleb128	0x13			/* DW_AT_language */
++	.uleb128	0xb			/* DW_FORM_data1 */
++	.uleb128	0x10			/* DW_AT_stmt_list */
++	.uleb128	0x17			/* DW_FORM_sec_offset */
++	.uleb128	0x11			/* DW_AT_low_pc */
++	.uleb128	0x1			/* DW_FORM_addr */
++	.uleb128	0x12			/* DW_AT_high_pc */
++	.uleb128	0x1			/* DW_FORM_addr */
++	.byte		0x0			/* Terminator */
++	.byte		0x0			/* Terminator */
++
++	.uleb128	2			/* Abbrev code */
++	.uleb128	0x2e			/* DW_TAG_subprogram */
++	.byte		1			/* has_children */
++	.uleb128	0x3			/* DW_AT_name */
++	.uleb128	0x8			/* DW_FORM_string */
++	.uleb128	0x11			/* DW_AT_low_pc */
++	.uleb128	0x1			/* DW_FORM_addr */
++	.uleb128	0x12			/* DW_AT_high_pc */
++	.uleb128	0x1			/* DW_FORM_addr */
++	.byte		0x0			/* Terminator */
++	.byte		0x0			/* Terminator */
++
++	.uleb128	3			/* Abbrev code */
++	.uleb128	0x1d			/* DW_TAG_inlined_subroutine */
++	.byte		0			/* has_children */
++	.uleb128	0x3			/* DW_AT_name */
++	.uleb128	0x8			/* DW_FORM_string */
++	.uleb128	0x11			/* DW_AT_low_pc */
++	.uleb128	0x1			/* DW_FORM_addr */
++	.uleb128	0x12			/* DW_AT_high_pc */
++	.uleb128	0x1			/* DW_FORM_addr */
++	.byte		0x0			/* Terminator */
++	.byte		0x0			/* Terminator */
++
++	.byte		0x0			/* Terminator */
++	.byte		0x0			/* Terminator */
++
++/* A line program is required: the function lookup is only reached once the
++   line table for the unit has decoded.  */
++
++	.section .debug_line
++.Lline_begin:
++	.4byte		.Lline_end - .Lline_start	/* Initial length */
++.Lline_start:
++	.2byte		2			/* Version */
++	.4byte		.Lline_lines - .Lline_hdr	/* header_length */
++.Lline_hdr:
++	.byte		1			/* Minimum insn length */
++	.byte		1			/* default_is_stmt */
++	.byte		1			/* line_base */
++	.byte		1			/* line_range */
++	.byte		0x10			/* opcode_base */
++
++	/* Standard opcode lengths */
++	.byte		0
++	.byte		1
++	.byte		1
++	.byte		1
++	.byte		1
++	.byte		0
++	.byte		0
++	.byte		0
++	.byte		1
++	.byte		0
++	.byte		0
++	.byte		1
++	.byte		0
++	.byte		0
++	.byte		0
++
++	/* Include directories */
++	.byte		0
++
++	/* File names */
++	.ascii		"dw2-inline-tie.c\0"
++	.uleb128	0
++	.uleb128	0
++	.uleb128	0
++
++	.byte		0
++
++.Lline_lines:
++	.byte		0			/* DW_LNE_set_address */
++	.uleb128	1 + (.Lptr_end - .Lptr_begin)
++	.byte		2
++	.dc.a		.Lfunc_begin
++
++	.byte		3			/* DW_LNS_advance_line */
++	.sleb128	16			/* ... to 17 */
++
++	.byte		1			/* DW_LNS_copy */
++
++	.byte		0			/* DW_LNE_set_address */
++	.uleb128	1 + (.Lptr_end - .Lptr_begin)
++	.byte		2
++	.dc.a		.Lfunc_end
++
++	.byte		0			/* DW_LNE_end_of_sequence */
++	.uleb128	1
++	.byte		1
++.Lline_end:
+diff --git a/binutils/testsuite/binutils-all/dw2-inline-tie.d b/binutils/testsuite/binutils-all/dw2-inline-tie.d
+new file mode 100644
+index 00000000000..6465aa4de1a
+--- /dev/null
++++ b/binutils/testsuite/binutils-all/dw2-inline-tie.d
+@@ -0,0 +1,12 @@
++#source: dw2-inline-tie.S
++#addr2line: -f 0x0 0x4 -e
++#name: addr2line, inlined subroutine covering its caller exactly
++
++# Both the DW_TAG_subprogram and the DW_TAG_inlined_subroutine inside it
++# cover the same address range, so the function lookup has to break a tie.
++# The inlined routine must win, at both addresses, on every run.
++
++inlined_fn
++.*dw2-inline-tie\.c:17
++inlined_fn
++.*dw2-inline-tie\.c:17

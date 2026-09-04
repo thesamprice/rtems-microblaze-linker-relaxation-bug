@@ -1,0 +1,13 @@
+# qemu-microblazeel -d in_asm, last translated blocks before the hang (repro built with -O2 -D_FORTIFY_SOURCE=2)
+0x3ff196b8:  addk	r6, r19, r0
+IN: 
+0x3ff196c4:  imm	-1
+0x3ff196c8:  lwi	r3, r20, -3840
+0x3ff196cc:  brald	r15, r3
+0x3ff196d0:  addk	r5, r22, r0
+IN: 
+0x3ff1752c:  rtsd	r15, 0
+0x3ff17530:  or	r0, r0, r0
+IN: 
+0x3ff196cc:  brald	r15, r3
+0x3ff196d0:  addk	r5, r22, r0

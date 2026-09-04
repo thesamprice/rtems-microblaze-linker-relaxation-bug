@@ -1,0 +1,23 @@
+# dtor.c: constructor, atexit handler, destructor.  Which of them run?
+
+## Bootlin glibc 2.41, dynamically linked
+constructor ran
+main
+atexit handler ran
+
+## Bootlin glibc 2.41, statically linked
+constructor ran
+main
+atexit handler ran
+destructor ran
+
+## glibc master + patches 0001-0003 (new crt1.o), dynamically linked
+constructor ran
+main
+atexit handler ran
+destructor ran
+
+## glibc test results, elf/ (unpatched crt1 -> patched crt1)
+tst-array1-cmp: FAIL -> PASS
+tst-array1-static-cmp: PASS -> PASS
+tst-initorder-cmp: FAIL -> PASS

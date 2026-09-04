@@ -1,0 +1,36 @@
+ 139  host artifact (Rosetta): spawned or re-exec'd guests lose argv[0]
+  93  timeouts and clock: emulation speed, missing zoneinfo, 20 s test-driver limit
+  41  environment: LD_AUDIT, profiling and gprof tests under qemu-user
+  31  environment: container tests, unshare() not permitted in Docker
+  22  environment: pty/tty under qemu-user (incl. tst-fortify at ptsname_r)
+  16  environment: malloc THP, hugetlb, tcache and fork tests under qemu-user
+  14  unsupported on MicroBlaze: lazy binding (ld forces BIND_NOW), TLS surplus
+  14  environment: PI/robust futex ops under qemu-user
+  12  other: elf
+  10  environment: POSIX message queues / aio / timers under qemu-user
+   9  environment: getdents EOVERFLOW under qemu-user
+   9  nptl cancellation: remaining tst-cancel* failures (select EINVAL under qemu, static variants, C++)
+   7  nptl: other (timing, tls3 lazy binding, guard, exec)
+   4  other: stdio-common
+   3  environment: network, nss, socket options, utmp under qemu-user
+   2  other: misc
+   2  other: posix
+   2  other: stdlib
+   1  other: debug
+   1  other: dirent
+   1  other: dlfcn
+   1  other: libio
+   1  environment: tst-*context* variants needing sigaltstack/timers under qemu
+ 435  total
+
+other: debug: debug/tst-sprintf-fortify-rdonly
+other: dirent: dirent/tst-closedir-leaks-mem
+other: dlfcn: dlfcn/tststatic2
+other: elf: elf/reldep6 elf/tst-bz15311 elf/tst-bz28937 elf/tst-dlopen-sgid elf/tst-p_align2 elf/tst-thp-1-no-s-code-pde elf/tst-thp-1-no-s-code-static elf/tst-thp-1-no-s-code elf/tst-thp-1-pde elf/tst-thp-1-static elf/tst-thp-1 elf/tst-thp-align
+other: libio: libio/tst-asprintf-null
+other: misc: misc/tst-ldbl-errorfptr misc/tst-select
+nptl cancellation: remaining tst-cancel* failures (select EINVAL under qemu, static variants, C++): nptl/tst-cancel17 nptl/tst-cancel24-static nptl/tst-cancel4 nptl/tst-cancel5 nptl/tst-cancel7 nptl/tst-cancelx17 nptl/tst-cancelx4 nptl/tst-cancelx5 nptl/tst-cancelx7
+nptl: other (timing, tls3 lazy binding, guard, exec): nptl/tst-cond24 nptl/tst-cond25 nptl/tst-guard1 nptl/tst-oddstacklimit nptl/tst-tls3-malloc nptl/tst-tls3 nptl/tst-tsd6
+other: posix: posix/tst-regex posix/tst-regex2
+other: stdio-common: stdio-common/tst-freopen5 stdio-common/tst-read-offset stdio-common/tst-vfprintf-width-prec-mem stdio-common/tst-vfprintf-width-prec
+other: stdlib: stdlib/tst-arc4random-thread stdlib/tst-secure-getenv

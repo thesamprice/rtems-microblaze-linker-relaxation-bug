@@ -1,0 +1,17 @@
+# glibc master + patch: debug/tst-longjmp_chk{,2,3} run under qemu-microblazeel
+== tst-longjmp_chk: PASS: debug/tst-longjmp_chk
+original exit status 0
+== tst-longjmp_chk2: PASS: debug/tst-longjmp_chk2
+original exit status 0
+not on alternate stack
+ in signal handler
+ on alternate stack
+ out of signal handler
+ not on alternate stack
+  in signal handler
+  on alternate stack
+  out of signal handler
+  not on alternate stack
+disabling alternate stack succeeded 
+== tst-longjmp_chk3: PASS: debug/tst-longjmp_chk3
+original exit status 0

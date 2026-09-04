@@ -1,0 +1,169 @@
+From d04785c8be266e8db901f47761911c36ee87e889 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 12:43:42 -0400
+Subject: [PATCH] gas: Support CFI directives for MicroBlaze
+
+MicroBlaze is one of the few ELF targets on which .cfi_* directives
+are rejected with "CFI is not supported for this target".  GCC works
+around that by emitting its own .eh_frame tables, but hand-written
+assembly cannot: none of glibc's MicroBlaze assembly has unwind
+information, so pthread cancellation with -fexceptions cleanup
+handlers and _Unwind_Backtrace stop at the first assembly frame
+(__syscall_cancel_arch, _start, the PLT resolver).
+
+Enable TARGET_USE_CFIPOP with the values GCC already uses for this
+target: r1 is the CFA register, r15 is the return address column
+(DWARF_FRAME_RETURN_COLUMN in gcc/config/microblaze/microblaze.h),
+and the data alignment factor is -4.  Register names r0..r31 map to
+their number.
+
+gas/ChangeLog:
+	* config/tc-microblaze.h (TARGET_USE_CFIPOP, DWARF2_CIE_DATA_ALIGNMENT,
+	DWARF2_DEFAULT_RETURN_COLUMN, tc_cfi_frame_initial_instructions,
+	tc_regname_to_dw2regnum): Define.
+	* config/tc-microblaze.c (microblaze_cfi_frame_initial_instructions,
+	microblaze_regname_to_dw2regnum): New functions.
+	* testsuite/gas/microblaze/cfi.s, cfi.d, cfi.exp: New test.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ gas/config/tc-microblaze.c           | 26 ++++++++++++++++++++++++++
+ gas/config/tc-microblaze.h           | 16 ++++++++++++++++
+ gas/testsuite/gas/microblaze/cfi.d   | 22 ++++++++++++++++++++++
+ gas/testsuite/gas/microblaze/cfi.exp |  5 +++++
+ gas/testsuite/gas/microblaze/cfi.s   | 13 +++++++++++++
+ 5 files changed, 82 insertions(+)
+ create mode 100644 gas/testsuite/gas/microblaze/cfi.d
+ create mode 100644 gas/testsuite/gas/microblaze/cfi.exp
+ create mode 100644 gas/testsuite/gas/microblaze/cfi.s
+
+diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
+index 3e3dca81921..2ff4f152e75 100644
+--- a/gas/config/tc-microblaze.c
++++ b/gas/config/tc-microblaze.c
+@@ -27,6 +27,7 @@
+ #include "../opcodes/microblaze-opc.h"
+ #include "../opcodes/microblaze-opcm.h"
+ #include "safe-ctype.h"
++#include "dw2gencfi.h"
+ #include <string.h>
+ #include <dwarf2dbg.h>
+ #include "aout/stab_gnu.h"
+@@ -394,6 +395,31 @@ md_begin (void)
+     str_hash_insert (opcode_hash_control, opcode->name, opcode, 0);
+ }
+ 
++/* CFI support.  The initial CFA is the incoming stack pointer, r1.  */
++
++void
++microblaze_cfi_frame_initial_instructions (void)
++{
++  cfi_add_CFA_def_cfa (1, 0);
++}
++
++/* Map a register name used in a .cfi_* directive to its DWARF column.
++   Only the general purpose registers r0..r31 have DWARF numbers.  */
++
++int
++microblaze_regname_to_dw2regnum (char *regname)
++{
++  char *end;
++  unsigned long n;
++
++  if ((regname[0] != 'r' && regname[0] != 'R') || !ISDIGIT (regname[1]))
++    return -1;
++  n = strtoul (regname + 1, &end, 10);
++  if (*end != '\0' || n > 31)
++    return -1;
++  return n;
++}
++
+ /* Try to parse a reg name.  */
+ 
+ static char *
+diff --git a/gas/config/tc-microblaze.h b/gas/config/tc-microblaze.h
+index 1fe678d72e7..fe0dd94da68 100644
+--- a/gas/config/tc-microblaze.h
++++ b/gas/config/tc-microblaze.h
+@@ -108,4 +108,20 @@ extern void 	 cons_fix_new_microblaze       (fragS *, int, int,
+ 						bfd_reloc_code_real_type);
+ #define EXTERN_FORCE_RELOC -1
+ 
++/* CFI directives.  The stack grows down in 4-byte units and r1 is the
++   stack pointer; r15 holds the return address.  These match what GCC
++   uses for MicroBlaze (DWARF_FRAME_RETURN_COLUMN and the default data
++   alignment factor), so gas-generated .eh_frame interoperates with
++   compiler output.  */
++#define TARGET_USE_CFIPOP 1
++#define DWARF2_CIE_DATA_ALIGNMENT -4
++#define DWARF2_DEFAULT_RETURN_COLUMN 15
++
++#define tc_cfi_frame_initial_instructions \
++  microblaze_cfi_frame_initial_instructions
++extern void microblaze_cfi_frame_initial_instructions (void);
++
++#define tc_regname_to_dw2regnum microblaze_regname_to_dw2regnum
++extern int microblaze_regname_to_dw2regnum (char *);
++
+ #endif /* TC_MICROBLAZE */
+diff --git a/gas/testsuite/gas/microblaze/cfi.d b/gas/testsuite/gas/microblaze/cfi.d
+new file mode 100644
+index 00000000000..4f2efa7a3c1
+--- /dev/null
++++ b/gas/testsuite/gas/microblaze/cfi.d
+@@ -0,0 +1,22 @@
++#readelf: -wf
++#name: MicroBlaze CFI directives
++#source: cfi.s
++
++Contents of the .eh_frame section:
++
++
++0+0000 0+0010 0+0000 CIE
++  Version:               1
++  Augmentation:          "zR"
++  Code alignment factor: 1
++  Data alignment factor: -4
++  Return address column: 15
++  Augmentation data:     0b
++  DW_CFA_def_cfa: r1 ofs 0
++
++0+0014 0+0014 0+0018 FDE cie=0+0000 pc=0+0000..0+0010
++  DW_CFA_advance_loc: 4 to 0+0004
++  DW_CFA_def_cfa_offset: 8
++  DW_CFA_advance_loc: 4 to 0+0008
++  DW_CFA_offset: r15 at cfa-8
++  DW_CFA_nop
+diff --git a/gas/testsuite/gas/microblaze/cfi.exp b/gas/testsuite/gas/microblaze/cfi.exp
+new file mode 100644
+index 00000000000..50aff60597a
+--- /dev/null
++++ b/gas/testsuite/gas/microblaze/cfi.exp
+@@ -0,0 +1,5 @@
++# CFI directive support for MicroBlaze.
++
++if [istarget microblaze*-*-*] {
++    run_dump_test "cfi"
++}
+diff --git a/gas/testsuite/gas/microblaze/cfi.s b/gas/testsuite/gas/microblaze/cfi.s
+new file mode 100644
+index 00000000000..e4bc22d8988
+--- /dev/null
++++ b/gas/testsuite/gas/microblaze/cfi.s
+@@ -0,0 +1,13 @@
++	.text
++	.globl	f
++	.type	f, @function
++f:
++	.cfi_startproc
++	addik	r1, r1, -8
++	.cfi_adjust_cfa_offset 8
++	swi	r15, r1, 0
++	.cfi_rel_offset r15, 0
++	rtsd	r15, 8
++	nop
++	.cfi_endproc
++	.size	f, . - f
+-- 
+2.39.5 (Apple Git-154)
+

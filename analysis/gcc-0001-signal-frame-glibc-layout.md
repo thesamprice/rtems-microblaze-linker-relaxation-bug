@@ -1,0 +1,163 @@
+<!-- Per-patch analysis. Follows analysis/TEMPLATE.md. -->
+
+# gcc 0001: locate the MicroBlaze signal frame from the handler's CFA
+
+**Patch:** `patches/gcc/0001-libgcc-microblaze-signal-frame-glibc-layout.patch`
+**Target:** `gcc` master (verified against the live file, ~2026-09)
+**Files touched:** `libgcc/config/microblaze/linux-unwind.h`
+(`microblaze_fallback_frame_state`)
+**Status:** independent runtime fix; the gcc-master `libgcc_s` needs it (glibc-longjmp-chk/README.md:314-325)
+
+## What it does
+`microblaze_fallback_frame_state` is libgcc's signal-frame unwinder fallback:
+when the DWARF walk reaches a kernel-installed signal handler it recovers the
+interrupted register file from the kernel's `rt_sigframe`. The upstream code
+found the frame by subtracting `sizeof (ucontext_t)` — the C library's type —
+from the sigreturn trampoline address. Under glibc `ucontext_t` is 304 bytes
+(128-byte `uc_sigmask`) against the kernel frame member's ~184 bytes, so the
+computed `sigcontext` was ~120 bytes too low and every recovered register was
+garbage; and qemu-user keeps the trampoline on a separate page, so there was
+nothing in front of it to subtract from at all. The patch instead anchors on
+the handler's CFA — which both the kernel (`regs->r1 = frame`) and qemu-user set
+to the `rt_sigframe` — and walks in by `siginfo_t + 2 longs + stack_t` to reach
+`uc_mcontext`, the same idiom every other `linux-unwind.h` uses. It keeps the
+trampoline match only to *recognise* the frame and probes 8 bytes ahead first.
+
+## Upstream audit: is this already fixed?
+**NO — AND THIS IS A CORRECTION OF AN EXISTING UPSTREAM FILE, NOT A NEW FILE.**
+`libgcc/config/microblaze/linux-unwind.h` **exists in gcc master today** and is
+exactly the buggy version this patch rewrites. Fetched live
+(`raw.githubusercontent.com/gcc-mirror/gcc/master/…`), upstream master still:
+
+- `#include <sys/ucontext.h>` (the patch switches to `<asm/sigcontext.h>`);
+- matches the trampoline `pc[0]/pc[1]` first, then `pc[2]/pc[3]` with `pc += 2`
+  (the patch flips the order and drops the `pc += 2`);
+- computes `ucontext_t *uc = (ucontext_t *)((_Unwind_Ptr) pc - sizeof
+  (ucontext_t)); sc = &uc->uc_mcontext;` — the wrong-size, trampoline-relative
+  arithmetic the patch replaces with `context->cfa + …`.
+
+The file's own header is `Copyright (C) 2026`, i.e. it was *added to gcc master
+only recently* and shipped broken for glibc from day one; it was evidently
+written against a uClibc-style `ucontext_t`. So the patch is a **fix to a
+current-master file**, and a reviewer must treat it as a diff against live
+upstream, not as introducing a port. The base the patch was diffed against is
+byte-identical to what master carries now.
+
+## Why it survived so long unpatched
+The file only ever existed in gcc master (never in a released MicroBlaze
+toolchain), and its arithmetic happens to be right for a `ucontext_t` whose
+`uc_sigmask` is the kernel's 8 bytes — i.e. uClibc, not glibc. Nobody ran a
+glibc MicroBlaze program that unwinds *through* a signal frame:
+`backtrace()` from a handler, a C++ throw across a signal-interrupted frame, or
+`pthread_cancel` unwinding out of a cancelled syscall. The glibc testsuite that
+exercises this (`debug/tst-backtrace4/5/6`, `nptl/tst-cancelx4`,
+`tst-cleanupx4`) is never run on the target; on it the unwind simply stopped at
+the handler instead of crashing, so the bug was silent.
+
+## What a reviewer should sanity-check (this port)
+Read `libgcc/config/microblaze/linux-unwind.h` in the patched tree:
+
+- **:62-67** trampoline match. `pc[2] == (0x31800000 | __NR_rt_sigreturn) &&
+  pc[3] == 0xb9cc0008` is tried first, then `pc[0]/pc[1]`. `0x31800000` is
+  `addik r12, r0, <imm>` (imm = `__NR_rt_sigreturn`), `0xb9cc0008` is
+  `brki r14, 0x8`. r15 = trampoline − 8 and the handler returns `rtsd r15, 8`,
+  so the return address `pc` sits 8 bytes (two instructions) before the
+  trampoline → the trampoline is at `pc[2]/pc[3]`. The `pc[0]/pc[1]` arm covers
+  a `pc` that already points at the trampoline. Note the match is now used
+  **only to recognise the frame** — `pc` no longer feeds the `sc` computation.
+- **:76-77** the offset arithmetic (the part to check hardest):
+  `sc = (struct sigcontext *)((_Unwind_Ptr) context->cfa + sizeof (siginfo_t)
+  + 2 * sizeof (unsigned long) + sizeof (stack_t));`
+  The kernel `rt_sigframe` is `{ siginfo_t info; struct ucontext uc;
+  unsigned long tramp[2]; }` and `struct ucontext` is `{ unsigned long uc_flags;
+  struct ucontext *uc_link; stack_t uc_stack; struct sigcontext uc_mcontext;
+  … }`. So `&uc.uc_mcontext − frame` = `sizeof(siginfo_t)` (to reach `uc`)
+  `+ uc_flags(4) + uc_link(4)` = `2*sizeof(unsigned long)` `+ sizeof(stack_t)`.
+  On 32-bit MicroBlaze a pointer is one `unsigned long`, `siginfo_t` is 128
+  bytes and `stack_t` (`{void*; int; size_t}`) is 12, all 4-aligned, so no
+  padding is elided — the hand arithmetic equals `offsetof` exactly. Confirm
+  `context->cfa` really is the frame: the handler's CFA is r1 at entry and the
+  kernel sets `regs->r1 = frame`.
+- **:85-89** register recovery: `for i in 0..31: reg[i] = &sc->regs.r0 +
+  i*4 − new_cfa`, with `new_cfa = sc->regs.r1` (:79). `struct sigcontext`
+  (asm/sigcontext.h) is `{ struct pt_regs regs; … }` and `pt_regs` holds
+  r0..r31 consecutively then `pc`, so `&sc->regs.r0 + i*4` walks the 32 GPRs.
+- **:96-99** the interrupted PC goes to `DWARF_ALT_FRAME_RETURN_COLUMN` (= 36,
+  `gcc/config/microblaze/microblaze.h:185`), one past the 32 hard regs, and
+  `fs->retaddr_column` is set to it; `fs->signal_frame = 1` (:100). Column 15
+  (r15, `MB_ABI_SUB_RETURN_ADDR_REGNUM`, microblaze.h:142) is recovered as an
+  ordinary GPR in the loop.
+
+## How other processors do the same thing
+Every glibc-era `linux-unwind.h` anchors the sigcontext on `context->cfa`, not
+on the trampoline — this is exactly what the patch changes MicroBlaze to do:
+
+- **libgcc/config/or1k/linux-unwind.h:39-54** — the closest analogue. Declares
+  `struct rt_sigframe { siginfo_t info; ucontext_t uc; } *rt = context->cfa;`
+  then `sc = &rt->uc.uc_mcontext;`, and `new_cfa = sc->regs.gpr[1]`. Same
+  shape, same stack-pointer-from-sigcontext step. or1k lets the compiler
+  compute `&uc.uc_mcontext`; MicroBlaze spells the offset out (see below).
+- **libgcc/config/sh/linux-unwind.h:83-90** — `struct rt_sigframe { siginfo_t
+  info; ucontext_t uc; } *rt_ = context->cfa;` → `sc = &rt_->uc.uc_mcontext;`,
+  `new_cfa = sc->sc_regs[15]`. Recognises the trampoline by instruction match
+  (`0x9305/0xc310/0x00ad`, the `mov #__NR_rt_sigreturn` + `trapa`).
+- **libgcc/config/riscv/linux-unwind.h:47-72** and
+  **libgcc/config/aarch64/linux-unwind.h:71-114** — both declare the inline
+  `rt_sigframe { siginfo_t info; … ucontext uc; }`, take `rt_ = context->cfa`,
+  and `sc = &rt_->uc.uc_mcontext`.
+
+**Why MicroBlaze uses explicit arithmetic rather than the struct trick:** the
+patched file includes `<asm/sigcontext.h>` (for `struct sigcontext`) but not a
+kernel-shaped `ucontext`, so it cannot name `uc.uc_mcontext` through a struct
+without pulling in glibc's `ucontext_t` — whose *size* is what broke the old
+code. Hard-coding the kernel frame layout (`siginfo_t + 2 longs + stack_t`)
+sidesteps any glibc/kernel `ucontext` divergence. The result is equivalent to
+the or1k/sh `&uc.uc_mcontext` because `uc_mcontext` precedes the oversized
+`uc_sigmask` in the struct, so only the layout *up to* `uc_mcontext` matters,
+and the patch reproduces exactly that prefix. A reviewer comparing against
+or1k should confirm the prefix `uc_flags, uc_link, uc_stack` = `2*long +
+stack_t` matches the kernel `struct ucontext`.
+
+## Same-processor code that does related logic
+- **glibc patch 0004** (`glibc-longjmp-chk/patches/0004-microblaze-ucontext.patch`,
+  `sysdeps/unix/sysv/linux/microblaze/ucontext_i.sym`) encodes the *same*
+  mcontext shape from the other side: `MCONTEXT_PC = offsetof(uc_mcontext) +
+  32*4`, i.e. r0..r31 then pc. The unwinder's `&sc->regs.r0 + i*4` for 32 regs
+  and `sc->regs.pc` must agree with that, and they do — both assume 32
+  consecutive words followed by the PC. This is the cross-patch consistency
+  check the reviewer wants: if one says "pc is word 33" the other must too.
+- **gcc/config/microblaze/microblaze.h**: `DWARF_ALT_FRAME_RETURN_COLUMN 36`
+  (:185), `RETURN_ADDR_OFFSET 8` (:196, the `rtsd r15,8` return), and
+  `INCOMING_RETURN_ADDR_RTX` = r15 (:192-193). The unwinder's use of column 36
+  for the interrupted PC and its 8-byte trampoline reasoning both derive from
+  these; they must stay in step.
+
+## Other cross-checks
+- **Kernel sigframe:** `arch/microblaze/kernel/signal.c` `struct rt_sigframe {
+  struct siginfo info; struct ucontext_abi uc; unsigned int tramp[2]; }` with
+  `setup_rt_frame` doing `regs->r1 = (unsigned long) frame` and writing the two
+  trampoline words into `frame->tramp`. That is the authority for both the
+  "CFA = frame" claim and the trampoline instructions; the kernel tree was not
+  present in the container, so verify these two facts against the running
+  kernel's source when reviewing.
+- **qemu-user:** places the trampoline on its own page and points r15 8 bytes
+  before it, which is why the patch probes `pc[2]/pc[3]` first and why the old
+  trampoline-relative subtraction failed there even under uClibc.
+
+## How to verify on real hardware
+No qemu/docker. On a MicroBlaze Linux board with the patched `libgcc_s`:
+
+1. **Backtrace through a handler.** Install a `SIGALRM` (or `SIGSEGV`) handler
+   that calls `_Unwind_Backtrace` (or `backtrace()`), raise it, and print the
+   frame count. Unpatched: the walk stops *at* the handler (e.g. 3 frames).
+   Patched: it continues past the signal frame into the interrupted code (e.g.
+   6+ frames). This is glibc's `debug/tst-backtrace4`.
+2. **Throw across a signal frame** (C++): raise a signal in a leaf, throw from
+   the handler, catch in a caller of the interrupted function; the catch is
+   reached only if the signal frame unwinds.
+3. **Cancellation:** a thread blocked in `read()` that is `pthread_cancel`ed
+   must run its cleanup handlers — `nptl/tst-cancelx4` / `tst-cleanupx4`. These
+   need the unwinder to step out of the cancelled syscall's signal frame.
+
+Confirm each recovered register by comparing `sc->regs.r1`/`pc` against the
+interrupted frame's known sp/return address.

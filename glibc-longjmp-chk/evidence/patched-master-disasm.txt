@@ -1,0 +1,46 @@
+# glibc master (10ed541ad1) + patch, cross-built microblazeel-linux-gnu: generated ____longjmp_chk
+00186cd8 <____longjmp_chk>:
+  186cd8:	3021ffc8 	addik	r1, r1, -56
+  186cdc:	fa610028 	swi	r19, r1, 40
+  186ce0:	fa81002c 	swi	r20, r1, 44
+  186ce4:	fac10030 	swi	r22, r1, 48
+  186ce8:	fae10034 	swi	r23, r1, 52
+  186cec:	f9e10000 	swi	r15, r1, 0
+  186cf0:	12610000 	addk	r19, r1, r0
+  186cf4:	e8650000 	lwi	r3, r5, 0
+  186cf8:	12c50000 	addk	r22, r5, r0
+  186cfc:	96808000 	mfs	r20, rpc
+  186d00:	b000000a 	imm	10
+  186d04:	329402f8 	addik	r20, r20, 760
+  186d08:	16439803 	cmpu	r18, r3, r19
+  186d0c:	be520064 	bltid	r18, 100		// 186d70
+  186d10:	12e60000 	addk	r23, r6, r0
+  186d14:	318000ba 	addik	r12, r0, 186
+  186d18:	10a00000 	addk	r5, r0, r0
+  186d1c:	30d3001c 	addik	r6, r19, 28
+  186d20:	b9cc0008 	brki	r14, 8	// 8 <__libc_tsd_CTYPE_TOUPPER>
+  186d24:	80000000 	or	r0, r0, r0
+  186d28:	be230048 	bneid	r3, 72		// 186d70
+  186d2c:	e8730020 	lwi	r3, r19, 32
+  186d30:	a8630001 	xori	r3, r3, 1
+  186d34:	be230024 	bneid	r3, 36		// 186d58
+  186d38:	e873001c 	lwi	r3, r19, 28
+  186d3c:	16439803 	cmpu	r18, r3, r19
+  186d40:	be520018 	bltid	r18, 24		// 186d58
+  186d44:	e8930024 	lwi	r4, r19, 36
+  186d48:	10632000 	addk	r3, r3, r4
+  186d4c:	16439803 	cmpu	r18, r3, r19
+  186d50:	be520024 	bltid	r18, 36		// 186d74
+  186d54:	10d70000 	addk	r6, r23, r0
+  186d58:	b000ffff 	imm	-1
+  186d5c:	e8b4d88c 	lwi	r5, r20, -10100
+  186d60:	b000ffff 	imm	-1
+  186d64:	e874f988 	lwi	r3, r20, -1656
+  186d68:	99fc1800 	brald	r15, r3
+  186d6c:	80000000 	or	r0, r0, r0
+  186d70:	10d70000 	addk	r6, r23, r0
+  186d74:	b000ffff 	imm	-1
+  186d78:	e874fa34 	lwi	r3, r20, -1484
+  186d7c:	99fc1800 	brald	r15, r3
+  186d80:	10b60000 	addk	r5, r22, r0
+

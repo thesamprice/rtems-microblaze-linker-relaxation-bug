@@ -1,0 +1,56 @@
+# Bootlin microblazeel--glibc--stable-2025.08-1 sysroot: GNU C Library (Buildroot) stable release version 2.41.
+
+0017852c <____longjmp_chk>:
+  17852c:	b60f0000 	rtsd	r15, 0
+  178530:	80000000 	or	r0, r0, r0
+  178534:	3021fff0 	addik	r1, r1, -16
+  178538:	f9e10000 	swi	r15, r1, 0
+  17853c:	fa810008 	swi	r20, r1, 8
+  178540:	14630000 	rsubk	r3, r3, r0
+  178544:	f861000c 	swi	r3, r1, 12
+  178548:	96808000 	mfs	r20, rpc
+  17854c:	b000000a 	imm	10
+  178550:	32943aac 	addik	r20, r20, 15020
+  178554:	b000ffeb 	imm	-21
+  178558:	b9f4abf8 	brlid	r15, -21512
+  17855c:	80000000 	or	r0, r0, r0
+  178560:	e881000c 	lwi	r4, r1, 12
+  178564:	f8830000 	swi	r4, r3, 0
+  178568:	ea810008 	lwi	r20, r1, 8
+  17856c:	e9e10000 	lwi	r15, r1, 0
+  178570:	30210010 	addik	r1, r1, 16
+  178574:	b60f0008 	rtsd	r15, 8
+  178578:	3060ffff 	addik	r3, r0, -1
+
+
+0017a678 <__longjmp_chk>:
+  17a678:	3021ffd8 	addik	r1, r1, -40
+  17a67c:	fac10024 	swi	r22, r1, 36
+  17a680:	12c50000 	addk	r22, r5, r0
+  17a684:	fa61001c 	swi	r19, r1, 28
+  17a688:	fa810020 	swi	r20, r1, 32
+  17a68c:	f9e10000 	swi	r15, r1, 0
+  17a690:	96808000 	mfs	r20, rpc
+  17a694:	b000000a 	imm	10
+  17a698:	32941964 	addik	r20, r20, 6500
+  17a69c:	b000ffed 	imm	-19
+  17a6a0:	b9f45ce4 	brlid	r15, 23780	// 50384 <_longjmp_unwind>
+  17a6a4:	12660000 	addk	r19, r6, r0
+  17a6a8:	e8760054 	lwi	r3, r22, 84
+  17a6ac:	be230028 	bneid	r3, 40		// 17a6d4
+  17a6b0:	10e00000 	addk	r7, r0, r0
+  17a6b4:	be330010 	bneid	r19, 16		// 17a6c4
+  17a6b8:	10d30000 	addk	r6, r19, r0
+  17a6bc:	32600001 	addik	r19, r0, 1
+  17a6c0:	10d30000 	addk	r6, r19, r0
+  17a6c4:	b000ffff 	imm	-1
+  17a6c8:	e874f100 	lwi	r3, r20, -3840
+  17a6cc:	99fc1800 	brald	r15, r3
+  17a6d0:	10b60000 	addk	r5, r22, r0
+  17a6d4:	b000ffff 	imm	-1
+  17a6d8:	e874ea34 	lwi	r3, r20, -5580
+  17a6dc:	30d60058 	addik	r6, r22, 88
+  17a6e0:	99fc1800 	brald	r15, r3
+  17a6e4:	30a00002 	addik	r5, r0, 2
+  17a6e8:	b800ffcc 	bri	-52		// 17a6b4
+

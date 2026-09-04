@@ -1,5 +1,11 @@
 # binutils patch series
 
+> **Update 2026-09-04:** patches 0001 and 0002 have **landed in binutils master**
+> (commits dated 2026-08-13, the day after the v2 send) and are already present
+> in the current base commit `6f24afa`. The linker-relaxation miscompile this
+> repository tracks is fixed upstream. Per-patch upstream audits and
+> reviewer notes for the whole series are in [`../../analysis/`](../../analysis/README.md).
+
 Four `git am`-able patches against upstream master `b7da195b94` (2.47.50.20260805).
 Together they take the MicroBlaze testsuite to **zero unexpected failures** on both
 `microblaze-elf` and `microblaze-xilinx-rtems7`.
@@ -8,6 +14,14 @@ Together they take the MicroBlaze testsuite to **zero unexpected failures** on b
 cd binutils-gdb
 git am .../0001-*.patch .../0002-*.patch .../0003-*.patch .../0004-*.patch
 ```
+
+**0005 is independent of the four above** — it is not a MicroBlaze fix and not part
+of the testsuite story. It is an architecture-neutral `bfd/dwarf2.c` determinism fix
+for `addr2line`, carried here because it is what makes per-test coverage `.info`
+files reproducible in the tcgcov work. It applies to the same `binutils-gdb` master
+and to `binutils-2.45.1` (what the Buildroot MicroBlaze target builds), and is also
+staged as `board/qemu/patches/binutils/0006-bfd-dwarf2-addr2line-tiebreak.patch` in
+that build tree. Not sent upstream yet.
 
 Verified: the series applies to pristine master with `git am`, and the resulting tree is
 identical to the one tested.
@@ -20,10 +34,15 @@ failures. 0003 and 0004 have not been re-tested since 0001 changed.
 
 | # | what | fixes | status |
 |---|---|---|---|
-| 0001 | don't index the local symbol cache with a global symbol index | the relaxation bug; adds 3 new tests | **sent as v2, 2026-08-12** |
-| 0002 | neutralise relocations against discarded sections | 4 existing tests | ready; NULL howto guarded |
+| 0001 | don't index the local symbol cache with a global symbol index | the relaxation bug; adds 3 new tests | **LANDED upstream 2026-08-13**; in base `6f24afa` |
+| 0002 | neutralise relocations against discarded sections | 4 existing tests | **LANDED upstream 2026-08-13**; in base `6f24afa` |
 | 0003 | widen the `pr24511` xfail to all MicroBlaze targets | 1 existing test | blocked: needs `#noxfail: microblaze*-linux*` |
 | 0004 | write the value for `BFD_RELOC_8` and `BFD_RELOC_16` fixups | 2 existing tests | not reviewed since 0001 |
+| 0005 | break equal-range `addr2line` function ties by DIE offset, not pointer | non-reproducible `-f`/`-i` output; adds 1 regression pin | independent; not sent upstream |
+| 0006 | gas: accept `.cfi_*` directives for MicroBlaze (CFA r1, return column r15, data align -4) | needed for any unwind info in hand-written asm; see `glibc-longjmp-chk/README.md` | independent; not sent upstream |
+| 0007 | bfd: apply the relocation statically when the .eh_frame editor returns -2 | assembler FDEs in shared objects otherwise point at pc=0 | independent; not sent upstream |
+| 0008 | bfd: keep the PLT address of address-taken functions in non-PIC executables (canonical PLT) | `&strlen` in an executable differed from `dlsym` / libc's own pointer; fixes glibc `misc/tst-ldbl-errorfptr`, `elf/tst-addr1` | independent; not sent upstream |
+| 0009 | gas + bfd: accept `sym - .` across sections and emit `R_MICROBLAZE_32_PCREL` (RELA howto, adjusted by relaxation) | lets gcc and the gas CFI directives use `DW_EH_PE_pcrel`: read-only `.eh_frame`, no dynamic relocations, `.eh_frame_hdr` search table; pairs with `patches/gcc/0002` | independent; needs the gcc patch to matter; not sent upstream |
 
 They are no longer sent as one series. 0001 went to the list on its own, as recommended
 below, and 0002 is now numbered as a standalone `[PATCH]` rather than `2/4`.
@@ -80,6 +99,21 @@ not define `__init_array_start`; MicroBlaze is such a target but the glob only c
 halfword datum resolved at fixup time assembled to **zero**. It also cures
 `gas/all/forward`, which was xfailed for `microblaze-*-*`; that xfail is dropped in the
 same patch.
+
+**0005** — `bfd/dwarf2.c`, `lookup_address_in_function_table`, broke equal-range ties
+between two `struct funcinfo *` by comparing the pointers. Those come from `bfd_zalloc`,
+so the winner tracked heap layout and `addr2line -f -i` named a different (inlined)
+function from run to run on the same binary — 23 of 200 runs differed on an RTEMS riscv
+`hello.exe`, only in which function was named, never in file/line. The fix orders by
+`unit_offset` (the DIE offset), which is what the pre-2016 walk of `unit->function_table`
+effectively did and which does not move with the heap. The bundled `dw2-inline-tie`
+test is a **regression pin** — allocation order normally equals DIE order, so a portable
+test cannot force the divergence; inverting the new comparison to `<` makes it FAIL,
+which is what gives it teeth. Found while chasing why coverage `.info` files were not
+reproducible across runs of the same suite: `FN`/`FNDA` moved while `DA`, `BRDA`, `LF`
+and `BRF` never did. Arch-independent; wanted by any tcgcov user who symbolizes with
+`addr2line -i` (all of them). `make check-binutils` on `riscv64-unknown-elf`: 236→237
+passes, the one pre-existing efi-format failure unchanged.
 
 ## Testsuite
 

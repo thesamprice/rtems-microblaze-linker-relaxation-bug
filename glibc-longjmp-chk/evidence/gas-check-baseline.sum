@@ -1,0 +1,11 @@
+FAIL: linking reloc_sym.x
+FAIL: disassembling reloc_sym.x
+FAIL: matching disassembly
+FAIL: difference of two undefined symbols
+FAIL: simple forward references
+FAIL: forward references
+FAIL: all end
+# of expected passes		264
+# of unexpected failures	7
+# of unsupported tests		6
+BASE GAS DONE

@@ -1,0 +1,63 @@
+From 2769cf221330d600af575de12c86091ff02043d2 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 21:49:30 -0400
+Subject: [PATCH] bfd: microblaze: keep the PLT address of address-taken
+ functions in executables
+
+When a non-PIC executable takes the address of a function defined in
+a shared library, the linker gives the executable a PLT entry and
+must leave that PLT address as the value of the executable's
+undefined symbol so that the dynamic linker treats it as the
+canonical address: every reference in the process, including the
+library's own and dlsym, then resolves to it and function pointers
+compare equal as C requires.  The backend already records
+pointer_equality_needed in check_relocs and points the symbol at the
+PLT in allocate_dynrelocs, but finish_dynamic_symbol then zeroes the
+value unconditionally.
+
+On MicroBlaze &strlen in an executable is its PLT stub while
+dlsym (RTLD_DEFAULT, "strlen") and every function pointer libc hands
+out is the real function, so callbacks and dladdr on function
+pointers misbehave: glibc's misc/tst-ldbl-errorfptr and elf/tst-addr1
+fail.
+
+Keep the value unless the symbol is only weakly referenced or never
+had a pointer-equality relocation, as elf32-arm does.
+
+bfd/ChangeLog:
+	* elf32-microblaze.c (microblaze_elf_finish_dynamic_symbol): Only
+	zero the value of a PLT-resolved undefined symbol when it is
+	weak or pointer equality does not matter.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ bfd/elf32-microblaze.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index 86429e772a4..0b0c4bc288b 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -3333,9 +3333,17 @@ microblaze_elf_finish_dynamic_symbol (struct bfd_link_info *info,
+       if (!h->def_regular)
+ 	{
+ 	  /* Mark the symbol as undefined, rather than as defined in
+-	     the .plt section.  Zero the value.  */
++	     the .plt section.  If the symbol is weak we need to clear
++	     the value.  Otherwise, the PLT entry would provide a
++	     definition for the symbol even if the symbol wasn't defined
++	     anywhere, and so the symbol would never be NULL.  Leave the
++	     value if there were any relocations where pointer equality
++	     matters (this is a clue for the dynamic linker, to make
++	     function pointer comparisons work between an application
++	     and shared library).  */
+ 	  sym->st_shndx = SHN_UNDEF;
+-	  sym->st_value = 0;
++	  if (!h->ref_regular_nonweak || !h->pointer_equality_needed)
++	    sym->st_value = 0;
+ 	}
+     }
+ 
+-- 
+2.39.5 (Apple Git-154)
+

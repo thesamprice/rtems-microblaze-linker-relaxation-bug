@@ -1,0 +1,25 @@
+pcrel fix4 applied in /src/binutils
+pcrel fix5 applied in /src/binutils
+BINUTILS REBUILT
+== (a) cross-section sym - .
+00000000  00000602 R_MICROBLAZE_32_P 00000000   f + 0
+00000004  00000102 R_MICROBLAZE_32_P 00000000   .text + 8
+-- linked DSO: dynamic relocs: 0
+-- f=00000164 p=00000170 stored=fffffff4 expected=fffffff4
+== (a2) addend matrix
+ Offset     Info    Type                Sym. Value  Symbol's Name + Addend
+00000000  00000902 R_MICROBLAZE_32_PCREL  00000000   f + 0
+00000004  00000102 R_MICROBLAZE_32_PCREL  00000000   .text + 8
+00000008  00000902 R_MICROBLAZE_32_PCREL  00000000   f + 0
+00000010  00000902 R_MICROBLAZE_32_PCREL  00000000   f + 64
+== (b) gas CFI now pcrel?
+  Augmentation data:     1b
+7] 00
+8] 00
+  0x00000178 011b033b 10000000 01000000 f0ffffff ...;............
+-- CFI FDE in DSO: 00000168..00000178  f is at 00000168
+== (c) relaxation: imm deleted before the target
+-- linked with -relax
+   imm instructions left: 0
+-- f=00000108 p=00000114 stored=fffffff4 expected=fffffff4
+PCREL VERIFY DONE

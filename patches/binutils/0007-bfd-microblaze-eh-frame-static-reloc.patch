@@ -1,0 +1,84 @@
+From 59ec25c514b43c5141ef97f3fb566baa2087bf50 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Wed, 2 Sep 2026 14:14:39 -0400
+Subject: [PATCH] bfd: microblaze: apply relocations the .eh_frame editor asks
+ to keep static
+
+When a shared object is linked, _bfd_elf_section_offset returns -2 for
+an R_MICROBLAZE_32 in .eh_frame whose FDE the eh_frame editor is
+converting to a PC-relative encoding: no dynamic relocation is wanted,
+but the absolute value must be written into the section so that the
+editor can turn it into a delta.  Every other backend handles that
+case with "skip = true, relocate = true" and then applies the
+relocation in place.  elf32-microblaze.c only skipped.  On a RELA
+target the addend lives in the relocation, so the field kept its
+assembled value of zero and _bfd_elf_write_section_eh_frame turned
+that into a PC-relative pointer to address 0.
+
+GCC-generated frames never hit this because GCC uses DW_EH_PE_aligned
+for PIC MicroBlaze code, which the editor leaves alone (hence the
+writable .eh_frame full of R_MICROBLAZE_REL relocations in every
+MicroBlaze DSO).  Assembler-generated frames use the default sdata4
+encoding and did hit it: with CFI directives in glibc's MicroBlaze
+assembly, every one of those FDEs in libc.so covered pc=0..size.
+
+bfd/ChangeLog:
+	* elf32-microblaze.c (microblaze_elf_relocate_section): Apply the
+	relocation statically when _bfd_elf_section_offset returns -2.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+ bfd/elf32-microblaze.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index 027b1886e9a..86429e772a4 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -1644,7 +1644,7 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+ 		  {
+ 		    Elf_Internal_Rela outrel;
+ 		    bfd_byte *loc;
+-		    bool skip;
++		    bool skip, relocate;
+ 
+ 		    /* When generating a shared object, these relocations
+ 		       are copied into the output file to be resolved at run
+@@ -1653,6 +1653,7 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+ 		    BFD_ASSERT (sreloc != NULL);
+ 
+ 		    skip = false;
++		    relocate = false;
+ 
+ 		    outrel.r_offset =
+ 		      _bfd_elf_section_offset (info->output_bfd, info,
+@@ -1660,7 +1661,14 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+ 		    if (outrel.r_offset == (bfd_vma) -1)
+ 		      skip = true;
+ 		    else if (outrel.r_offset == (bfd_vma) -2)
+-		      skip = true;
++		      /* The .eh_frame editor converts this field to a
++			 PC-relative encoding, so no dynamic relocation is
++			 needed, but the absolute value must still be written
++			 into the section for it to compute the delta from.
++			 On this RELA target the addend only exists in the
++			 relocation, so skipping without relocating leaves a
++			 zero behind and the FDE points at address 0.  */
++		      skip = true, relocate = true;
+ 		    outrel.r_offset += (input_section->output_section->vma
+ 					+ input_section->output_offset);
+ 
+@@ -1697,6 +1705,10 @@ microblaze_elf_relocate_section (struct bfd_link_info *info,
+ 		    loc = sreloc->contents;
+ 		    loc += sreloc->reloc_count++ * sizeof (Elf32_External_Rela);
+ 		    bfd_elf32_swap_reloca_out (info->output_bfd, &outrel, loc);
++
++		    if (relocate && r_type == R_MICROBLAZE_32)
++		      bfd_put_32 (input_bfd, relocation + addend,
++				  contents + offset);
+ 		    break;
+ 		  }
+ 		else
+-- 
+2.39.5 (Apple Git-154)
+
