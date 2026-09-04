@@ -70,6 +70,17 @@ on a source tree directly, edit under `/work/src` and rerun the build stage.
 - **runtest patterns are relative to the testsuite root**:
   `gas/microblaze/*.exp`, not `microblaze/*.exp`, which runs nothing and
   reports nothing.
+- **fetching a pinned commit reliably.** A pinned SHA is not a ref tip, so a
+  plain shallow `fetch <sha>` is not universally served, and these repos are
+  large and their servers (sourceware especially) drop transfers mid-stream.
+  `fetch` fetches one snapshot as small as possible, preferring a depth-1 fetch
+  of the exact SHA, then a depth-1 clone of a named branch whose tip is the
+  commit (gcc's `microblaze-fixes`, via `GCC_BRANCH`), then a `--filter=tree:0`
+  clone plus checkout; every step is capped and retried. binutils and glibc come
+  from sourceware, not the GitHub `bminor` mirrors: a `tree:0` checkout does a
+  by-SHA "promisor" fetch that GitHub refuses for a non-tip commit, and there is
+  no `bminor/binutils-gdb` mirror anyway. A transient `Could not resolve host`
+  or TLS drop is the server, not the harness; rerun `fetch` and it resumes.
 
 ## Reading the results
 

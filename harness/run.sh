@@ -16,9 +16,12 @@ JOBS=${JOBS:-$(nproc)}
 GLIBC_REPO=${GLIBC_REPO:-https://sourceware.org/git/glibc.git}
 GLIBC_COMMIT=${GLIBC_COMMIT:-10ed541ad1452ef6eb615e23af2e7a55fd62c513}     # master, 2026-08-25
 BINUTILS_REPO=${BINUTILS_REPO:-https://sourceware.org/git/binutils-gdb.git}
+# sourceware (not the github mirror) for binutils/glibc: a --filter=tree:0 checkout
+# lazily fetches the snapshot by SHA, which github refuses for a non-tip commit.
 BINUTILS_COMMIT=${BINUTILS_COMMIT:-6f24afa4391bd33f1263378280b99385d2c13055} # master, 2026-08-31
 GCC_REPO=${GCC_REPO:-https://github.com/thesamprice/gcc.git}
-GCC_COMMIT=${GCC_COMMIT:-95e1193774c67fe2e6acdeeeb404e20de747f93b}          # branch microblaze-fixes
+GCC_COMMIT=${GCC_COMMIT:-95e1193774c67fe2e6acdeeeb404e20de747f93b}          # tip of microblaze-fixes
+GCC_BRANCH=${GCC_BRANCH:-microblaze-fixes}   # commit is this branch's tip: allows a depth-1 clone
 BOOTLIN_URL=${BOOTLIN_URL:-https://toolchains.bootlin.com/downloads/releases/toolchains/microblazeel/tarballs/microblazeel--glibc--stable-2025.08-1.tar.xz}
 
 # Unquoted on use so that the defaults expand as globs; override with a
@@ -42,20 +45,50 @@ run_logged() { # logfile cmd...   run a command, keep its output in a log, show 
   if ! "$@" > "$lf" 2>&1; then log "failed: $* (log: $lf)"; grep -n -E " error: |Error [0-9]+$|\*\*\*" "$lf" | head -10; return 1; fi
 }
 
-clone_at() { # repo commit dir
-  # A pinned commit is not necessarily a ref tip, and neither sourceware nor
-  # GitHub will serve an arbitrary SHA to a shallow "fetch <sha>".  So take a
-  # blobless partial clone of all history (small: commits and trees only, blobs
-  # arrive on checkout), which can then check out any commit.  Retry: these
-  # large transfers drop their TLS connection under load.
-  local repo=$1 commit=$2 dir=$3 try
-  if [ -e "$dir/.git" ]; then
-    if git -C "$dir" cat-file -e "$commit^{commit}" 2>/dev/null; then log "$dir already cloned"; return; fi
-    log "$dir exists but lacks $commit, refetching"; else log "cloning $repo @ ${commit:0:12} into $dir"; fi
+clone_at() { # repo commit dir [branch]
+  # Fetch one snapshot at a pinned commit as few and as small transfers as
+  # possible, because both sourceware and GitHub drop large or slow transfers
+  # mid-stream.  In order of preference:
+  #  1. depth-1 fetch of the exact SHA ("git fetch --depth 1 origin <sha>"):
+  #     one commit's tree and blobs, no history, no lazy follow-up fetch.  The
+  #     smallest possible transfer and the most robust; both servers here serve
+  #     it (they honour reachable-SHA-in-want).
+  #  2. depth-1 clone of a named branch, if the commit is that branch's tip
+  #     (gcc's microblaze-fixes) -- same size, used when a plain checkout of a
+  #     branch is more natural.
+  #  3. commit-only partial clone (--filter=tree:0) then checkout, as a last
+  #     resort; its checkout does an on-demand "promisor" fetch that is the
+  #     least reliable of the three.
+  # Every network step is capped so a stall fails fast, and the whole thing is
+  # retried; a finished tree is the success condition, not a git exit code.
+  local repo=$1 commit=$2 dir=$3 branch=${4:-} try
+  # Success of a fresh fetch: the working tree exists and holds this snapshot.
+  _clone_done() { [ -e "$dir/configure" ] && [ "$(git -C "$dir" rev-parse HEAD 2>/dev/null)" = "$commit" ]; }
+  # Already usable: the commit is somewhere in history (apply_patches may have
+  # moved HEAD past it) and the working tree is there.  Do not re-clone then.
+  if [ -e "$dir/configure" ] && git -C "$dir" cat-file -e "$commit^{commit}" 2>/dev/null; then
+    log "$dir already has $commit"; return; fi
+  log "cloning $repo @ ${commit:0:12} into $dir"
   for try in 1 2 3 4 5; do
     rm -rf "$dir"
-    if git -c http.postBuffer=524288000 clone -q --filter=blob:none "$repo" "$dir" \
-       && git -C "$dir" checkout -q "$commit"; then return 0; fi
+    # 1. depth-1 fetch of the exact SHA
+    if timeout 1200 git init -q "$dir" \
+       && git -C "$dir" remote add origin "$repo" \
+       && timeout 1200 git -C "$dir" -c http.postBuffer=524288000 fetch -q --depth 1 origin "$commit" \
+       && git -C "$dir" checkout -q FETCH_HEAD && _clone_done; then return 0; fi
+    # 2. depth-1 clone of the branch whose tip is this commit
+    rm -rf "$dir"
+    if [ -n "$branch" ] \
+       && timeout 1200 git clone -q --depth 1 --branch "$branch" "$repo" "$dir" && _clone_done; then return 0; fi
+    # 3. commit-only clone then checkout (checkout retried on its own)
+    rm -rf "$dir"
+    if timeout 1200 git -c http.postBuffer=524288000 clone -q --filter=tree:0 --no-checkout "$repo" "$dir"; then
+      local ctry
+      for ctry in 1 2 3; do
+        if timeout 1200 git -C "$dir" checkout -q "$commit" && _clone_done; then return 0; fi
+        sleep $((ctry*20))
+      done
+    fi
     log "clone attempt $try failed, retrying in $((try*20))s"; sleep $((try*20))
   done
   die "could not clone $repo @ $commit after 5 tries"
@@ -90,7 +123,7 @@ stage_fetch() {
     mkdir -p "$TC" && tar -xJf "$WORK/tc.tar.xz" -C "$TC" --strip-components=1 && rm -f "$WORK/tc.tar.xz"
   fi
   clone_at "$BINUTILS_REPO" "$BINUTILS_COMMIT" "$SRC/binutils"; apply_patches "$SRC/binutils" $BINUTILS_PATCHES
-  clone_at "$GCC_REPO" "$GCC_COMMIT" "$SRC/gcc";                apply_patches "$SRC/gcc" $GCC_PATCHES
+  clone_at "$GCC_REPO" "$GCC_COMMIT" "$SRC/gcc" "$GCC_BRANCH";  apply_patches "$SRC/gcc" $GCC_PATCHES
   clone_at "$GLIBC_REPO" "$GLIBC_COMMIT" "$SRC/glibc";          apply_patches "$SRC/glibc" $GLIBC_PATCHES
   log "sources ready"
 }
