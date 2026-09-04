@@ -11,6 +11,16 @@ gcc the `microblaze-fixes` branch tip `95e1193`, glibc `10ed541` (2026-08-25).
 Upstream was re-checked against binutils master `193340ad3` and gcc/glibc master
 on 2026-09-04.
 
+## After the main-branch merge
+
+`main` now also carries a parallel cancellation-hang investigation (kernel
+`entry.S`/signal-frame patches, `patches/glibc/` cancellation fixes, a second
+libgcc unwinder). It overlaps this session's exception-handling work.
+[MERGE-AUDIT.md](MERGE-AUDIT.md) reconciles the two: which patches are the same
+fix, which supersede which (the duplicate gas CFI patch is already removed), and
+the two interactions that only real hardware can settle — the libgcc unwinder's
+glibc-vs-uClibc offset and its dependency on the kernel signal-frame reserve.
+
 ## Upstream audit summary
 
 Two patches are already upstream and need no further action; the rest are
