@@ -1,0 +1,35 @@
+PCREL BUILD START Thu Sep  3 11:58:14 UTC 2026
+GCC2 CONFIGURE DONE Thu Sep  3 12:10:19 UTC 2026
+GCC2 BUILD OK Thu Sep  3 13:56:47 UTC 2026
+#define HAVE_GAS_CFI_DIRECTIVE 1
+#define HAVE_LD_EH_FRAME_HDR 1
+#define HAVE_LD_RO_RW_SECTION_MIXING 1
+== crtendS.o .eh_frame flags: 4] 00
+== libgcc_s: .eh_frame_hdr=A .eh_frame=A  dynrel=87
+checking whether the assembler supports CFI directives for MicroBlaze... yes
+GLIBC CONFIGURE DONE Thu Sep  3 13:57:18 UTC 2026
+PCREL MAKE FAILED Thu Sep  3 14:15:13 UTC 2026
+9263:make[2]: *** [../Makerules:638: /build-pcrel/libc_pic.os.clean] Error 1
+9269:make[1]: *** [Makefile:488: elf/subdir_lib] Error 2
+9271:make: *** [Makefile:20: all] Error 2
+PCREL BUILD2 START Thu Sep  3 14:16:54 UTC 2026
+== gcc now resolves: objcopy=/opt/gcc17/lib/gcc/microblazeel-linux-gnu/17.0.0/../../../../microblazeel-linux-gnu/bin/objcopy ar=/opt/gcc17/lib/gcc/microblazeel-linux-gnu/17.0.0/../../../../microblazeel-linux-gnu/bin/ar
+AR = /opt/gcc17/lib/gcc/microblazeel-linux-gnu/17.0.0/../../../../microblazeel-linux-gnu/bin/ar
+NM = /opt/gcc17/lib/gcc/microblazeel-linux-gnu/17.0.0/../../../../microblazeel-linux-gnu/bin/nm
+OBJCOPY = /opt/gcc17/lib/gcc/microblazeel-linux-gnu/17.0.0/../../../../microblazeel-linux-gnu/bin/objcopy
+READELF = /opt/gcc17/lib/gcc/microblazeel-linux-gnu/17.0.0/../../../../microblazeel-linux-gnu/bin/readelf
+GLIBC CONFIGURE DONE Thu Sep  3 14:17:25 UTC 2026
+PCREL MAKE FAILED Thu Sep  3 14:21:49 UTC 2026
+4704:collect2: error: ld returned 1 exit status
+4705:make[2]: *** [../Rules:277: /build-pcrel/support/links-dso-program] Error 1
+4710:make[1]: *** [Makefile:488: support/others] Error 2
+6892:make: *** [Makefile:20: all] Error 2
+PCREL BUILD3 START Thu Sep  3 14:23:08 UTC 2026
+PCREL MAKE OK Thu Sep  3 14:23:40 UTC 2026
+   /build-cfi/libc.so: .eh_frame flags=WA hdr=011bffff REL-relocs-in-.eh_frame=711 fdes=4437
+   /build-pcrel/libc.so: .eh_frame flags=A hdr=011b033b REL-relocs-in-.eh_frame=0 fdes=3789
+   /build-cfi/elf/ld.so: .eh_frame flags=WA hdr=011bffff REL-relocs-in-.eh_frame=7 fdes=318
+   /build-pcrel/elf/ld.so: .eh_frame flags=A hdr=011b033b REL-relocs-in-.eh_frame=0 fdes=311
+   /build-pcrel/nptl/libpthread.so.0: .eh_frame flags=A hdr= REL-relocs-in-.eh_frame=0 fdes=1
+   /build-pcrel/math/libm.so: .eh_frame flags=A hdr=011b033b REL-relocs-in-.eh_frame=0 fdes=541
+PCREL BUILD DONE Thu Sep  3 14:23:41 UTC 2026

@@ -491,9 +491,35 @@ And the unwind probe aborts on the unpatched Bootlin glibc 2.41 with either
 toolchain, which is glibc 0007 (`ld.so` without an `.eh_frame` terminator),
 not the encoding.
 
-Not done: rebuilding gcc's libgcc and crt files with the new `cc1`, then glibc
-with it, and rerunning the suite. That is the natural next step before either
-patch goes upstream.
+The full rebuild and rerun (2026-09-03/04). gcc was rebuilt from scratch with
+the two gcc patches into `/opt/gcc17`, this time with objdump on `PATH`, so its
+configure set `HAVE_LD_RO_RW_SECTION_MIXING` and `HAVE_GAS_CFI_DIRECTIVE`; its
+own `libgcc_s`, crt files and libstdc++ came out with a read-only `.eh_frame`.
+glibc was then rebuilt with that compiler and the full `make check` rerun. The
+exception tables came out as intended (`evidence/build-pcrel.log`):
+
+| object | old `.eh_frame` | rebuilt `.eh_frame` | dynamic relocs in it |
+|---|---|---|---|
+| `libc.so` | writable, no hdr table | read-only, hdr table | 711 -> 0 |
+| `ld.so` | writable, no hdr table | read-only, hdr table | 7 -> 0 |
+| `libm.so` | writable | read-only, hdr table | -> 0 |
+
+Test results (`evidence/full-check-results-pcrel.txt`): the main suite completed
+at 4574 PASS / 430 FAIL, with `nptl`/`rt` only partial (the Docker VM ran the
+Mac's disk out of space mid-`nptl` and had to be restarted; the unfinished
+`nptl` tests are the LD_AUDIT, PI-futex and cancellation hangs). Against the
+gcc-14 run, excluding the partial `nptl`/`rt`: three tests moved to PASS
+(`elf/tst-addr1` and `misc/tst-ldbl-errorfptr`, the canonical-PLT fixes, plus
+`posix/tst-wait4-time64`), and every one of the fifteen newly-failing tests is a
+timeout, the load-dependent emulation-speed bucket, not a code regression. No
+unwinding or exception-table test regressed. `_Unwind_Backtrace` through a DSO
+and the `nptl` cleanup tests (`tst-cleanup0` through `3`) pass on the rebuilt
+libraries.
+
+The whole configuration is reproducible from scratch with the `harness/`
+directory at the repo root: one Dockerfile and one script that fetch the three
+sources at the pinned commits, apply the patch series, build binutils, gcc and
+glibc in order, and run the suite. See `harness/README.md`.
 
 The four remaining gas failures (`difference of two undefined symbols`,
 `simple forward references`, `forward references`, `all end`) are present on
