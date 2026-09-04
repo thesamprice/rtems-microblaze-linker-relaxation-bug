@@ -1,5 +1,11 @@
 # binutils patch series
 
+> **Update 2026-09-04:** patches 0001 and 0002 have **landed in binutils master**
+> (commits dated 2026-08-13, the day after the v2 send) and are already present
+> in the current base commit `6f24afa`. The linker-relaxation miscompile this
+> repository tracks is fixed upstream. Per-patch upstream audits and
+> reviewer notes for the whole series are in [`../../analysis/`](../../analysis/README.md).
+
 Four `git am`-able patches against upstream master `b7da195b94` (2.47.50.20260805).
 Together they take the MicroBlaze testsuite to **zero unexpected failures** on both
 `microblaze-elf` and `microblaze-xilinx-rtems7`.
@@ -28,8 +34,8 @@ failures. 0003 and 0004 have not been re-tested since 0001 changed.
 
 | # | what | fixes | status |
 |---|---|---|---|
-| 0001 | don't index the local symbol cache with a global symbol index | the relaxation bug; adds 3 new tests | **sent as v2, 2026-08-12** |
-| 0002 | neutralise relocations against discarded sections | 4 existing tests | ready; NULL howto guarded |
+| 0001 | don't index the local symbol cache with a global symbol index | the relaxation bug; adds 3 new tests | **LANDED upstream 2026-08-13**; in base `6f24afa` |
+| 0002 | neutralise relocations against discarded sections | 4 existing tests | **LANDED upstream 2026-08-13**; in base `6f24afa` |
 | 0003 | widen the `pr24511` xfail to all MicroBlaze targets | 1 existing test | blocked: needs `#noxfail: microblaze*-linux*` |
 | 0004 | write the value for `BFD_RELOC_8` and `BFD_RELOC_16` fixups | 2 existing tests | not reviewed since 0001 |
 | 0005 | break equal-range `addr2line` function ties by DIE offset, not pointer | non-reproducible `-f`/`-i` output; adds 1 regression pin | independent; not sent upstream |
