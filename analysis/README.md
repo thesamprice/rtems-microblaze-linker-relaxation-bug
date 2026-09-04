@@ -36,6 +36,9 @@ The headline: **the linker-relaxation miscompile that this repository was opened
 to track (binutils 0001) is fixed in binutils master.** So is the discarded-section
 bug (0002). The remaining work is the exception-handling and glibc-runtime series.
 
+The exact file:line checks behind this table, so the audit can be re-run, are in
+[audit-ground-truth.md](audit-ground-truth.md).
+
 ## binutils
 
 | Patch | Summary | Doc |
