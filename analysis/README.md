@@ -95,7 +95,8 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 See [HARDWARE-TESTING.md](HARDWARE-TESTING.md): how to build the patched
 binutils, gcc and glibc natively on a Linux host and exercise each fix on a
 MicroBlaze board, without the qemu-user / Docker test harness used during
-development. [TEST-PLAN.md](TEST-PLAN.md) is the checklist version: which
+development. [`sigframe-test/`](sigframe-test/README.md) is a ready-to-run qemu-system test
+for gcc 0001's signal-frame unwinder. [TEST-PLAN.md](TEST-PLAN.md) is the checklist version: which
 suites to run in which order, the exact `make check` targets, and a sample
 DejaGnu board file and glibc test-wrapper for driving the tests onto real
 hardware.

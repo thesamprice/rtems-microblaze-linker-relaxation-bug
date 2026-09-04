@@ -99,6 +99,8 @@ shared-library boundaries, exercising the new `.eh_frame_hdr` search table
 against the real kernel sigframe rather than qemu's trampoline page. See
 [`gcc-0001`](gcc-0001-signal-frame-glibc-layout.md),
 [`gcc-0002`](gcc-0002-pcrel-eh-encodings.md).
+A ready-to-run signal-frame unwinder test for gcc 0001 (on qemu-system, with a
+real kernel) is in [`sigframe-test/`](sigframe-test/README.md).
 
 ## 4. gdb, smoke test (executes on the board)
 
