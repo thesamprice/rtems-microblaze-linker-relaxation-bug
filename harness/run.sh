@@ -14,11 +14,11 @@ REPO=${REPO:-/repo}
 JOBS=${JOBS:-$(nproc)}
 
 GLIBC_REPO=${GLIBC_REPO:-https://sourceware.org/git/glibc.git}
-GLIBC_COMMIT=${GLIBC_COMMIT:-10ed541ad1452ef6eb615e23af2e7a55fd62c513}     # master, 2026-08-25
+GLIBC_COMMIT=${GLIBC_COMMIT:-fe03757f67e25bc8fea1473572beb30a05508d08}     # master, 2026-09-04 (rework verified: 0001-0007 apply clean)
 BINUTILS_REPO=${BINUTILS_REPO:-https://sourceware.org/git/binutils-gdb.git}
 # sourceware (not the github mirror) for binutils/glibc: a --filter=tree:0 checkout
 # lazily fetches the snapshot by SHA, which github refuses for a non-tip commit.
-BINUTILS_COMMIT=${BINUTILS_COMMIT:-6f24afa4391bd33f1263378280b99385d2c13055} # master, 2026-08-31
+BINUTILS_COMMIT=${BINUTILS_COMMIT:-193340ad3e0861ae524dc116dd8cd7d71d6e2b72} # master, 2026-09-04; 0001+0002 already merged here
 GCC_REPO=${GCC_REPO:-https://github.com/thesamprice/gcc.git}
 GCC_COMMIT=${GCC_COMMIT:-95e1193774c67fe2e6acdeeeb404e20de747f93b}          # tip of microblaze-fixes
 GCC_BRANCH=${GCC_BRANCH:-microblaze-fixes}   # commit is this branch's tip: allows a depth-1 clone
@@ -26,7 +26,7 @@ BOOTLIN_URL=${BOOTLIN_URL:-https://toolchains.bootlin.com/downloads/releases/too
 
 # Unquoted on use so that the defaults expand as globs; override with a
 # space-separated list of files, or an empty string for none.
-BINUTILS_PATCHES=${BINUTILS_PATCHES-"$REPO/patches/binutils/000[6-9]-*.patch"}
+BINUTILS_PATCHES=${BINUTILS_PATCHES-"$REPO/patches/binutils/000[3-9]-*.patch"}   # 0001+0002 landed upstream; 0003-0009 are the still-open set
 GCC_PATCHES=${GCC_PATCHES-"$REPO/patches/gcc/000[1-2]-*.patch"}
 GLIBC_PATCHES=${GLIBC_PATCHES-"$REPO/glibc-longjmp-chk/patches/000[1-7]-*.patch"}
 

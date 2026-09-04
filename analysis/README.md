@@ -11,6 +11,14 @@ gcc the `microblaze-fixes` branch tip `95e1193`, glibc `10ed541` (2026-08-25).
 Upstream was re-checked against binutils master `193340ad3` and gcc/glibc master
 on 2026-09-04.
 
+## Reworked against current upstream
+
+[REWORK.md](REWORK.md) records the 2026-09-04 re-check against current master
+(binutils `193340ad3`, gcc `08794c636`, glibc `fe03757f`): binutils 0001 and
+0002 are dropped as already-merged, and every other patch still applies cleanly
+with no rebase. The reworked binutils series builds and passes its MicroBlaze
+suites on today's master.
+
 ## After the main-branch merge
 
 `main` now also carries a parallel cancellation-hang investigation (kernel
