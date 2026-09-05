@@ -27,9 +27,11 @@
 #include <sys/reboot.h>
 
 /* non-static so their addresses are real and not inlined away */
-void leaf(void);
-void mid(void);
-void outer(void);
+/* noinline so the call chain the test checks survives -O2 */
+#define NOINLINE __attribute__((noinline, noclone))
+void NOINLINE leaf(void);
+void NOINLINE mid(void);
+void NOINLINE outer(void);
 
 static void *want[8];
 static const char *wname[8];
@@ -117,7 +119,7 @@ static void handler (int sig)
   poweroff_or_exit (found == nwant ? 0 : 1);
 }
 
-void leaf (void)
+void NOINLINE leaf (void)
 {
 #ifdef MODE_ALRM
   raise (SIGALRM);           /* interrupted PC lands in raise(); leaf is its caller */
@@ -126,8 +128,8 @@ void leaf (void)
 #endif
   sink++;                    /* keep leaf off a tail-call position */
 }
-void mid (void)   { leaf ();  sink++; }
-void outer (void) { mid ();   sink++; }
+void NOINLINE mid (void)   { leaf ();  sink++; }
+void NOINLINE outer (void) { mid ();   sink++; }
 
 int main (void)
 {

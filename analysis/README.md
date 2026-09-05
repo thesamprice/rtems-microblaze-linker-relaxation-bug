@@ -100,6 +100,15 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 | 0006 | use the generic unwinder-based `backtrace()` | [generic-backtrace](glibc-0006-generic-backtrace.md) |
 | 0007 | terminate `ld.so`'s own `.eh_frame` | [ldso-eh-frame](glibc-0007-ldso-eh-frame.md) |
 
+## Hardware-accelerated build
+
+[hardware-build.md](hardware-build.md): the toolchain defaults to fully
+soft-emulated MicroBlaze; the flag set for a full-featured core (`-O2`,
+hard-float, barrel shifter, hw mul/div, pattern-compare); why it is
+correctness-safe (the unwinder fix passes at `-O2` with all flags on); and why
+hard-float is ABI-compatible and leaves glibc patch 0002 correct (the FPU has no
+fenv).
+
 ## Running on real hardware
 
 See [HARDWARE-TESTING.md](HARDWARE-TESTING.md): how to build the patched
