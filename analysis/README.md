@@ -79,6 +79,7 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 | 0007 | bfd: apply the relocation statically when the `.eh_frame` editor deletes it | [eh-frame-static-reloc](binutils-0007-eh-frame-static-reloc.md) |
 | 0008 | bfd: keep the PLT address of address-taken functions (canonical PLT) | [canonical-plt](binutils-0008-canonical-plt-pointer-equality.md) |
 | 0009 | gas + bfd: `sym - .` across sections, `R_MICROBLAZE_32_PCREL` | [pcrel-data-relocs](binutils-0009-pcrel-data-relocs.md) |
+| 0010 | gas testsuite: exclude `microblazeel-*` from the `diff1` test | [diff1-microblazeel-exclude](binutils-0010-diff1-microblazeel-exclude.md) |
 
 ## gcc
 

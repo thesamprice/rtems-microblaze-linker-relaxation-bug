@@ -319,7 +319,16 @@ No GCC change is required for this bug.
 **RTEMS** — needs the workaround now, since it cannot dictate the toolchain.
 `-Wl,--no-relax` added to `ABI_FLAGS` in
 `spec/build/bsps/microblaze/microblaze_fpga/abi.yml`, which covers the BSP, cpukit and
-the installed pkg-config files.
+the installed pkg-config files (`patches/rtems/0001-bsps-microblaze-Disable-linker-relaxation.patch`).
+
+**Update (2026-09):** the binutils fix landed upstream on 2026-08-13 and is in
+binutils master (`patches/binutils/landed/0001`). Once the RTEMS MicroBlaze
+toolchain is rebuilt with a binutils that carries it — the RTEMS 6/7 toolchain
+still uses the Xilinx 2.36.1 snapshot, which does not — the workaround should be
+removed to turn relaxation (and the `-O2` build) back on:
+`patches/rtems/0002-bsps-microblaze-re-enable-linker-relaxation.patch` reverses
+it. Applying 0002 before the toolchain has the fix would reintroduce the silent
+miscompile.
 
 ## RTEMS test results
 

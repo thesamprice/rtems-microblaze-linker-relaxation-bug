@@ -1,0 +1,30 @@
+From: Samuel Price <thesamprice@gmail.com>
+Subject: [PATCH] gas: testsuite: exclude microblazeel from the diff1 test
+
+gas/all/gas.exp skips "difference of two undefined symbols" for targets that
+resolve such differences at link time via relaxation, MicroBlaze among them
+(the comment lists it).  The guard is "microblaze-*-*", which matches the
+big-endian triplet but not the little-endian "microblazeel-*-*", so the test
+runs and fails on microblazeel even though the assembler behaves correctly.
+Widen the glob to "microblaze*-*-*", covering both endiannesses -- the same
+shape the AVR/RL78/RX entries already use.
+
+gas/ChangeLog:
+	* testsuite/gas/all/gas.exp: Exclude microblaze*-*-* (both
+	endiannesses) from diff1, not just microblaze-*-*.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+diff --git a/gas/testsuite/gas/all/gas.exp b/gas/testsuite/gas/all/gas.exp
+index 46451fb5a..7782fd411 100644
+--- a/gas/testsuite/gas/all/gas.exp
++++ b/gas/testsuite/gas/all/gas.exp
+@@ -70,7 +70,7 @@ if {    ![istarget alpha*-*-*vms*]
+      && ![istarget avr-*-*]
+      && ![istarget ft32-*-*]
+      && ![istarget hppa*-*-*]
+-     && ![istarget microblaze-*-*]
++     && ![istarget microblaze*-*-*]
+      && ![istarget loongarch*-*-*]
+      && ![istarget mn10300-*-*]
+      && ![istarget msp430*-*-*]

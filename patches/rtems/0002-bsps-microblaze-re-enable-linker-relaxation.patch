@@ -1,0 +1,59 @@
+From: Samuel Price <thesamprice@gmail.com>
+Subject: [PATCH] bsps/microblaze: re-enable linker relaxation
+
+Reverts "bsps/microblaze: Disable linker relaxation".  That patch added
+-Wl,--no-relax to work around a binutils bug: the MicroBlaze relaxation pass
+corrupted the addend of R_MICROBLAZE_64 relocations with a non-zero addend,
+silently miscompiling RTEMS at -O2 (see ANALYSIS.md).
+
+The binutils fix landed upstream on 2026-08-13 ("ld: microblaze: don't index
+the local symbol cache with a global symbol index"); it is in binutils master
+and kept here under patches/binutils/landed/0001.  With a toolchain that
+carries it, relaxation is safe again, so drop the workaround and let GCC's
+default -relax run -- relaxation trims redundant IMM instructions and recovers
+the ~520 bytes of text the workaround cost.
+
+REQUIRES the RTEMS MicroBlaze toolchain to be built with a binutils that has
+the fix.  The RTEMS 6/7 toolchain uses the Xilinx binutils 2.36.1 snapshot,
+which does NOT; apply this only after that binutils is updated or the fix is
+backported, otherwise the silent miscompile returns.  Once relaxation is back
+on, the BSPs pinned to -O0 for this bug (bspkcu105 et al., which link
+../../opto0) can also return to -O2.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+diff --git a/spec/build/bsps/microblaze/microblaze_fpga/abi.yml b/spec/build/bsps/microblaze/microblaze_fpga/abi.yml
+--- a/spec/build/bsps/microblaze/microblaze_fpga/abi.yml
++++ b/spec/build/bsps/microblaze/microblaze_fpga/abi.yml
+@@ -13,30 +13,8 @@ default:
+   - -mno-xl-soft-div
+   - -mno-xl-soft-mul
+   - -Wl,-EL
+-  - -Wl,--no-relax
+ description: |
+-  ABI flags.
+-
+-  The MicroBlaze GCC link spec passes -relax unconditionally.  Linker
+-  relaxation deletes redundant IMM instructions, and while doing so it
+-  corrupts the addend of R_MICROBLAZE_64 relocations which have a non-zero
+-  addend: the addend loses four bytes for each IMM deleted ahead of the
+-  relocation.  Relocations with a zero addend in the same section resolve
+-  correctly, so this is silent - there is no link error, just a load from
+-  the wrong address.
+-
+-  A structure member reference such as
+-
+-    lwi rD, r0, _Per_CPU_Information + offsetof(Per_CPU_Control, executing)
+-
+-  therefore reads the preceding member instead.  RTEMS then hands out the
+-  wrong executing thread, which breaks resource ownership and thread
+-  identity throughout the system.  It shows up with optimization enabled
+-  and is largely hidden at -O0, which is why these BSPs were built at -O0.
+-
+-  -Wl,--no-relax overrides the -relax from the link spec.  Observed with
+-  binutils 2.36.1; it also removes the intermittent ld segmentation faults
+-  seen when linking the testsuite.
++  ABI flags
+ enabled-by: true
+ links: []
+ name: ABI_FLAGS

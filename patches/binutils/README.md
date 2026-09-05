@@ -15,7 +15,8 @@ series is **0003-0009**, which applies cleanly to current master `193340ad3`
 ```sh
 cd binutils-gdb
 git am .../0003-*.patch .../0004-*.patch .../0005-*.patch .../0006-*.patch \
-      .../0007-*.patch .../0008-*.patch .../0009-*.patch
+      .../0007-*.patch .../0008-*.patch .../0009-*.patch \\
+      .../0010-*.patch
 ```
 
 **0005 is independent of the four above** — it is not a MicroBlaze fix and not part
@@ -46,6 +47,7 @@ failures. 0003 and 0004 have not been re-tested since 0001 changed.
 | 0007 | bfd: apply the relocation statically when the .eh_frame editor returns -2 | assembler FDEs in shared objects otherwise point at pc=0 | independent; not sent upstream |
 | 0008 | bfd: keep the PLT address of address-taken functions in non-PIC executables (canonical PLT) | `&strlen` in an executable differed from `dlsym` / libc's own pointer; fixes glibc `misc/tst-ldbl-errorfptr`, `elf/tst-addr1` | independent; not sent upstream |
 | 0009 | gas + bfd: accept `sym - .` across sections and emit `R_MICROBLAZE_32_PCREL` (RELA howto, adjusted by relaxation) | lets gcc and the gas CFI directives use `DW_EH_PE_pcrel`: read-only `.eh_frame`, no dynamic relocations, `.eh_frame_hdr` search table; pairs with `patches/gcc/0002` | independent; needs the gcc patch to matter; not sent upstream |
+| 0010 | gas testsuite: exclude `microblazeel-*` from the `diff1` test (the glob only covered `microblaze-*`, so the little-endian triplet ran it and failed) | the last MicroBlaze-attributable `gas/all` failure | independent; testsuite only |
 
 They are no longer sent as one series. 0001 went to the list on its own, as recommended
 below, and 0002 is now numbered as a standalone `[PATCH]` rather than `2/4`.
