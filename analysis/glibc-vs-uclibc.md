@@ -67,6 +67,43 @@ of the frame) and computes the offset with a **kernel-sized** ucontext, so it is
 correct for glibc and independent of the kernel's front-of-frame layout. It
 passes on both kernels under glibc.
 
+## How the C library, kernel, and unwinder normally stay in sync
+
+There is no tool that keeps these three in agreement; it works because of a
+frozen ABI and one convention — read the signal frame by **offset**, never by
+**size**.
+
+1. **The kernel UAPI is the single frozen source of truth.** The signal-frame
+   layout — `struct sigcontext`, `struct ucontext`, the `rt_sigreturn`
+   trampoline, `sigset_t` — lives in the kernel's `arch/<arch>/include/uapi/asm/`
+   headers and is guaranteed stable: changing it would break every existing
+   binary that unwinds a signal frame. Everyone conforms to that one fixed
+   target, and it never moves.
+
+2. **The C library matches the kernel once, as a superset.** glibc's
+   `ucontext_t` is larger than the kernel's (a 1024-bit `sigset_t` for real-time
+   signals), but it puts `uc_sigmask` *after* `uc_mcontext` — the asm-generic
+   header says "mask last for extensibility." So glibc and the kernel disagree on
+   `sizeof(ucontext_t)` but agree forever on the **offset** of `uc_mcontext`;
+   uClibc-ng and musl do the same.
+
+3. **libgcc syncs to the kernel, not the C library, and reads by offset.** Every
+   other arch's `linux-unwind.h` takes `context->cfa`, casts it to a local
+   `struct rt_sigframe` mirroring the kernel, and reads `&rt->uc.uc_mcontext`.
+   Because that offset is identical across the kernel, glibc, uClibc and musl,
+   the unwinder is in sync with all of them automatically and never touches the C
+   library's `sizeof`.
+
+**Where MicroBlaze broke it.** The upstream MicroBlaze unwinder used
+`pc - sizeof(ucontext_t)` — a *size*, which is not synced, since glibc's is 120
+bytes bigger than the kernel's. That coupled libgcc to the C library's size
+instead of the kernel's frozen offset, so it worked on uClibc and failed on
+glibc. And separately, MicroBlaze did something almost no arch does: it *changed*
+its kernel signal frame (the front arg-save reserve). Both are departures from
+the normal discipline. This session's fix restores it — anchor on the trampoline
+at the frozen *end* of the frame and compute offsets with kernel-matching sizes,
+so neither the C library's size nor the front-of-frame layout can throw it off.
+
 ## Other library-dependent items in this series
 
 These are less about a size mismatch and more about which library exercises a
