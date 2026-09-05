@@ -36,3 +36,6 @@ the NULL-howto guard. The `sym_hashes != NULL` check mirrors
 ## Status
 Was "ready; NULL howto guarded" in the series README. **Now merged upstream**
 alongside 0001. Doc records the landed state.
+
+Re-verified 2026-09-04: present in the base commit `6f24afa` and current master
+`193340ad3`; the patch no longer applies. See [REWORK.md](REWORK.md).

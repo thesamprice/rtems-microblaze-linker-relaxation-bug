@@ -7,6 +7,11 @@
 **Files touched:** `gas/config/tc-microblaze.c`, `gas/config/tc-microblaze.h`, `bfd/elf32-microblaze.c`, `gas/testsuite/gas/microblaze/reloc_pcrel.{s,d,exp}`, `gas/testsuite/gas/microblaze/cfi.d`
 **Status:** independent; needs the gcc patch to matter; not sent upstream (patches README, row 0009)
 
+> **History (this session).** Applies cleanly to current binutils master; the
+> reworked series builds and passes the gas/ld suites ([REWORK.md](REWORK.md)),
+> and the round-four full rebuild confirmed `libc.so`'s `.eh_frame` read-only
+> with an `.eh_frame_hdr` table (711 → 0 dynamic relocs).
+
 ## What it does
 MicroBlaze gas rejects `sym - .` when `sym` is in another section ("operation combines symbols in different segments") because it never defined `DIFF_EXPR_OK`, and that difference is exactly what a PC-relative `.eh_frame` pointer is. So neither GCC nor the CFI directives could use `DW_EH_PE_pcrel`; every MicroBlaze DSO shipped a writable `.eh_frame` with one `R_MICROBLAZE_REL` per FDE (711 in `libc.so`) and no `.eh_frame_hdr` search table. The patch defines `DIFF_EXPR_OK`, teaches `cons_fix_new_microblaze` to emit `R_MICROBLAZE_32_PCREL` for `sym - .`, lets `tc_gen_reloc` honour `fx_pcrel` on a 32-bit fixup, clears the erroneous `partial_inplace` on the `R_MICROBLAZE_32_PCREL` howto (a RELA target must not rewrite the addend), and extends the relaxation addend-adjustment loop to that relocation so FDE pointers survive `-relax`.
 

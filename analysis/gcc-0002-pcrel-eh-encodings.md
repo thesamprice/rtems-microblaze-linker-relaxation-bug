@@ -8,6 +8,12 @@
 (`ASM_PREFERRED_EH_DATA_FORMAT`)
 **Status:** independent; requires binutils 0009; not sent upstream (glibc-longjmp-chk/README.md:466-470, patches/binutils/README.md:39)
 
+> **History (this session).** Verified end to end in the full gcc+glibc rebuild
+> (`glibc-longjmp-chk/evidence/build-pcrel.log`): with this encoding `libc.so`'s
+> `.eh_frame` became read-only with an `.eh_frame_hdr` table and its dynamic
+> relocations went 711 → 0. The patch applies cleanly to current gcc master and
+> depends on binutils 0009 — see [REWORK.md](REWORK.md).
+
 ## What it does
 `ASM_PREFERRED_EH_DATA_FORMAT` chooses how gcc encodes pointers in `.eh_frame`.
 MicroBlaze used `DW_EH_PE_aligned` (absolute pointers) for PIC/global, the last

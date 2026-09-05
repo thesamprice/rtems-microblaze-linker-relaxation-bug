@@ -1,13 +1,18 @@
 <!-- Per-patch analysis. Follows analysis/TEMPLATE.md. -->
 
-> **qemu-system result (2026-09-04):** correct on a stock Linux 6.12.9 petalogix
-> kernel, but breaks once `patches/linux/`'s 32-byte signal-frame reserve is in —
-> the CFA offset was kernel-layout-dependent, so the patch was rewritten to
-> anchor on the trampoline with a kernel-sized ucontext, now PASS on both the
-> stock and reserve kernels. See [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
+> **History (this session).** The patch went through three forms, tested on a real
+> kernel under qemu-system (petalogix, Linux 6.12): Ramin's upstream
+> `pc - sizeof(ucontext_t)` fails on both a stock and a reserve kernel under
+> glibc; a CFA-anchored form fixes the stock kernel but breaks once
+> `patches/linux/`'s 32-byte front reserve moves `&siginfo` off the SP; the
+> committed form anchors on the trampoline with a **kernel-sized** ucontext and
+> PASSes on both. The three-by-two matrix and reproduction are in
+> [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md); the offset-not-size
+> principle it turns on is in
+> [glibc-vs-uclibc.md](glibc-vs-uclibc.md#how-the-c-library-kernel-and-unwinder-normally-stay-in-sync).
 
 
-# gcc 0001: locate the MicroBlaze signal frame from the handler's CFA
+# gcc 0001: locate the MicroBlaze signal frame from the rt_sigreturn trampoline
 
 **Patch:** `patches/gcc/0001-libgcc-microblaze-signal-frame-glibc-layout.patch`
 **Target:** `gcc` master (verified against the live file, ~2026-09)
@@ -21,14 +26,19 @@ when the DWARF walk reaches a kernel-installed signal handler it recovers the
 interrupted register file from the kernel's `rt_sigframe`. The upstream code
 found the frame by subtracting `sizeof (ucontext_t)` — the C library's type —
 from the sigreturn trampoline address. Under glibc `ucontext_t` is 304 bytes
-(128-byte `uc_sigmask`) against the kernel frame member's ~184 bytes, so the
-computed `sigcontext` was ~120 bytes too low and every recovered register was
-garbage; and qemu-user keeps the trampoline on a separate page, so there was
-nothing in front of it to subtract from at all. The patch instead anchors on
-the handler's CFA — which both the kernel (`regs->r1 = frame`) and qemu-user set
-to the `rt_sigframe` — and walks in by `siginfo_t + 2 longs + stack_t` to reach
-`uc_mcontext`, the same idiom every other `linux-unwind.h` uses. It keeps the
-trampoline match only to *recognise* the frame and probes 8 bytes ahead first.
+(128-byte `uc_sigmask`) against the kernel `struct ucontext`'s 184, so the
+computed `sigcontext` was 120 bytes too low and every recovered register was
+garbage. It works only under uClibc, whose `ucontext_t` matches the kernel — the
+comment in the upstream file even says so. The committed patch keeps the same
+trampoline structure but fixes the size: it anchors on the trampoline (the last
+member of the kernel `rt_sigframe`) and computes the sigcontext with a **local
+kernel-sized `ucontext`** whose `uc_sigmask` is the kernel `sigset_t` (8 bytes),
+not the C library's (128). Because the trampoline is at the *end* of the frame,
+this offset is immune to any argument-save area the kernel reserves at the
+*front* — the `patches/linux/` reserve — so it is correct on both kernel
+layouts. An intermediate CFA-anchored form (`context->cfa + siginfo_t + 2 longs
++ stack_t`) was tried first; it was correct for the stock frame but broke on the
+reserve kernel, which is why the trampoline anchor was chosen (see History).
 
 ## Upstream audit: is this already fixed?
 **NO — AND THIS IS A CORRECTION OF AN EXISTING UPSTREAM FILE, NOT A NEW FILE.**
@@ -72,19 +82,19 @@ Read `libgcc/config/microblaze/linux-unwind.h` in the patched tree:
   trampoline → the trampoline is at `pc[2]/pc[3]`. The `pc[0]/pc[1]` arm covers
   a `pc` that already points at the trampoline. Note the match is now used
   **only to recognise the frame** — `pc` no longer feeds the `sc` computation.
-- **:76-77** the offset arithmetic (the part to check hardest):
-  `sc = (struct sigcontext *)((_Unwind_Ptr) context->cfa + sizeof (siginfo_t)
-  + 2 * sizeof (unsigned long) + sizeof (stack_t));`
-  The kernel `rt_sigframe` is `{ siginfo_t info; struct ucontext uc;
-  unsigned long tramp[2]; }` and `struct ucontext` is `{ unsigned long uc_flags;
-  struct ucontext *uc_link; stack_t uc_stack; struct sigcontext uc_mcontext;
-  … }`. So `&uc.uc_mcontext − frame` = `sizeof(siginfo_t)` (to reach `uc`)
-  `+ uc_flags(4) + uc_link(4)` = `2*sizeof(unsigned long)` `+ sizeof(stack_t)`.
-  On 32-bit MicroBlaze a pointer is one `unsigned long`, `siginfo_t` is 128
-  bytes and `stack_t` (`{void*; int; size_t}`) is 12, all 4-aligned, so no
-  padding is elided — the hand arithmetic equals `offsetof` exactly. Confirm
-  `context->cfa` really is the frame: the handler's CFA is r1 at entry and the
-  kernel sets `regs->r1 = frame`.
+- **the trampoline offset (the part to check hardest).** `tramp` is normalised
+  to point at the trampoline, then `sc = &rt->uc.uc_mcontext` where
+  `rt = tramp − __builtin_offsetof (struct rt_sigframe, tramp)` and the local
+  `struct rt_sigframe` is `{ siginfo_t info; struct kernel_ucontext uc;
+  unsigned int tramp[2]; }`. The load-bearing detail is `kernel_ucontext`, which
+  ends in `unsigned long uc_sigmask[64 / (8*sizeof(long))]` (the kernel
+  `sigset_t`, 8 bytes on this target), **not** the C library's 128-byte one — a
+  probe measured the C-library `struct ucontext` at 304 bytes vs the kernel's
+  184, and using the wrong size is exactly Ramin's bug. Anchoring from the
+  trampoline at the *end* of the frame is what makes the offset independent of
+  the front reserve; confirm `uc_sigmask`'s size matches the kernel's `_NSIG`
+  (64 → two words) and that `uc_mcontext` is preceded by `uc_flags, uc_link,
+  uc_stack` exactly as the kernel `struct ucontext`.
 - **:85-89** register recovery: `for i in 0..31: reg[i] = &sc->regs.r0 +
   i*4 − new_cfa`, with `new_cfa = sc->regs.r1` (:79). `struct sigcontext`
   (asm/sigcontext.h) is `{ struct pt_regs regs; … }` and `pt_regs` holds
@@ -96,8 +106,18 @@ Read `libgcc/config/microblaze/linux-unwind.h` in the patched tree:
   ordinary GPR in the loop.
 
 ## How other processors do the same thing
-Every glibc-era `linux-unwind.h` anchors the sigcontext on `context->cfa`, not
-on the trampoline — this is exactly what the patch changes MicroBlaze to do:
+Most arches anchor the sigcontext on `context->cfa` and read `&rt->uc.uc_mcontext`
+through a local `struct rt_sigframe`, reading by **offset** (the same in glibc,
+uClibc and the kernel), never by `sizeof`. MicroBlaze cannot use that directly,
+because its kernel reserve moves the front of the frame off the CFA; **arm** is
+the precedent for what MicroBlaze does instead — it dispatches on the restorer
+trampoline to cope with its two kernel frame layouts. **aarch64** only ever grows
+its frame at the *tail* (SVE/ZA state as chained records inside `uc_mcontext`),
+so its CFA anchor never moves and it never needed the trampoline. The
+offset-not-size rule, and where MicroBlaze departed from it, are in
+[glibc-vs-uclibc.md](glibc-vs-uclibc.md#how-the-c-library-kernel-and-unwinder-normally-stay-in-sync).
+The CFA + local-struct comparators below are still the oracle for the *offset*
+math the trampoline path also relies on:
 
 - **libgcc/config/or1k/linux-unwind.h:39-54** — the closest analogue. Declares
   `struct rt_sigframe { siginfo_t info; ucontext_t uc; } *rt = context->cfa;`

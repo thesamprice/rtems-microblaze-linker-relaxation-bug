@@ -34,3 +34,7 @@ port dropped it at copy time in 2009; upstream master now matches sh again.
 ## Status
 **Sent as v2 (2026-08-12), reviewed by Alan Modra ("looks good"), and now
 merged upstream.** No further action; this doc records the landed state.
+
+Re-verified 2026-09-04 against current master `193340ad3`: the guard is present
+and our patch no longer applies (the fix is already there). See
+[REWORK.md](REWORK.md).

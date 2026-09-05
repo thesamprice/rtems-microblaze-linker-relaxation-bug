@@ -7,6 +7,11 @@
 **Files touched:** `bfd/elf32-microblaze.c`
 **Status:** independent; not sent upstream (patches README, row 0007)
 
+> **History (this session).** Applies cleanly to current binutils master; the
+> reworked series builds and passes the gas/ld suites ([REWORK.md](REWORK.md)),
+> and the round-four full rebuild confirmed the read-only `.eh_frame` plus
+> `.eh_frame_hdr` table end to end.
+
 ## What it does
 When linking a shared object, `_bfd_elf_section_offset` returns `(bfd_vma) -2` for an `R_MICROBLAZE_32` in `.eh_frame` whose FDE the `.eh_frame` editor is re-encoding as PC-relative: no dynamic relocation is wanted, but the absolute target value must still be written into the section so the editor can turn it into a delta. Every backend that supports this returns "skip the dynamic reloc, but relocate the field in place"; `elf32-microblaze.c` only skipped. On a RELA target the addend lives in the relocation, not the field, so the field kept its assembled value of zero and `_bfd_elf_write_section_eh_frame` produced a PC-relative pointer to address 0. The fix sets `relocate = true` on the -2 branch and writes `relocation + addend` into the field with `bfd_put_32`.
 

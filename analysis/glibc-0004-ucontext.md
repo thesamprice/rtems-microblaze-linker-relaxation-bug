@@ -102,7 +102,14 @@ build-time dependency, so the missing implementation stayed invisible.
   same r15+8 resume convention.
 - gcc patch `patches/gcc/0001-libgcc-microblaze-signal-frame-glibc-layout.patch`
   reads the kernel `rt_sigframe`, whose `regs` member is the same `pt_regs`
-  order — cross-confirms the register ordering this patch relies on.
+  order — cross-confirms the register ordering this patch relies on. The
+  `mcontext_t` layout this patch encodes (pc at word 32, after r0..r31) is the
+  same kernel `struct sigcontext` the libgcc unwinder locates and reads; the two
+  must agree on that shape. Note that `ucontext_i.sym` uses `offsetof` into the
+  C library's `ucontext_t`, which is size-portable here because `uc_mcontext`
+  precedes the oversized `uc_sigmask`; that same kernel-vs-glibc `ucontext` size
+  difference (184 vs 304 bytes) is what gcc 0001 has to get right by size, and
+  it is documented in [glibc-vs-uclibc.md](glibc-vs-uclibc.md).
 
 ## Other cross-checks
 - The syscall error path uses the existing `SYSCALL_ERROR_LABEL` /

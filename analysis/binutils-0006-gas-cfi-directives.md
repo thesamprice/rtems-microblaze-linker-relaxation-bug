@@ -7,6 +7,13 @@
 **Files touched:** `gas/config/tc-microblaze.c`, `gas/config/tc-microblaze.h`, `gas/testsuite/gas/microblaze/cfi.{s,d,exp}`
 **Status:** independent; not sent upstream (patches README, row 0006)
 
+> **History (this session).** After the `main`-branch merge this superseded the
+> cancellation branch's second gas CFI patch: 0006 was kept for its testsuite
+> and its `tc_regname_to_dw2regnum` (so `.cfi_offset r15` works with register
+> names), and the duplicate was dropped — see
+> [MERGE-AUDIT.md](MERGE-AUDIT.md) zone A. The reworked series builds and passes
+> the MicroBlaze gas suite on current master `193340ad3` ([REWORK.md](REWORK.md)).
+
 ## What it does
 MicroBlaze is one of the few ELF targets whose assembler rejects `.cfi_*` with "CFI is not supported for this target", because `tc-microblaze.h` never defined `TARGET_USE_CFIPOP`. GCC hides this by writing its own `.eh_frame`, but hand-written assembly (all of glibc's MicroBlaze asm) then carries no unwind information, so `_Unwind_Backtrace` and `-fexceptions` cleanup handlers stop at the first assembler frame. The patch turns on `TARGET_USE_CFIPOP` and supplies the three CFI hooks with the values GCC already uses for this ABI: the CFA is r1, the return-address column is 15, and the CIE data-alignment factor is -4.
 
