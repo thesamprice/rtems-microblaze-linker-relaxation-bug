@@ -61,3 +61,37 @@ CC=/opt/gcc17/bin/microblazeel-linux-gnu-gcc MODE=alrm ./build-test.sh
 KERNEL=vmlinux-stock   ./run-qemu-system.sh   # PASS
 KERNEL=vmlinux-patched ./run-qemu-system.sh   # FAIL, stops at the signal frame
 ```
+
+## Resolution: anchor on the trampoline (implemented)
+
+gcc 0001 was rewritten to anchor on the trampoline instead of the CFA. The
+trampoline is the last member of the kernel's `rt_sigframe`, so the sigcontext
+is a fixed distance *below* it, independent of any arg-save area reserved at the
+front. The distance is computed with a local `struct` whose `uc_sigmask` is the
+**kernel** `sigset_t` (8 bytes, `_NSIG == 64`), not the C library's 128-byte one
+— getting that size wrong is the original bug (Ramin's `pc - sizeof(ucontext_t)`
+used glibc's). Verified: PASS on **both** the stock and the reserve-patched
+kernel, 12 frames each.
+
+| gcc 0001 | stock kernel | patched kernel |
+|---|---|---|
+| CFA-anchored (before) | PASS | FAIL |
+| trampoline-anchored (now) | **PASS** | **PASS** |
+
+## How other processors handled kernel signal-frame changes
+
+- **Most never moved the frame head.** aarch64 grew its sigcontext for SVE/ZA
+  state, but those go in *chained extension records inside* `uc_mcontext`, at the
+  tail — so `context->cfa` still points at `siginfo` and the anchor never moved.
+  No unwinder change was needed. Its "Historically ... `uc_mcontext`" comment is
+  a *type* rename (`struct sigcontext` to glibc's `mcontext_t`), not a layout
+  change.
+- **arm is the precedent for a real layout change.** The ARM kernel had two
+  distinct signal frames (`struct sigframe` and later `struct rt_sigframe`); its
+  libgcc unwinder tells them apart by the restorer trampoline instructions and
+  uses the matching offset. That is the same trampoline-dispatch idea used here.
+- **The MicroBlaze difference.** The arg-save reserve inserts space at the
+  *front* of the frame, moving `&siginfo` off the handler's SP — something no
+  other arch does, because they only ever grew their frames at the tail. That is
+  why CFA-anchoring, which is fine everywhere else, is not enough here, and why
+  the trampoline anchor (arm-style, immune to a front change) is the right fit.

@@ -84,8 +84,9 @@ one arg-save-area higher, so gcc 0001's offset is short by that reserve.
 passes on the stock kernel and FAILS on the kernel with patch #1, and adding
 exactly the 32-byte reserve flips it (stock then fails). So no single
 CFA-relative offset works for both; the anchor is kernel-layout-dependent. The
-robust direction is to anchor from the trampoline with the kernel's ucontext
-size, immune to the front reserve. Full evidence and reproduction in
+robust fix, now implemented in `patches/gcc/0001`, anchors from the trampoline
+with a kernel-sized ucontext, immune to the front reserve: verified PASS on both
+the stock and the reserve kernel. Full evidence in
 [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
 
 ### D. Cancellation path: asm CFI vs tail-call — pick one for the cancel frame

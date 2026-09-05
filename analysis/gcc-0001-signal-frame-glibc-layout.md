@@ -2,8 +2,9 @@
 
 > **qemu-system result (2026-09-04):** correct on a stock Linux 6.12.9 petalogix
 > kernel, but breaks once `patches/linux/`'s 32-byte signal-frame reserve is in —
-> the CFA offset is kernel-layout-dependent. See
-> [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
+> the CFA offset was kernel-layout-dependent, so the patch was rewritten to
+> anchor on the trampoline with a kernel-sized ucontext, now PASS on both the
+> stock and reserve kernels. See [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
 
 
 # gcc 0001: locate the MicroBlaze signal frame from the handler's CFA
