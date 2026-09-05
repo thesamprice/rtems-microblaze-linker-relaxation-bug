@@ -3,8 +3,8 @@
 Several of the fixes in this repository behave differently depending on which C
 library the target uses, because parts of the toolchain — above all libgcc's
 signal-frame unwinder — depend on the C library's runtime data layout. The two
-libraries in play on MicroBlaze Linux are **glibc** (the modern default) and
-**uClibc-ng** (still common in minimal Buildroot systems). This note collects
+libraries in play on MicroBlaze Linux are **uClibc-ng** (the common default, and the only option without an MMU)
+and **glibc** (an MMU-only choice). This note collects
 the library-dependent differences so a reviewer or a distributor knows what is
 affected and what to test where.
 
@@ -84,16 +84,29 @@ path at all:
   behaviour they fix is what glibc's own testsuite exercises. Nobody runs that
   suite on MicroBlaze, which is why the gaps persisted.
 
-## Which toolchains use which library
+## Which toolchains use which library (checked, 2026-09)
 
-- **glibc** is the default in the mainstream flows: AMD/Xilinx **PetaLinux**
-  (Yocto-based), **Bootlin** MicroBlaze toolchains, and **Yocto / OpenEmbedded**
-  generally. Modern vendor and distro builds are glibc.
-- **uClibc-ng** remains common in **Buildroot** minimal-footprint builds, and was
-  the default in older, pre-Yocto PetaLinux — which is the era much of the
-  existing MicroBlaze code (including the unwinder) was written and tested in.
+MicroBlaze is a soft-core that is often built **without an MMU**, and **glibc
+requires an MMU** — so a large share of MicroBlaze Linux systems *cannot* use
+glibc at all. uClibc-ng supports both MMU and no-MMU, which is why it is the
+common default:
 
-(These are the qualitative ecosystem defaults, not a usage statistic.)
+- **Buildroot**: default C library for MicroBlaze is **uClibc**; glibc is an
+  opt-in.
+- **PetaLinux**: historically defaults to **uClibc**, with glibc selectable in
+  the rootfs config.
+- **Bootlin** toolchains: offered in **all three** (glibc, uClibc-ng, musl)
+  variants — there is no single default; you choose. This repo used the glibc
+  variant.
+- **Yocto / meta-xilinx**: `TCLIBC` is configurable; the meta-microblaze layer
+  does not declare a MicroBlaze-specific default.
+
+So **uClibc-ng is at least as common as glibc on MicroBlaze, and likely the more
+typical default**; glibc is the MMU-only minority — which is what this repo, the
+Bootlin glibc toolchain, and the original native-gdb report happen to use. The
+long-broken, never-tested state of the glibc MicroBlaze port is consistent with
+it being a minority rather than the mainstream. (This is the project-default
+picture, not a usage statistic.)
 
 ## Practical guidance
 
@@ -102,7 +115,10 @@ path at all:
   qemu-system with a glibc rootfs.
 - **When submitting gcc 0001 upstream, frame it as a glibc bug fix**, not just as
   support for the kernel reserve: the upstream unwinder is broken for every glibc
-  MicroBlaze target today, independent of the reserve.
+  MicroBlaze target today, independent of the reserve. glibc is a minority on
+  MicroBlaze (uClibc-ng is more common, and the only option without an MMU), so
+  it affects fewer users than the headline suggests — but it is a real, total
+  failure for those it does affect.
 - **If you maintain both libraries**, the trampoline anchor is correct for both
   (it uses the kernel layout, which uClibc already matches), so it is a strict
   improvement, not a glibc-only special case.

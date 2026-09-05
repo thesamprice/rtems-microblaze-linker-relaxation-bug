@@ -24,8 +24,9 @@ suites on today's master.
 Several fixes behave differently by C library. [glibc-vs-uclibc.md](glibc-vs-uclibc.md)
 compares them: the `ucontext_t`/`sigset_t` size gap that makes the upstream
 libgcc signal-frame unwinder a live bug under glibc (but fine under uClibc), and
-which toolchains default to which library. glibc is the default in
-PetaLinux/Yocto/Bootlin, so the unwinder bug affects the mainstream.
+which toolchains default to which library. uClibc-ng is the more common
+MicroBlaze default (and the only option without an MMU); glibc is an MMU-only
+minority, which is what this repo targets and where the unwinder bug bites.
 
 ## After the main-branch merge
 
