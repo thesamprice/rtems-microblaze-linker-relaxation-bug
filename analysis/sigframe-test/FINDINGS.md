@@ -73,10 +73,23 @@ front. The distance is computed with a local `struct` whose `uc_sigmask` is the
 used glibc's). Verified: PASS on **both** the stock and the reserve-patched
 kernel, 12 frames each.
 
-| gcc 0001 | stock kernel | patched kernel |
+| libgcc unwinder | stock kernel | reserve kernel |
 |---|---|---|
-| CFA-anchored (before) | PASS | FAIL |
-| trampoline-anchored (now) | **PASS** | **PASS** |
+| Ramin's upstream (gcc 15.3/16.2/master), `pc - sizeof(ucontext_t)` | FAIL | FAIL |
+| gcc 0001 CFA-anchored (earlier) | PASS | FAIL |
+| gcc 0001 trampoline-anchored (now) | **PASS** | **PASS** |
+
+Two independent problems, both tested under glibc on the real kernel:
+
+- **A pre-existing upstream bug, unrelated to the kernel reserve.** Ramin's
+  unwinder (currently in gcc master) fails on the *stock* kernel under glibc,
+  because it subtracts glibc's `ucontext_t` (304 bytes) where it needs the
+  kernel's `struct ucontext` (184). It was written for uClibc, whose `ucontext_t`
+  matches the kernel; under glibc, signal-frame unwinding is broken with no
+  kernel change involved. A uClibc buildroot would not show it.
+- **The kernel reserve is a second, orthogonal break.** A libgcc that fixes the
+  first bug by CFA-anchoring still breaks once the reserve moves `&siginfo` off
+  the handler's SP. The trampoline anchor tolerates both.
 
 ## How other processors handled kernel signal-frame changes
 
