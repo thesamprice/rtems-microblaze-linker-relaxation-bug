@@ -48,13 +48,24 @@ static _Unwind_Reason_Code trace_cb(struct _Unwind_Context *ctx, void *arg)
   return _URC_NO_REASON;
 }
 
-/* a captured return/interrupt address belongs to fn if it lands in a small
-   window at or after fn's entry; the marker functions are tiny and noinline */
-#define FN_WINDOW 0x800
-static int in_fn (void *ip, void *fn)
+/* Identify which marker a captured address belongs to: the marker with the
+   greatest entry <= ip, provided ip is within FN_WINDOW of it.  Using the
+   closest preceding marker (rather than "within a window of each") stops the
+   small, adjacent marker functions from all matching one address.  Returns the
+   marker index, or -1.  */
+#define FN_WINDOW 0x400
+static int marker_of (void *ip)
 {
-  unsigned long a = (unsigned long) ip, b = (unsigned long) fn;
-  return a >= b && a < b + FN_WINDOW;
+  unsigned long a = (unsigned long) ip;
+  int best = -1;
+  unsigned long best_start = 0;
+  for (int w = 0; w < nwant; w++)
+    {
+      unsigned long b = (unsigned long) want[w];
+      if (a >= b && a - b < FN_WINDOW && (best < 0 || b > best_start))
+	{ best = w; best_start = b; }
+    }
+  return best;
 }
 
 static void poweroff_or_exit (int code)
@@ -81,22 +92,29 @@ static void handler (int sig)
     printf ("%s=%p ", wname[w], want[w]);
   printf ("\n");
 
-  int found = 0, last = -1, ordered = 1;
+  /* label each captured frame with the marker it lands in (or -1) */
+  printf ("frame markers:");
+  for (int i = 0; i < nframes; i++)
+    { int m = marker_of (frames[i]); printf (" %s", m >= 0 ? wname[m] : "."); }
+  printf ("\n");
+
+  /* the markers must appear as an ordered subsequence in distinct frames:
+     leaf, then mid, then outer, then main, each in a later frame */
+  int fi = 0, found = 0;
   for (int w = 0; w < nwant; w++)
     {
-      int at = -1;
-      for (int i = 0; i < nframes; i++)
-	if (in_fn (frames[i], want[w])) { at = i; break; }
-      if (at >= 0) { found++; if (at < last) ordered = 0; last = at; }
-      printf ("  expect %-6s : %s\n", wname[w], at >= 0 ? "present" : "MISSING");
+      while (fi < nframes && marker_of (frames[fi]) != w)
+	fi++;
+      if (fi < nframes) { found++; fi++; printf ("  %-6s : frame %d\n", wname[w], fi - 1); }
+      else              { printf ("  %-6s : MISSING\n", wname[w]); }
     }
 
-  if (found == nwant && ordered)
+  if (found == nwant)
     printf ("RESULT: PASS -- unwound through the signal frame, all %d interrupted frames in order\n", nwant);
   else
-    printf ("RESULT: FAIL -- %d/%d interrupted frames recovered%s (signal-frame unwinder wrong for this libc/kernel)\n",
-	    found, nwant, ordered ? "" : ", out of order");
-  poweroff_or_exit (found == nwant && ordered ? 0 : 1);
+    printf ("RESULT: FAIL -- only %d/%d interrupted frames recovered (unwinder stopped early: %d frames total; signal-frame offset wrong for this libc/kernel)\n",
+	    found, nwant, nframes);
+  poweroff_or_exit (found == nwant ? 0 : 1);
 }
 
 void leaf (void)

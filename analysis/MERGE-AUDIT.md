@@ -80,10 +80,13 @@ equals `&siginfo`.
 That is exactly the anchor gcc 0001 uses. With the kernel patch applied,
 `context->cfa` (the handler's SP) points at the reserved area, and `&siginfo` is
 one arg-save-area higher, so gcc 0001's offset is short by that reserve.
-**Action:** gcc 0001 must be validated against a kernel that carries patch #1,
-and its offset adjusted to add the reserve if the board shows it short. This is
-the single most important cross-check in the merged set, because the two fixes
-are on the same layout from opposite sides.
+**CONFIRMED under qemu-system** (Linux 6.12.9, petalogix-s3adsp1800): gcc 0001
+passes on the stock kernel and FAILS on the kernel with patch #1, and adding
+exactly the 32-byte reserve flips it (stock then fails). So no single
+CFA-relative offset works for both; the anchor is kernel-layout-dependent. The
+robust direction is to anchor from the trampoline with the kernel's ucontext
+size, immune to the front reserve. Full evidence and reproduction in
+[sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
 
 ### D. Cancellation path: asm CFI vs tail-call — pick one for the cancel frame
 

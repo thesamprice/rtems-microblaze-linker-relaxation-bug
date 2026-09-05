@@ -1,5 +1,11 @@
 <!-- Per-patch analysis. Follows analysis/TEMPLATE.md. -->
 
+> **qemu-system result (2026-09-04):** correct on a stock Linux 6.12.9 petalogix
+> kernel, but breaks once `patches/linux/`'s 32-byte signal-frame reserve is in —
+> the CFA offset is kernel-layout-dependent. See
+> [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
+
+
 # gcc 0001: locate the MicroBlaze signal frame from the handler's CFA
 
 **Patch:** `patches/gcc/0001-libgcc-microblaze-signal-frame-glibc-layout.patch`
