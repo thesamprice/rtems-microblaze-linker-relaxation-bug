@@ -38,10 +38,17 @@ PASS, all frames recovered. The exception-handling, CFI, relocation and
 signal-frame fixes are about frame layout and relocations, not arithmetic, so
 the hardware int/float flags do not affect them.
 
-(One caveat found while checking: at `-O2` gcc inlines trivial leaf functions,
-so a backtrace test whose markers are not `noinline` sees a collapsed call chain
-and reports a false negative. `sigframe-test/sigunwind.c` now marks its markers
-`noinline`; this is a property of the *test*, not the unwinder.)
+(One caveat found while checking, worth stating precisely because it *looks*
+like an unwinder failure and is not: at `-O2` gcc inlines the whole trivial call
+chain `main <- outer <- mid <- leaf` into `main`, so `main` calls `raise()`
+directly. The `leaf`/`mid`/`outer` symbols survive only because their addresses
+are taken for the marker array; nothing calls them (confirmed by disassembly:
+no `brlid` targets them). So those frames genuinely are not on the stack, and
+the backtrace correctly omits them -- the unwinder reported exactly what was
+there. A backtrace test whose markers are not `noinline` mistakes that for a
+failure. `sigframe-test/sigunwind.c` now marks its markers `noinline` so the
+call chain is real; this is a property of the test, not the unwinder, which is
+correct at both -O1 and -O2.)
 
 ## Hard-float on MicroBlaze: two things that are not obvious
 
