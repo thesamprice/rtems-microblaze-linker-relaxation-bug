@@ -19,6 +19,14 @@ on 2026-09-04.
 with no rebase. The reworked binutils series builds and passes its MicroBlaze
 suites on today's master.
 
+## glibc vs uClibc
+
+Several fixes behave differently by C library. [glibc-vs-uclibc.md](glibc-vs-uclibc.md)
+compares them: the `ucontext_t`/`sigset_t` size gap that makes the upstream
+libgcc signal-frame unwinder a live bug under glibc (but fine under uClibc), and
+which toolchains default to which library. glibc is the default in
+PetaLinux/Yocto/Bootlin, so the unwinder bug affects the mainstream.
+
 ## After the main-branch merge
 
 `main` now also carries a parallel cancellation-hang investigation (kernel
