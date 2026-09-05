@@ -1,6 +1,6 @@
 # binutils 0002: neutralise relocations against discarded sections
 
-**Patch:** `patches/binutils/0002-microblaze-neutralise-relocations-against-discarded-.patch`
+**Patch:** `patches/binutils/landed/0002-microblaze-neutralise-relocations-against-discarded-.patch` (moved to `landed/`: merged upstream)
 **Files:** `bfd/elf32-microblaze.c`
 
 ## What it does

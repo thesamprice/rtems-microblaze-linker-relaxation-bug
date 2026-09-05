@@ -1,6 +1,6 @@
 # binutils 0001: don't index the local symbol cache with a global symbol index
 
-**Patch:** `patches/binutils/0001-ld-microblaze-don-t-index-the-local-symbol-cache.patch`
+**Patch:** `patches/binutils/landed/0001-ld-microblaze-don-t-index-the-local-symbol-cache.patch` (moved to `landed/`: merged upstream)
 **Files:** `bfd/elf32-microblaze.c` (+ 3 new ld tests)
 
 ## What it does

@@ -11,7 +11,7 @@ applies cleanly to today's master.
 
 | Patch | Why |
 |---|---|
-| binutils 0001 (relaxation OOB) | merged upstream 2026-08-13; `git apply` to master fails because the fix is already there (`elf32-microblaze.c:2125`). The `.patch` and `ANALYSIS.md` are kept as the record of the original bug. |
+| binutils 0001 (relaxation OOB) | merged upstream 2026-08-13; `git apply` to master fails because the fix is already there (`elf32-microblaze.c:2125`). The `.patch` is kept under `patches/binutils/landed/` and `ANALYSIS.md` documents the bug. |
 | binutils 0002 (discarded sections) | merged upstream 2026-08-13; `RELOC_AGAINST_DISCARDED_SECTION` is already at `elf32-microblaze.c:1120`. |
 
 Also already upstream, and never ours to submit: the libgcc signal-frame
