@@ -2,7 +2,8 @@
 
 Several of the fixes in this repository behave differently depending on which C
 library the target uses, because parts of the toolchain — above all libgcc's
-signal-frame unwinder — depend on the C library's runtime data layout. The two
+signal-frame unwinder — depend on the C library's runtime data layout. This is a **Linux** question; the RTOS and bare-metal targets (RTEMS,
+FreeRTOS) use Newlib and are unaffected — see the last section. The two
 libraries in play on MicroBlaze Linux are **uClibc-ng** (the common default, and the only option without an MMU)
 and **glibc** (an MMU-only choice). This note collects
 the library-dependent differences so a reviewer or a distributor knows what is
@@ -107,6 +108,36 @@ Bootlin glibc toolchain, and the original native-gdb report happen to use. The
 long-broken, never-tested state of the glibc MicroBlaze port is consistent with
 it being a minority rather than the mainstream. (This is the project-default
 picture, not a usage statistic.)
+
+## RTOS and bare-metal: Newlib (RTEMS, FreeRTOS)
+
+Everything above is about **Linux**. The RTOS and bare-metal targets do not use
+glibc or uClibc at all, and none of the signal-frame / unwinder discussion
+applies to them — they have no Linux kernel, no `rt_sigframe`, no `ld.so`, and no
+`ucontext_t` in the Linux sense.
+
+- **RTEMS** uses **Newlib**. The `microblaze-rtems` toolchain links Newlib as its
+  C library; RTEMS supplies the OS glue on top. This repository *started* as an
+  RTEMS/Newlib problem — the `-O2` linker-relaxation miscompile in `ANALYSIS.md`
+  (binutils 0001, now upstream) — which is a toolchain bug, independent of the C
+  library.
+- **FreeRTOS** ships **no C library of its own** — it is only a scheduler/kernel.
+  Applications link whatever the toolchain provides, which on embedded targets is
+  **Newlib** (often newlib-nano), or **picolibc** as a modern alternative. On
+  Xilinx MicroBlaze, FreeRTOS is built against the Xilinx standalone/bare-metal
+  BSP, which is Newlib-based.
+
+So on MicroBlaze the C library depends on the target:
+
+| Target | C library |
+|---|---|
+| Linux, MMU | glibc *or* uClibc-ng *or* musl (uClibc-ng most common) |
+| Linux, no-MMU (uClinux) | uClibc-ng or musl (glibc not possible) |
+| RTEMS | Newlib |
+| FreeRTOS / bare-metal | Newlib (newlib-nano), or picolibc; no libc from FreeRTOS itself |
+
+The signal-frame unwinder issue in this document is confined to the top two rows,
+and specifically bites glibc.
 
 ## Practical guidance
 
