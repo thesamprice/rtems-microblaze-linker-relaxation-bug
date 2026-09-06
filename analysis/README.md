@@ -11,6 +11,13 @@ gcc the `microblaze-fixes` branch tip `95e1193`, glibc `10ed541` (2026-08-25).
 Upstream was re-checked against binutils master `193340ad3` and gcc/glibc master
 on 2026-09-04.
 
+## Start here: the patch map
+
+[PATCH-ORGANIZATION.md](PATCH-ORGANIZATION.md) is the top-level map — every patch
+across binutils, gcc, glibc, Linux and RTEMS, grouped by which upstream it goes
+to, its status (landed / ready / needs-reconciliation / local / hardware-decision),
+the cross-component dependencies, the overlaps to resolve, and the build order.
+
 ## Reworked against current upstream
 
 [REWORK.md](REWORK.md) records the 2026-09-04 re-check against current master
