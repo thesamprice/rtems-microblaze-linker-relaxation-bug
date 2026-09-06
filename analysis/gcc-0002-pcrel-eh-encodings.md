@@ -27,6 +27,14 @@ for code pointers and `DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4` for
 global (personality) pointers — the encoding every other ELF target uses. Result:
 read-only `.eh_frame`, no dynamic relocations, and a working `.eh_frame_hdr`.
 
+**This is a copy, not a new expression.** The replacement macro
+`(((GLOBAL) ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4)` is
+character-for-character the one `config/riscv/riscv.h` and `config/or1k/or1k.h`
+already ship. The MicroBlaze change is a one-line adoption of an encoding those
+ports already exercise on every unwind — a reviewer can diff it against
+`riscv.h` and confirm they are byte-identical. Nothing in it is
+MicroBlaze-specific.
+
 ## Upstream audit: is this already fixed?
 No. Fetched gcc master live
 (`raw.githubusercontent.com/gcc-mirror/gcc/master/gcc/config/microblaze/microblaze.h`):

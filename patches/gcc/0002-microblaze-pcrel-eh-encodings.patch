@@ -20,6 +20,12 @@ without dynamic relocations, the .eh_frame_hdr table is built, and
 unwinding through a shared object works unchanged (verified with
 _Unwind_Backtrace across a DSO on glibc under qemu-user).
 
+The new macro is not a new expression: it is character-for-character the
+one config/riscv/riscv.h and config/or1k/or1k.h already ship,
+(((GLOBAL) ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4).
+This change simply adopts, for MicroBlaze, the encoding every other DWARF-
+unwinding ELF target already uses; nothing here is MicroBlaze-specific.
+
 Requires binutils with the matching gas/ld change; older assemblers
 reject the "sym - ." expressions.
 
