@@ -105,6 +105,39 @@ Read `libgcc/config/microblaze/linux-unwind.h` in the patched tree:
   (r15, `MB_ABI_SUB_RETURN_ADDR_REGNUM`, microblaze.h:142) is recovered as an
   ordinary GPR in the loop.
 
+## The two trampoline words (why they are raw literals, not `#define`s)
+`0x31800000 | __NR_rt_sigreturn` and `0xb9cc0008` are **not addresses** — they
+are the two MicroBlaze instructions of the kernel's `rt_sigreturn` trampoline,
+matched so the unwinder can tell it is standing on that trampoline. Kernel-
+injected trampolines carry no CFI, so matching their instruction words is the
+only handle an unwinder has. Decoded (Type-B `opcode[31:26] rD[25:21] rA[20:16]
+imm[15:0]`):
+
+| word | instruction | role |
+|---|---|---|
+| `0x31800000 \| __NR_rt_sigreturn` | `addik r12, r0, __NR_rt_sigreturn` | load the rt_sigreturn syscall number into r12 |
+| `0xb9cc0008` | `brki r14, 0x8` | trap into the kernel at vector 0x8 (the syscall) |
+
+`0x31800000` is `addik r12, r0, 0` with the immediate field zero, so OR-ing the
+syscall number fills the immediate; the number itself is symbolic
+(`__NR_rt_sigreturn`, from the syscall header), not hard-coded. The kernel emits
+exactly these two words in `arch/microblaze/kernel/signal.c` (`setup_rt_frame`);
+they are a frozen ABI — changing them would break unwinding for every existing
+binary — which is why comparing against a literal is safe rather than fragile.
+
+**Should they be `#define`d for clarity? No, and a reviewer would not expect it.**
+The libgcc `linux-unwind.h` house style across every arch is a raw opcode literal
+at the comparison with a comment naming the instruction, never a macro. This very
+file cites the precedent: **sh** matches `0x9305/0xc310/0x00ad`
+(`mov #__NR_rt_sigreturn` + `trapa`) inline; i386, x86-64, arm, riscv and aarch64
+all do the same with their own trampoline opcodes. None wraps the word in a
+`#define`. MicroBlaze is in fact *more* legible than most of them, because it
+factors the syscall number out symbolically (`0x31800000 | __NR_rt_sigreturn`)
+where aarch64/riscv bake it straight into the hex. The clarity mechanism these
+files use is the comment, which this patch already carries; introducing `#define`s
+would diverge from the convention and add an indirection a reviewer then has to
+chase for a two-instruction match. Keep the literals plus the explanatory comment.
+
 ## How other processors do the same thing
 Most arches anchor the sigcontext on `context->cfa` and read `&rt->uc.uc_mcontext`
 through a local `struct rt_sigframe`, reading by **offset** (the same in glibc,
