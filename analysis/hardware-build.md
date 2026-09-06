@@ -50,6 +50,31 @@ failure. `sigframe-test/sigunwind.c` now marks its markers `noinline` so the
 call chain is real; this is a property of the test, not the unwinder, which is
 correct at both -O1 and -O2.)
 
+## Rebuilt and verified (2026-09-06)
+
+libgcc and glibc were rebuilt with the full flag set
+(`-mcpu=v11.0 -mhard-float -mxl-barrel-shift -mxl-multiply-high -mno-xl-soft-mul
+-mno-xl-soft-div -mxl-pattern-compare -mxl-reorder`) and the result checked on
+qemu-system (petalogix, Linux 6.12):
+
+| object | hardware instructions now emitted |
+|---|---|
+| `libgcc.a` | FPU `fadd`/`fmul`/`fdiv`, barrel `bsll`/`bsrl`/`bsra`, `mul`/`mulh`, `pcmpeq`/`pcmpne` |
+| `libc.so` | `mul` 672, barrel 654, `pcmpeq` 1237, FPU 42 |
+| `libm.so` | FPU throughout: `fmul` 482, `fadd` 333, `fdiv` 120 |
+
+Both build cleanly (glibc needs `make lib` first so `libm.so.6` exists before
+`support/links-dso-program` links libstdc++ against it -- a build-order race, not
+a flag problem). qemu-system's petalogix core executes the FPU, barrel-shift and
+hardware-multiply instructions without trapping (a hard-float `fmul`/`bsrl`/`mul`
+program returns the right answer). And the correctness fixes hold under the
+hardware runtime: the signal-frame unwinder test (gcc 0001) built at -O2 with the
+full flag set and linked against the hardware libgcc still passes.
+
+Nothing had to be patched to do this -- the units are turned on by build flags,
+not source changes. Making them the default without flags is a `--with-cpu` +
+default-flags toolchain build (matched to the FPGA), not an upstream gcc patch.
+
 ## Hard-float on MicroBlaze: two things that are not obvious
 
 1. **It is ABI-compatible with soft-float.** MicroBlaze's FPU operates on the
