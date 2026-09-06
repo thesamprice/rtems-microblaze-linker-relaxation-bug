@@ -284,10 +284,17 @@ new file mode 100644
 index 00000000000..6465aa4de1a
 --- /dev/null
 +++ b/binutils/testsuite/binutils-all/dw2-inline-tie.d
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,19 @@
 +#source: dw2-inline-tie.S
 +#addr2line: -f 0x0 0x4 -e
 +#name: addr2line, inlined subroutine covering its caller exactly
++#notarget: ia64-*-* alpha*-*-*
++
++# ia64 and alpha force natural alignment on the .dc.a in the hand-written line
++# program (their assembler's md_cons_align), inserting padding that desyncs the
++# DW_LNE_set_address operand ("mangled line number section").  testranges.d
++# excludes ia64 for the same class of reason.  The bfd tie-break under test is
++# target-neutral -- only the assembler quirk is being sidestepped here.
 +
 +# Both the DW_TAG_subprogram and the DW_TAG_inlined_subroutine inside it
 +# cover the same address range, so the function lookup has to break a tie.

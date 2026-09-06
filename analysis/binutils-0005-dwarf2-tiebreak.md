@@ -31,6 +31,28 @@ ordering equals by greater `unit_offset` deterministically picks the innermost
 routine, which is what the loop's own comment says it should do and what the
 pre-`089e3718bd8` `unit->function_table` prepend-walk effectively did.
 
+## Testcase portability (reviewer feedback, 2026-09-06)
+
+A reviewer running the new `dw2-inline-tie` test on `ia64-*` and `alpha-*` saw
+
+    .../binutils/addr2line: DWARF error: mangled line number section
+
+The cause is the assembler, not the test's logic: on ia64/alpha `md_cons_align`
+forces every `cons` (`.dc.a`, `.4byte`, ...) to its natural alignment, so gas
+inserts a padding `0x00` before the hand-written `DW_LNE_set_address` address in
+the `.debug_line` program.  The extended-opcode length field (`1 + address_size`)
+does not count that byte, so the reader desyncs and reports the line section as
+mangled.
+
+This cannot be fixed by re-encoding: the line program has two `set_address`
+operands a fixed 10 bytes apart, so they are never both aligned (10 is not a
+multiple of 4 or 8) no matter how the header is padded — even upstream `dw2-1.S`
+has one of its two `set_address` addresses land unaligned.  The fix is therefore
+to skip the two assembler-quirk targets, exactly as `binutils-all/testranges.d`
+(another hand-written DWARF test) already does with `#notarget: ia64-*-*`.  The
+`.d` now carries `#notarget: ia64-*-* alpha*-*-*`; the bfd tie-break under test
+is target-neutral and still runs everywhere else.
+
 ## Status
 Independent, arch-neutral determinism fix; **not sent upstream**. Also staged
 for the Buildroot 2.45.1 tree
