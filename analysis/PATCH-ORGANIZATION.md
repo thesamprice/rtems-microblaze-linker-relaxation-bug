@@ -51,7 +51,7 @@ still-open series is verified clean on master `193340ad3`
 |---|---|---|
 | 0001 | libgcc signal-frame unwinder: trampoline anchor, kernel-sized ucontext | **RECONCILE** — corrects Ramin's upstream `4ef64ad1a`; fixes a live glibc bug; interacts with Linux 0001 (MERGE-AUDIT zones B/C, sigframe-test/FINDINGS.md) |
 | 0002 | PC-relative `.eh_frame` encodings | READY (needs binutils 0009) |
-| (local) | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream ([hardware-build.md](hardware-build.md)) |
+| local/0001 | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream (`patches/gcc/local/`, [hardware-build.md](hardware-build.md)) |
 
 Note: `patches/linux/ramin-0001-libgcc-...` is **not ours to submit** — it is
 Ramin Moussavi's upstream commit (gcc 15.3/16.2), carried only as the thing to

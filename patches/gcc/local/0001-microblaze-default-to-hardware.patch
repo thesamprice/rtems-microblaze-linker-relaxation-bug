@@ -1,0 +1,45 @@
+From: Samuel Price <thesamprice@gmail.com>
+Subject: [PATCH] microblaze: default to hardware instructions (LOCAL, not upstream)
+
+Make the toolchain emit hardware instructions with no -m flags, for an FPGA
+whose MicroBlaze has all the units: change TARGET_DEFAULT from the all-soft
+masks (SOFT_MUL | SOFT_DIV | SOFT_FLOAT) to the hardware masks (BARREL_SHIFT |
+MULTIPLY_HIGH | PATTERN_COMPARE; dropping the SOFT_* masks turns on hardware
+multiply, divide and floating point), and bump the default -mcpu from v4.00.a
+to v11.0.  -mxl-reorder is already Init(2)=auto.
+
+DO NOT SEND UPSTREAM.  gcc's conservative all-soft default is correct as the
+lowest common denominator: a MicroBlaze synthesised without a hardware
+multiplier, barrel shifter or FPU would emit illegal instructions with this
+default.  This belongs in a BSP/toolchain build matched to specific hardware
+(the Xilinx/PetaLinux toolchains are built this way), not in upstream gcc.
+Equivalent to always passing:
+  -mcpu=v11.0 -mhard-float -mxl-barrel-shift -mxl-multiply-high
+  -mno-xl-soft-mul -mno-xl-soft-div -mxl-pattern-compare -mxl-reorder
+The MicroBlaze target does not accept configure's --with-cpu, so the default
+cpu is set here in source rather than at configure time.
+
+Assisted-by: Claude <noreply@anthropic.com>
+---
+--- a/gcc/config/microblaze/microblaze.h
++++ b/gcc/config/microblaze/microblaze.h
+@@ -56,8 +56,8 @@
+ #endif
+ 
+ /* Default target_flags if no switches are specified  */
+-#define TARGET_DEFAULT      (MASK_SOFT_MUL | MASK_SOFT_DIV | MASK_SOFT_FLOAT \
+-                             | TARGET_ENDIAN_DEFAULT)
++#define TARGET_DEFAULT      (MASK_BARREL_SHIFT | MASK_MULTIPLY_HIGH \
++                             | MASK_PATTERN_COMPARE | TARGET_ENDIAN_DEFAULT)
+ 
+ /* Do we have CLZ?  */
+ #define TARGET_HAS_CLZ      (TARGET_PATTERN_COMPARE && microblaze_has_clz)
+@@ -71,7 +71,7 @@
+ /* What is the default setting for -mcpu= . We set it to v4.00.a even though
+    we are actually ahead. This is safest version that has generate code
+    compatible for the original ISA */
+-#define MICROBLAZE_DEFAULT_CPU      "v4.00.a"
++#define MICROBLAZE_DEFAULT_CPU      "v11.0"
+ 
+ /* Macros to decide whether certain features are available or not,
+    depending on the instruction set architecture level.  */

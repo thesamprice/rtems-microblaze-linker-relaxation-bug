@@ -72,8 +72,29 @@ hardware runtime: the signal-frame unwinder test (gcc 0001) built at -O2 with th
 full flag set and linked against the hardware libgcc still passes.
 
 Nothing had to be patched to do this -- the units are turned on by build flags,
-not source changes. Making them the default without flags is a `--with-cpu` +
-default-flags toolchain build (matched to the FPGA), not an upstream gcc patch.
+not source changes.
+
+## The defaulting toolchain (`patches/gcc/local/0001`)
+
+To emit hardware instructions with *no* `-m` flags at all -- matched to an FPGA
+whose MicroBlaze has every unit -- `gcc/config/microblaze/microblaze.h` was
+changed: `TARGET_DEFAULT` from the all-soft masks (`SOFT_MUL | SOFT_DIV |
+SOFT_FLOAT`) to the hardware masks (`BARREL_SHIFT | MULTIPLY_HIGH |
+PATTERN_COMPARE`; dropping the `SOFT_*` masks turns on hardware multiply, divide
+and float), and `MICROBLAZE_DEFAULT_CPU` from `v4.00.a` to `v11.0`. The
+MicroBlaze target does not accept configure's `--with-cpu`, so the default cpu
+is set in source. This is `patches/gcc/local/0001-microblaze-default-to-hardware.patch`.
+
+Built and verified (2026-09-06): a toolchain with this patch, on top of gcc
+0001+0002, was configured and built to `/opt/gcc-hw`. With no flags, `xgcc -O2`
+emits `fmul`/`fadd` for float, `idiv` for divide, and issues *zero* soft-helper
+calls (`__mulsf3` etc.); `-Q --help=target` reports `-mcpu=v11.0`, `-mhard-float`,
+`-mxl-barrel-shift`, `-mxl-multiply-high` and `-mxl-pattern-compare` all enabled
+by default. It stays **LOCAL**: gcc's conservative all-soft default is the
+correct lowest common denominator (a MicroBlaze synthesised without a multiplier,
+barrel shifter or FPU would fault on these instructions), so this belongs in a
+BSP/toolchain build matched to the hardware -- as the Xilinx/PetaLinux toolchains
+are built -- not in upstream gcc.
 
 ## Hard-float on MicroBlaze: two things that are not obvious
 
