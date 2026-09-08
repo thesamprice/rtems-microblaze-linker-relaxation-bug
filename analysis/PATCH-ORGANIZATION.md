@@ -54,7 +54,7 @@ still-open series is verified clean on master `193340ad3`
 | ramin-0002 | libgcc `moddi3.S`: 64-bit signed modulo wrong for nearly every input since 2010, hangs on little-endian | READY — Ramin's, carried from OpenADK (`toolchain/gcc/patches/16.2.0/0010`), applies to gcc master; not yet on gcc-patches, **his to submit** |
 | landed/ramin-0001 | Ramin's libgcc unwinder | **LANDED** — gcc master + releases/gcc-15 (`4ef64ad1a`, 2026-06); OpenADK carries it for 12.5/15.3/16.2 |
 | 0002 | PC-relative `.eh_frame` encodings | READY (needs binutils 0009) |
-| local/0001 | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream (`patches/gcc/local/`, [hardware-build.md](hardware-build.md)) |
+| local-0001 | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream (`patches/gcc/local-0001-...`, [hardware-build.md](hardware-build.md)) |
 
 Note: the `ramin-*` patches are **not ours to submit**. `landed/ramin-0001` is
 Ramin Moussavi's upstream unwinder commit, kept only as the thing to add to an

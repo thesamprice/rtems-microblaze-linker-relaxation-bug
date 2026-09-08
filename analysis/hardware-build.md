@@ -74,7 +74,7 @@ full flag set and linked against the hardware libgcc still passes.
 Nothing had to be patched to do this -- the units are turned on by build flags,
 not source changes.
 
-## The defaulting toolchain (`patches/gcc/local/0001`)
+## The defaulting toolchain (`patches/gcc/local-0001`)
 
 To emit hardware instructions with *no* `-m` flags at all -- matched to an FPGA
 whose MicroBlaze has every unit -- `gcc/config/microblaze/microblaze.h` was
@@ -83,7 +83,7 @@ SOFT_FLOAT`) to the hardware masks (`BARREL_SHIFT | MULTIPLY_HIGH |
 PATTERN_COMPARE`; dropping the `SOFT_*` masks turns on hardware multiply, divide
 and float), and `MICROBLAZE_DEFAULT_CPU` from `v4.00.a` to `v11.0`. The
 MicroBlaze target does not accept configure's `--with-cpu`, so the default cpu
-is set in source. This is `patches/gcc/local/0001-microblaze-default-to-hardware.patch`.
+is set in source. This is `patches/gcc/local-0001-microblaze-default-to-hardware.patch`.
 
 Built and verified (2026-09-06): a toolchain with this patch, on top of gcc
 0001+0002, was configured and built to `/opt/gcc-hw`. With no flags, `xgcc -O2`
