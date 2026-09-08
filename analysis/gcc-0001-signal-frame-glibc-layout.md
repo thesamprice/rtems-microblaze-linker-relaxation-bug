@@ -4,7 +4,8 @@
 > kernel under qemu-system (petalogix, Linux 6.12): Ramin's upstream
 > `pc - sizeof(ucontext_t)` fails on both a stock and a reserve kernel under
 > glibc; a CFA-anchored form fixes the stock kernel but breaks once
-> `patches/linux/`'s 32-byte front reserve moves `&siginfo` off the SP; the
+> the kernel's front reserve (32 bytes in our superseded Linux 0001, 28 in
+> Ramin's Linux 0003) moves `&siginfo` off the SP; the
 > committed form anchors on the trampoline with a **kernel-sized** ucontext and
 > PASSes on both. The three-by-two matrix and reproduction are in
 > [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md); the offset-not-size
@@ -35,7 +36,7 @@ member of the kernel `rt_sigframe`) and computes the sigcontext with a **local
 kernel-sized `ucontext`** whose `uc_sigmask` is the kernel `sigset_t` (8 bytes),
 not the C library's (128). Because the trampoline is at the *end* of the frame,
 this offset is immune to any argument-save area the kernel reserves at the
-*front* — the `patches/linux/` reserve — so it is correct on both kernel
+*front* — the `patches/linux/` reserve, in either its 32- or 28-byte form — so it is correct on both kernel
 layouts. An intermediate CFA-anchored form (`context->cfa + siginfo_t + 2 longs
 + stack_t`) was tried first; it was correct for the stock frame but broke on the
 reserve kernel, which is why the trampoline anchor was chosen (see History).

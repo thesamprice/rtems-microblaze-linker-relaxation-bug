@@ -109,8 +109,9 @@ applied — both built from the same source, same configuration, same host compi
 `BSP_MICROBLAZE_FPGA_USE_FDT = False`, `bsps/microblaze/shared/fdt/microblaze-fdt-support.c`
 fails with `-Werror=unused-parameter` on `compatible` and `prop_name`. That is the
 concrete reason
-[`../patches/rtems/0001-bsps-microblaze-Fix-build-without-BSP_MICROBLAZE_FPGA_USE_FDT.patch`](../patches/rtems/)
-exists; apply it first or the harness cannot be built at all.
+[`../patches/rtems/landed/0001-bsps-microblaze-Fix-build-without-BSP_MICROBLAZE_FPGA_USE_FDT.patch`](../patches/rtems/landed/)
+exists. It landed in RTEMS main on 2026-08-17 (Sebastian Huber, `91401c423f`);
+on an older RTEMS apply it first or the harness cannot be built at all.
 
 ## Reproducing
 

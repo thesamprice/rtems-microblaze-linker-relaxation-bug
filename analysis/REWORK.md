@@ -16,7 +16,7 @@ applies cleanly to today's master.
 
 Also already upstream, and never ours to submit: the libgcc signal-frame
 unwinder — Ramin Moussavi's `4ef64ad1a` (gcc 15.3 / 16.2), carried in
-`patches/linux/ramin-0001-...` only as the thing to add to an old toolchain.
+`patches/gcc/landed/ramin-0001-...` only as the thing to add to an old toolchain.
 Our `patches/gcc/0001` is the glibc *correction* to that upstream file, not the
 file itself.
 
@@ -57,3 +57,23 @@ harness (`../harness/run.sh`) now pins these master commits and applies
 - **gcc:** submit 0001 (as a fix to Ramin's file) and 0002 (needs binutils 0009).
 - **glibc:** submit 0001-0007, after the cancellation-path reconciliation in
   [MERGE-AUDIT.md](MERGE-AUDIT.md).
+
+## Re-check 2026-09-08: Ramin's OpenADK work
+
+Checked binutils master `d715260f4`, gcc master (2026-09-08), glibc master, Linux
+mainline/linux-next, RTEMS main, and Ramin Moussavi's commit trail (GitHub,
+OpenADK `wbx-github/openadk`, sourceware and kernel patchwork).
+
+| Patch | Result |
+|---|---|
+| RTEMS FDT fix | **landed** — Sebastian Huber `91401c423f` (2026-08-17), identical code. Moved to `patches/rtems/landed/`. |
+| `ramin-0001` libgcc unwinder | already in gcc master/releases/gcc-15; moved from `patches/linux/` to `patches/gcc/landed/`. |
+| Linux 0001-0004 | **superseded** by Ramin's 6-patch series (2026-08-21, OpenADK `target/linux/patches/7.2/000[2-6]`): same four fixes, his entry.S form restores `PTO` instead of lowering r1. Moved to `patches/linux/superseded/`; his series now sits in `patches/linux/`. Not upstream anywhere yet. |
+| binutils 0003-0010 | still open; no MicroBlaze commits since 0002 landed. |
+| gcc 0001, 0002 | still open; OpenADK carries only the upstream unwinder form, no glibc correction; `microblaze.h` still `DW_EH_PE_aligned`. |
+| glibc (all) | still open; zero MicroBlaze changes upstream in 2026; Ramin works on uClibc-ng. |
+| RTEMS relax 0001/0002 | local; RTEMS main `abi.yml` still has empty `ldflags`. |
+
+New from Ramin, not in this repo: libgcc `moddi3.S` fix (wrong since 2010,
+hangs on LE), the kernel `sigaltstack` wiring (now in `patches/linux/0002`),
+and backports of Gopi's PR118280/PR103383 gcc patches.

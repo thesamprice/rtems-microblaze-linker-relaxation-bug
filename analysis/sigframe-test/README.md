@@ -45,14 +45,15 @@ missing, so you can see where the walk stopped.
 ### A. Does the kernel arg-save reserve shift the offset?
 
 gcc 0001 locates the sigcontext at `cfa + sizeof(siginfo_t) + 2*long +
-sizeof(stack_t)`, assuming the handler's SP is `&siginfo`. `patches/linux/0001`
-(reserve the ABI arg-save area in the signal frame) deliberately stops that from
+sizeof(stack_t)`, assuming the handler's SP is `&siginfo`. `patches/linux/superseded/0001`
+(reserve the ABI arg-save area in the signal frame; now Ramin's `patches/linux/0003`
+with a 28-byte gap) deliberately stops that from
 being true. Boot the **same** test binary under both kernels:
 
 | kernel | expectation |
 |---|---|
 | stock (no reserve) | PASS if gcc 0001's offset is right for the stock frame |
-| + `patches/linux/0001` | if this FAILs while stock PASSes, the reserve shifts `&siginfo` and gcc 0001's offset must add the reserve size |
+| + `patches/linux/superseded/0001` (or Ramin's 0003) | if this FAILs while stock PASSes, the reserve shifts `&siginfo` and gcc 0001's offset must add the reserve size |
 
 This is the interaction flagged in `../MERGE-AUDIT.md` zone C.
 

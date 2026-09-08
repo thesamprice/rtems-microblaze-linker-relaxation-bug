@@ -27,7 +27,7 @@ correctness bug, and one glibc bug (below).
    signal frame and NPTL cancellation stops early. **Fix: Ramin Moussavi's gcc
    `4ef64ad1a`** (in gcc 15.3/16.2). Confirmed: our buildroot GCC 15.3.0 lacked it;
    after adding it, `backtrace()` from a handler steps through the signal frame
-   (`patches/linux/ramin-0001-...`).
+   (`patches/gcc/landed/ramin-0001-...`).
 
 3. **tst-eintr1 segfaults = kernel `ret_from_trap` clobbers r4 on rt_sigreturn.**
    `ret_from_trap` stores r3/r4 into pt_regs unconditionally; for rt_sigreturn that
@@ -121,13 +121,15 @@ Plus a latent correctness bug found along the way:
   not yet mailed. Both are glibc patches → libc-alpha / MicroBlaze maintainers.
   Both bugs are still present in glibc git master (HEAD).
 
-`patches/linux/`:
+`patches/linux/` (2026-09-08: these four are now under `patches/linux/superseded/`;
+Ramin's 6-patch series, which covers all of them, is in `patches/linux/` — see
+`analysis/PATCH-ORGANIZATION.md`):
 - `0001-microblaze-reserve-the-ABI-argument-save-area-in-the.patch` — bug #4,
   mailed to Neal + Ramin, Msg-Id `<20260816205752.66769-1-thesamprice@gmail.com>`.
 - `0002-microblaze-preserve-the-MSR-carry-flags-across-signals.patch` — bug #5,
   mailed, Msg-Id `<20260816223827.89404-1-thesamprice@gmail.com>`.
-- `ramin-0001-libgcc-microblaze-signal-frame-unwinding.patch` — bug #2 (Ramin,
-  gcc `4ef64ad1a`), for reference.
+- `../gcc/landed/ramin-0001-libgcc-microblaze-signal-frame-unwinding.patch` — bug #2
+  (Ramin, gcc `4ef64ad1a`), for reference.
 
 - `0003-microblaze-reserve-the-ABI-argument-save-area-in-entr.patch` — bug #1
   (entry.S argument-save reservation; the GCC-15 boot fix).

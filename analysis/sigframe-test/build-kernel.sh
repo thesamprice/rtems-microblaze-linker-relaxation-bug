@@ -1,7 +1,8 @@
 #!/bin/sh
 # build-kernel.sh -- cross-build a MicroBlaze petalogix kernel for qemu-system,
-# optionally with patches/linux/ applied, so the signal-frame test can run
-# against a real kernel (and against the arg-save-reserve change).
+# optionally with patches/linux/ applied (Ramin's series; set PATCHES=
+# ../../patches/linux/superseded for the original 32-byte arg_save form), so
+# the signal-frame test can run against a real kernel with the front reserve.
 #
 #   CROSS_COMPILE=microblazeel-buildroot-linux-gnu- ./build-kernel.sh [stock|patched]
 #
@@ -22,7 +23,7 @@ export ARCH=microblaze CROSS_COMPILE
 
 if [ "$MODE" = patched ]; then
   for f in "$patches"/000*.patch; do patch -p1 -N -f < "$f" >/dev/null 2>&1 || true; done
-  echo "applied patches/linux (signal-frame reserve etc.)"
+  echo "applied $patches (signal-frame reserve etc.)"
 fi
 
 make mmu_defconfig >/dev/null

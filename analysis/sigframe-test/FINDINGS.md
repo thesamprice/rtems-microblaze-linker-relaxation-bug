@@ -2,8 +2,8 @@
 
 Ran `sigunwind` (built with the patched gcc, so it carries gcc 0001's
 CFA-anchored unwinder) under `qemu-system-microblazeel -M petalogix-s3adsp1800`
-on a Linux 6.12.9 kernel built two ways: stock, and with `patches/linux/`
-applied (the arg-save-reserve that puts `unsigned long arg_save[8]` at the front
+on a Linux 6.12.9 kernel built two ways: stock, and with the original
+`patches/linux/` (now `patches/linux/superseded/`) applied (the arg-save-reserve that puts `unsigned long arg_save[8]` at the front
 of `struct rt_sigframe`, moving `&siginfo` 32 bytes off the handler's SP).
 
 | libgcc offset | stock kernel | patched kernel |
@@ -29,7 +29,8 @@ struct rt_sigframe {
 
 gcc 0001 anchors at `context->cfa` (the handler's SP) and adds the siginfo and
 the ucontext head to reach `uc_mcontext`. That is right only while `SP == &info`.
-`patches/linux/0001` inserts `arg_save[8]` before `info`, so `SP == &arg_save`
+`patches/linux/superseded/0001` inserts `arg_save[8]` before `info` (Ramin's
+current `patches/linux/0003` inserts a 28-byte `abi_gap[7]` instead), so `SP == &arg_save`
 and `&info == SP + 32` — the anchor is short by 32.
 
 ## The robust direction (not implemented here)

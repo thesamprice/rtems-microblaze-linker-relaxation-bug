@@ -18,6 +18,7 @@ on what.
 | mark | meaning |
 |---|---|
 | **LANDED** | merged upstream; kept only for the record |
+| **SUPERSEDED** | replaced by someone else's version of the same fix; kept under `superseded/` for the record |
 | **READY** | applies to current upstream, tested, submit as-is |
 | **RECONCILE** | overlaps another patch; resolve before submitting (see MERGE-AUDIT.md) |
 | **LOCAL** | a build/BSP configuration change, not for upstream |
@@ -49,13 +50,16 @@ still-open series is verified clean on master `193340ad3`
 
 | # | what | status |
 |---|---|---|
-| 0001 | libgcc signal-frame unwinder: trampoline anchor, kernel-sized ucontext | **RECONCILE** — corrects Ramin's upstream `4ef64ad1a`; fixes a live glibc bug; interacts with Linux 0001 (MERGE-AUDIT zones B/C, sigframe-test/FINDINGS.md) |
+| 0001 | libgcc signal-frame unwinder: trampoline anchor, kernel-sized ucontext | READY — corrects Ramin's upstream `4ef64ad1a`; fixes a live glibc bug; layout-independent, so it is unaffected by the kernel's front reserve (MERGE-AUDIT zones B/C, sigframe-test/FINDINGS.md) |
+| landed/ramin-0001 | Ramin's libgcc unwinder | **LANDED** — gcc master + releases/gcc-15 (`4ef64ad1a`, 2026-06); OpenADK carries it for 12.5/15.3/16.2 |
 | 0002 | PC-relative `.eh_frame` encodings | READY (needs binutils 0009) |
 | local/0001 | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream (`patches/gcc/local/`, [hardware-build.md](hardware-build.md)) |
 
-Note: `patches/linux/ramin-0001-libgcc-...` is **not ours to submit** — it is
-Ramin Moussavi's upstream commit (gcc 15.3/16.2), carried only as the thing to
-add to an old toolchain. gcc 0001 is the correction on top of it.
+Note: `patches/gcc/landed/ramin-0001-libgcc-...` is **not ours to submit** — it
+is Ramin Moussavi's upstream commit, kept only as the thing to add to an old
+toolchain. gcc 0001 is the correction on top of it. Not in this repo but worth
+picking up from OpenADK: Ramin's `moddi3.S` fix (`toolchain/gcc/patches/16.2.0/
+0010-microblaze-moddi3-endianness-and-sign.patch`), not yet on gcc-patches.
 
 ## glibc  → `libc-alpha`
 
@@ -82,14 +86,23 @@ Two sets that overlap on the cancellation path — reconcile before submitting.
 
 ## Linux kernel  → `LKML` / `linux-microblaze`
 
-`patches/linux/`.
+`patches/linux/` now carries **Ramin Moussavi's 6-patch series** (2026-08-21,
+taken from OpenADK `target/linux/patches/7.2/`, commit `5ed122100e`), which
+covers everything our own four kernel patches did. Our originals are under
+`patches/linux/superseded/`. As of 2026-09-08 the series is in **neither**
+torvalds master, linux-next nor patchwork.kernel.org — it is pending LKML, not
+landed. (Patch 1/6 of the series is not carried by OpenADK.)
 
-| # | what | status |
-|---|---|---|
-| 0001 | reserve the ABI arg-save area in the **signal** frame (siginfo clobber) | **HW-DECISION** — changes the signal-frame layout gcc 0001 anchors to (MERGE-AUDIT zone C) |
-| 0002 | preserve MSR carry across signals | READY |
-| 0003 | reserve the ABI arg-save area in **entry.S** (GCC-15 boot death) | READY |
-| 0004 | `ret_from_trap`: don't clobber r4 on rt_sigreturn | READY — this is Ramin's LKML fix (`Fixes: 791d0a169b91`) |
+| # | what | replaces | status |
+|---|---|---|---|
+| 0002 | wire up `sigaltstack` (was `sys_ni_syscall`) | — | pending LKML |
+| 0003 | 28-byte ABI argument-home gap at the front of `rt_sigframe` | our 0001 (32-byte `arg_save[8]`) | pending LKML |
+| 0004 | `ret_from_trap_no_rval`: rt_sigreturn skips the r3/r4 stores | our 0004 (trampoline variant) | pending LKML |
+| 0005 | restore the pre-2011 `PTO` offset below `pt_regs` (GCC-15 boot death) | our 0003 (`C_ARG_SIZE` r1 lowering) | pending LKML |
+| 0006 | preserve MSR carry across signals | our 0002 — same patch, Sam's Signed-off-by kept | pending LKML |
+
+gcc 0001 anchors on the trampoline at the *end* of the frame, so the change
+from a 32-byte to a 28-byte front gap does not affect it.
 
 ## RTEMS  → RTEMS
 
@@ -99,10 +112,7 @@ Two sets that overlap on the cancellation path — reconcile before submitting.
 |---|---|---|
 | 0001 | disable linker relaxation (the `-Wl,--no-relax` workaround) | applied workaround for the pre-fix toolchain |
 | 0002 | re-enable linker relaxation | **HW-DECISION** — apply only once the RTEMS toolchain carries binutils 0001, else the miscompile returns |
-| 0001 (FDT) | build without `BSP_MICROBLAZE_FPGA_USE_FDT` | independent BSP fix |
-
-Housekeeping: `patches/rtems/` has two files named `0001-*` (the disable-relax
-and the FDT fix). Renumber one when tidying.
+| landed/0001 (FDT) | build without `BSP_MICROBLAZE_FPGA_USE_FDT` | **LANDED** — Sebastian Huber's identical fix, RTEMS `91401c423f`, 2026-08-17 |
 
 ## The overlaps to resolve first
 
@@ -110,8 +120,8 @@ Reconciliations, detailed in [MERGE-AUDIT.md](MERGE-AUDIT.md):
 
 - **A. gas CFI** — resolved: kept binutils 0006, removed the branch's duplicate.
 - **B/C. libgcc unwinder** — gcc 0001 (trampoline anchor) supersedes both Ramin's
-  form (broken under glibc) and the earlier CFA form (broken by Linux 0001's
-  reserve). It passes on both stock and reserve kernels; verified in
+  form (broken under glibc) and the earlier CFA form (broken by the kernel's
+  front reserve, now Ramin's Linux 0003). It passes on both stock and reserve kernels; verified in
   [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
 - **D. cancellation path** — adopt the tail-call (glibc-branch 0002) and drop the
   `syscall_cancel.S` hunk of glibc EH 0005; keep the rest of its CFI. Both need
@@ -124,8 +134,9 @@ Reconciliations, detailed in [MERGE-AUDIT.md](MERGE-AUDIT.md):
    0009). Build with objdump on `PATH`.
 3. **glibc** with that gcc + `glibc-longjmp-chk/patches/000[1-7]` (and the
    cancellation set after the zone-D reconciliation).
-4. **Linux** with `patches/linux/` for a board/qemu-system run; gcc 0001 must
-   match whether Linux 0001 is in (FINDINGS.md).
+4. **Linux** with `patches/linux/` (Ramin's series) for a board/qemu-system
+   run; gcc 0001 is layout-independent, so it works with or without it
+   (FINDINGS.md).
 
 `harness/run.sh` automates 1-3; [hardware-build.md](hardware-build.md) adds the
 hardware flag set.

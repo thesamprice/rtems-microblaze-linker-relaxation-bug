@@ -65,7 +65,7 @@ Relaxation is worth 520 bytes. The `-O2` win survives essentially intact.
 | [`RELAXATION-GUIDE.md`](RELAXATION-GUIDE.md) | how the surrounding code works — the `imm` mechanism, the call chain, the BFD structures, where the code came from, and what else is wrong with it |
 | [`ASAN-GUIDE.md`](ASAN-GUIDE.md) | how to build and use an ASan linker, and what can and cannot be sanitized on the target |
 | [`patches/binutils/`](patches/binutils/) | **four-patch series** — the fix plus three further MicroBlaze bugs; testsuite goes to zero failures |
-| [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`) + an unrelated non-FDT build fix |
+| [`patches/rtems/`](patches/rtems/) | RTEMS-side workaround (`-Wl,--no-relax`); the non-FDT build fix landed upstream (2026-08-17) and is under `landed/` |
 | [`ld-microblaze/`](ld-microblaze/) | the dejagnu tests from the patch, readable without unpacking it |
 | [`binutils-testsuite/`](binutils-testsuite/) | whole binutils `make check`, baseline vs patched, with raw `.sum` files |
 | [`torture-suite/`](torture-suite/) | GCC torture suite: executable content byte-identical, 1585/1609 execute tests pass, zero regressions |

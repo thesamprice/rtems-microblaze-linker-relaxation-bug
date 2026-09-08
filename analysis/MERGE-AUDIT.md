@@ -42,7 +42,7 @@ than folding it into the CFI one.
 
 Two files touch `libgcc/config/microblaze/linux-unwind.h`:
 
-- `patches/linux/ramin-0001-libgcc-microblaze-signal-frame-unwinding.patch` is
+- `patches/gcc/landed/ramin-0001-libgcc-microblaze-signal-frame-unwinding.patch` is
   **Ramin Moussavi's upstream commit `4ef64ad1a`** (gcc 15.3 / 16.2). It *added*
   the unwinder. It is already in gcc master. Its buildroot GCC 15.3.0 lacked it,
   which is why the branch carries it — as the thing to add to an old toolchain,
@@ -70,8 +70,9 @@ Keep both, reframed that way. But two things a reviewer — and a board — must
 
 ### C. Kernel signal-frame reserve vs gcc 0001's anchor — DIRECT INTERACTION
 
-`patches/linux/0001-microblaze-reserve-the-ABI-argument-save-area-in-the-signal`
-fixes a real bug: because `struct rt_sigframe` puts `siginfo` first, the handler
+`patches/linux/superseded/0001-microblaze-reserve-the-ABI-argument-save-area-in-the-signal`
+(now Ramin's `patches/linux/0003`, a 28-byte `abi_gap[7]` instead of our 32-byte
+`arg_save[8]`) fixes a real bug: because `struct rt_sigframe` puts `siginfo` first, the handler
 runs with `r1 == &siginfo`, and a spilling handler (GCC 15's IRA) writes its
 argument-save area over `si_code`, dropping the cancel. The fix reserves the
 arg-save area **at the base of the signal frame**, so the handler's SP no longer
@@ -119,7 +120,7 @@ together and re-tested as a unit.
 | binutils | 0003, 0004, 0006, 0007, 0008, 0009 (+ optional `.debug_line` min-insn-length) | 0001, 0002 already landed; 0005 (dwarf2 tiebreak) is arch-neutral, send separately |
 | gcc | `gcc/0001` (as a fix to Ramin's file), `gcc/0002` | 0002 depends on binutils 0009; ramin-0001 is already upstream |
 | glibc | `glibc/0001`, `glibc/0002`, the trimmed `glibc-longjmp-chk/0005`, and 0001-0004, 0006, 0007 | resolve the `syscall_cancel.S` overlap first |
-| linux | the four `patches/linux/` kernel patches | Ramin's `ret_from_trap` r4 fix went to LKML; Sam's reserve/MSR patches are the ABI-correctness fixes |
+| linux | Ramin's 6-patch series in `patches/linux/` (2026-09-08: our four originals are under `superseded/`) | covers the same four fixes plus `sigaltstack`; MSR patch keeps Sam's Signed-off-by; pending LKML, not yet in mainline |
 
 ## Decisions that are yours, not mine
 
