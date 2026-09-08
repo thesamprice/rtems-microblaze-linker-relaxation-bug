@@ -110,9 +110,20 @@ from a 32-byte to a 28-byte front gap does not affect it.
 
 | # | what | status |
 |---|---|---|
-| 0001 | disable linker relaxation (the `-Wl,--no-relax` workaround) | applied workaround for the pre-fix toolchain |
-| 0002 | re-enable linker relaxation | **HW-DECISION** — apply only once the RTEMS toolchain carries binutils 0001, else the miscompile returns |
 | landed/0001 (FDT) | build without `BSP_MICROBLAZE_FPGA_USE_FDT` | **LANDED** — Sebastian Huber's identical fix, RTEMS `91401c423f`, 2026-08-17 |
+
+The two linker-relaxation patches (disable `-Wl,--no-relax` in `abi.yml`, and
+the matching re-enable) were **deleted on 2026-09-08**: the miscompile is fixed
+in binutils master (0001/0002 landed 2026-08-13), so an RTEMS-side workaround
+is the wrong fix. The proper change is in the **RTEMS Source Builder**:
+`rtems/config/7/rtems-microblaze.bset` still pins
+`tools/rtems-xilinx-binutils-2.36` (binutils 2.36 + ten meta-xilinx
+rel-v2021.1 patches). Point it at a binutils that carries the upstream fix
+(master after 2026-08-13; the RSB already has `rtems-binutils-head` and
+`rtems-binutils-git-1` configs) and relaxation, and the `-O2` build, work
+without any BSP change. Check the Xilinx-only patches (wdc.ext insns, address
+extension, bit-field insns) against upstream first — most landed via Neal
+Frager's 2023 binutils series.
 
 ## The overlaps to resolve first
 
