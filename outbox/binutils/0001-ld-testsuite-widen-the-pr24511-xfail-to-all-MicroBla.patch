@@ -1,7 +1,7 @@
-From 5aadda755bf098cc642dcc7e8352f4bc1c937132 Mon Sep 17 00:00:00 2001
+From 69b9aafd27447e3c51caa122c02d0412374044c4 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 12:08:58 -0400
-Subject: [PATCH] ld/testsuite: widen the pr24511 xfail to all MicroBlaze
+Subject: [PATCH 1/7] ld/testsuite: widen the pr24511 xfail to all MicroBlaze
  targets
 
 The test already xfails microblaze*-*-elf*, on the grounds given in its own
@@ -28,7 +28,7 @@ ld/
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/ld/testsuite/ld-elf/pr24511.d b/ld/testsuite/ld-elf/pr24511.d
-index f77a43b9..ec7f584b 100644
+index f77a43b9e2e..ec7f584b8b9 100644
 --- a/ld/testsuite/ld-elf/pr24511.d
 +++ b/ld/testsuite/ld-elf/pr24511.d
 @@ -4,7 +4,7 @@

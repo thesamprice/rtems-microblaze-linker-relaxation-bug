@@ -160,6 +160,28 @@ Reconciliations, detailed in [MERGE-AUDIT.md](MERGE-AUDIT.md):
 `harness/run.sh` automates 1-3; [hardware-build.md](hardware-build.md) adds the
 hardware flag set.
 
+## Sending: the numbering reviewers see
+
+The file numbers under `patches/<repo>/` are this repo's bookkeeping (gaps
+where things landed, `ramin-`/`local-` prefixes). Reviewers never see them.
+`tools/make-outbox.sh` turns each still-open set into a mailing-list series:
+it checks the upstream base out in a throwaway worktree, `git am`s the
+patches in order (so each is verified to apply on top of the previous one),
+and `git format-patch`es them back out with `[PATCH n/N]` subjects and a
+`[PATCH 0/N]` cover letter filled from `patches/<repo>/0000-cover-letter.txt`.
+The result is committed under `outbox/`:
+
+| series | files | base it was generated on |
+|---|---|---|
+| `outbox/binutils/` | cover + 7 (repo 0003, 0004, 0006-0010) | binutils master `d715260f420` |
+| `outbox/binutils-dwarf2/` | 1 (repo 0005, arch-neutral, own thread) | same |
+| `outbox/gcc-0001/`, `outbox/gcc-0002/` | 1 each, no cover letter | gcc master `5792827ef` |
+| `outbox/glibc/` | cover + 9 (repo 0001-0009) | glibc master `04e750e7` |
+
+Send with `git send-email --to=<list> outbox/<series>/*.patch`; the cover
+letter goes first and the rest thread under it. Regenerate after editing any
+patch or cover letter. Kernel and RTEMS have nothing to send.
+
 ## The synthesis docs
 
 | doc | what it is for |

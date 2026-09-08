@@ -1,7 +1,7 @@
-From 4be49bf2af3ca5ad14634e1247b449721c04737e Mon Sep 17 00:00:00 2001
+From 63c69e1cd5390877037cd22271236e1cf66ab73a Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 12:11:32 -0400
-Subject: [PATCH] microblaze: write the value for BFD_RELOC_8 and
+Subject: [PATCH 2/7] microblaze: write the value for BFD_RELOC_8 and
  BFD_RELOC_16 fixups
 
 md_apply_fix has cases for BFD_RELOC_32 and BFD_RELOC_64 and for the
@@ -42,10 +42,10 @@ gas/
  2 files changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
-index 42ce97b3..2bba6a59 100644
+index 3e3dca81921..36b98bbd8fc 100644
 --- a/gas/config/tc-microblaze.c
 +++ b/gas/config/tc-microblaze.c
-@@ -2142,6 +2142,29 @@ md_apply_fix (fixS *   fixP,
+@@ -2145,6 +2145,29 @@ md_apply_fix (fixS *   fixP,
  	    }
  	}
        break;
@@ -76,7 +76,7 @@ index 42ce97b3..2bba6a59 100644
      case BFD_RELOC_RVA:
      case BFD_RELOC_32_PCREL:
 diff --git a/gas/testsuite/gas/all/forward.d b/gas/testsuite/gas/all/forward.d
-index d921ec51..360ab778 100644
+index d921ec517be..360ab778ebb 100644
 --- a/gas/testsuite/gas/all/forward.d
 +++ b/gas/testsuite/gas/all/forward.d
 @@ -11,7 +11,7 @@

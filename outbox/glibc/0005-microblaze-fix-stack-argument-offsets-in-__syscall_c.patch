@@ -1,0 +1,50 @@
+From 5f18a59fd994866a629e98303524d39fba4ff2c0 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 7 Sep 2026 23:54:55 -0400
+Subject: [PATCH 5/9] microblaze: fix stack-argument offsets in
+ __syscall_cancel_arch
+
+__syscall_cancel_arch reads its 7th and 8th arguments (syscall arguments
+5 and 6, passed on the stack) from r1+56 and r1+60.  On MicroBlaze the
+incoming stack arguments begin at r1+28: the link-register word sits at
+r1+0, followed by the six register-argument save slots r1+4..r1+24, so
+argument 7 is at r1+28 and argument 8 at r1+32.
+
+With the wrong offsets every cancellable syscall that passes arguments on
+the stack reads uninitialised caller stack.  The practical victims are
+pread64/pwrite64, whose 5th syscall argument is the high word of the
+64-bit offset: a valid offset (e.g. 0) is corrupted into a huge/negative
+value.  pread64(pipe, .., 0) then returns EINVAL (negative offset) instead
+of ESPIPE, defeating the POSIX AIO helper's ESPIPE->read() fallback in
+rt/aio_misc.c -- aio_read completes immediately with EINVAL, so
+aio_suspend returns before it can block and cannot be cancelled.  This is
+why nptl/tst-cancel17 fails on MicroBlaze.
+
+Verified on qemu-system-microblazeel: with the fix pread64(pipe, .., 0)
+returns ESPIPE, the AIO request blocks, and nptl/tst-cancel17 passes.
+
+	* sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+	(__syscall_cancel_arch): Load arguments 5 and 6 from r1+28 and
+	r1+32 instead of r1+56 and r1+60.
+---
+ sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S b/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+index 64b74948..d6ae1fcf 100644
+--- a/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
++++ b/sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
+@@ -42,8 +42,8 @@ __syscall_cancel_arch_start:
+ 	addk	r6,r8,r0
+ 	addk	r7,r9,r0
+ 	addk	r8,r10,r0
+-	lwi	r9,r1,56
+-	lwi	r10,r1,60
++	lwi	r9,r1,28
++	lwi	r10,r1,32
+ 	brki	r14,8
+ 
+ 	.globl __syscall_cancel_arch_end
+-- 
+2.39.5 (Apple Git-154)
+

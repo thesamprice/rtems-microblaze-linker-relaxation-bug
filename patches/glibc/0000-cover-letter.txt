@@ -1,0 +1,46 @@
+microblaze: fix the fortified longjmp hang, destructors, cancellation, and add ucontext, CFI and a working backtrace
+
+The MicroBlaze port has never had its testsuite run, and this series is
+what fell out of running it (under qemu-user and, for the signal-frame
+cases, qemu-system with a real kernel).  Patches apply to current master
+with git am in this order; 3 and 7 both touch start.S, 5 to 7 touch
+syscall_cancel.S, 4 and 8 touch the Linux Makefile.
+
+Bugs:
+
+  1/9  microblaze: Implement ____longjmp_chk using the generic Linux version
+       The function has been a two-instruction stub (rtsd r15,0; nop) since
+       the 2012 port, so every fortified longjmp/siglongjmp hangs.
+  2/9  microblaze: Tell the libm tests that soft-float has no exceptions or
+       rounding modes
+       The tests abort before running otherwise.
+  3/9  microblaze: Pass _dl_fini to __libc_start_main so destructors run
+       _start passed 0; since 2.34 nothing else runs .fini_array in a
+       dynamically linked program.
+  5/9  microblaze: fix stack-argument offsets in __syscall_cancel_arch
+       Arguments 5 and 6 were read from r1+56/60; the ABI puts them at
+       r1+28/32.  pread64/pwrite64 through a cancellation point got a
+       garbage offset (aio_suspend, nptl/tst-cancel17).
+  6/9  microblaze: tail-call __syscall_do_cancel so -fexceptions
+       cancellation unwinds
+       brlid made an asm frame with no unwind info, so the forced unwind
+       stopped there and cleanup handlers never ran.
+  9/9  elf: Terminate the .eh_frame section of ld.so
+       ld.so is linked without sofini.os; add an rtld flavour of it.
+
+Functionality:
+
+  4/9  microblaze: Implement getcontext, setcontext, swapcontext and
+       makecontext (they were the ENOSYS stubs).
+  7/9  microblaze: Add CFI to the assembly sources
+       Behind a configure probe: the assembler only accepts .cfi_* with the
+       gas patch posted to binutils@ ("gas: Support CFI directives for
+       MicroBlaze"); without it the macros expand to nothing and the build
+       is unchanged.
+  8/9  microblaze: Use the generic unwinder-based backtrace
+       The port's own prologue-scanning backtrace misfires and stops early.
+
+Full unwinding through a signal frame on glibc additionally needs a libgcc
+fix (the upstream MD_FALLBACK_FRAME_STATE_FOR uses sizeof(ucontext_t),
+which is 120 bytes larger under glibc than the kernel's); that is a
+separate patch to gcc-patches and is not required by anything here.

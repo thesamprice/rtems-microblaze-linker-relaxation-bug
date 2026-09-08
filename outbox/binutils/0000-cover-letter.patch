@@ -1,0 +1,81 @@
+From 27cc7a7ec078d7953b3a3eb314b0d8a5d7e5c32f Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 7 Sep 2026 23:53:41 -0400
+Subject: [PATCH 0/7] MicroBlaze: gas CFI, PC-relative .eh_frame data, PLT pointer equality, and gas fixups
+
+This series is the still-open MicroBlaze binutils work from the
+investigation that produced the relaxation fix already in master
+(a639e0adaf2, f55053f1dc9).  It applies to current master with git am, in
+this order; 6/7 needs 3/7 (both touch tc-microblaze.h and the cfi test).
+
+  1/7  ld/testsuite: widen the pr24511 xfail to all MicroBlaze targets
+       Testsuite only.  elfmicroblaze.sc defines no __init_array_start, so
+       the test fails rather than xfails on every non-elf MicroBlaze triple.
+  2/7  microblaze: write the value for BFD_RELOC_8 and BFD_RELOC_16 fixups
+       md_apply_fix had no case for them, so ".dc.b L1-L0" assembled to 0
+       and no relocation survived to correct it.
+  3/7  gas: Support CFI directives for MicroBlaze
+       TARGET_USE_CFIPOP was never defined; gas rejected .cfi_* with "CFI
+       is not supported for this target".  Adds the hooks, register-name
+       mapping, and a testsuite.
+  4/7  bfd: microblaze: apply relocations the .eh_frame editor asks to keep
+       _bfd_elf_section_offset returning -2 was treated as "skip" instead
+       of "apply statically", leaving the field unrelocated.
+  5/7  bfd: microblaze: keep the PLT address of address-taken functions
+       finish_dynamic_symbol zeroed st_value unconditionally, so &func in
+       a non-PIC executable differed from &func inside the library.
+  6/7  microblaze: support "sym - ." across sections, and relax
+       R_MICROBLAZE_32_PCREL
+       DIFF_EXPR_OK was never defined, so gas could not assemble the
+       difference a PC-relative .eh_frame pointer is made of.
+  7/7  gas: testsuite: exclude microblazeel from the diff1 test
+       Testsuite only; the guard matched microblaze-* but not microblazeel-*.
+
+Testing: with the series on master, the MicroBlaze gas suite
+(gas/microblaze/*.exp) and ld-microblaze plus ld-elf/eh* pass with no
+failures, and the whole gas, ld and binutils suites for microblaze-elf show
+no change other than the tests the series adds.  The set was also used
+end to end: with 3/7 and 6/7 the gcc MicroBlaze port can switch its
+.eh_frame encoding to PC-relative (patch to follow on gcc-patches), which
+took libc.so from 711 dynamic relocations in .eh_frame to none and made
+the section read-only with an .eh_frame_hdr table; glibc's full make check
+under qemu showed no unwinding or exception-table regression.
+
+The arch-neutral bfd/dwarf2.c addr2line tie-break fix found in the same
+work is sent separately.
+
+Samuel Price (7):
+  ld/testsuite: widen the pr24511 xfail to all MicroBlaze targets
+  microblaze: write the value for BFD_RELOC_8 and BFD_RELOC_16 fixups
+  gas: Support CFI directives for MicroBlaze
+  bfd: microblaze: apply relocations the .eh_frame editor asks to keep
+    static
+  bfd: microblaze: keep the PLT address of address-taken functions in
+    executables
+  microblaze: support "sym - ." across sections, and relax
+    R_MICROBLAZE_32_PCREL
+  gas: testsuite: exclude microblazeel from the diff1 test
+
+ bfd/elf32-microblaze.c                       | 31 +++++++--
+ gas/config/tc-microblaze.c                   | 70 +++++++++++++++++++-
+ gas/config/tc-microblaze.h                   | 23 +++++++
+ gas/testsuite/gas/all/forward.d              |  2 +-
+ gas/testsuite/gas/all/gas.exp                |  2 +-
+ gas/testsuite/gas/microblaze/cfi.d           | 22 ++++++
+ gas/testsuite/gas/microblaze/cfi.exp         |  5 ++
+ gas/testsuite/gas/microblaze/cfi.s           | 13 ++++
+ gas/testsuite/gas/microblaze/reloc_pcrel.d   | 11 +++
+ gas/testsuite/gas/microblaze/reloc_pcrel.exp |  5 ++
+ gas/testsuite/gas/microblaze/reloc_pcrel.s   | 11 +++
+ ld/testsuite/ld-elf/pr24511.d                |  2 +-
+ 12 files changed, 188 insertions(+), 9 deletions(-)
+ create mode 100644 gas/testsuite/gas/microblaze/cfi.d
+ create mode 100644 gas/testsuite/gas/microblaze/cfi.exp
+ create mode 100644 gas/testsuite/gas/microblaze/cfi.s
+ create mode 100644 gas/testsuite/gas/microblaze/reloc_pcrel.d
+ create mode 100644 gas/testsuite/gas/microblaze/reloc_pcrel.exp
+ create mode 100644 gas/testsuite/gas/microblaze/reloc_pcrel.s
+
+-- 
+2.39.5 (Apple Git-154)
+
