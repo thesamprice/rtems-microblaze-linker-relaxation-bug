@@ -20,7 +20,7 @@ same steps by hand. The pieces that matter regardless of host:
   `PATH`. objdump must be on `PATH` at configure time or gcc will not enable
   read-only exception tables (`HAVE_LD_RO_RW_SECTION_MIXING`), and the
   `.eh_frame` improvement from `patches/gcc/0002` will not show.
-- **glibc** with the seven `glibc-longjmp-chk/patches/`, compiled by that gcc.
+- **glibc** with the nine `patches/glibc/`, compiled by that gcc.
   Point glibc's configure `CC` at the new gcc so it picks up the new
   `libgcc_s`, crt files and `objcopy`/`readelf`.
 

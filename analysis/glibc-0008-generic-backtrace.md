@@ -1,8 +1,8 @@
 <!-- Per-patch analysis. Follows analysis/TEMPLATE.md. Cite code as path:line. -->
 
-# glibc 0006: MicroBlaze uses the generic unwinder-based `backtrace`
+# glibc 0008: MicroBlaze uses the generic unwinder-based `backtrace`
 
-**Patch:** `glibc-longjmp-chk/patches/0006-microblaze-generic-backtrace.patch`
+**Patch:** `patches/glibc/0008-microblaze-generic-backtrace.patch`
 **Target:** `glibc.git` at base commit `10ed541` (2026-08-25); built in the glibc-cfi tree
 **Files touched:** `sysdeps/microblaze/Makefile`, `sysdeps/microblaze/backtrace.c` (deleted), `sysdeps/microblaze/backtrace_linux.c` (deleted), `sysdeps/unix/sysv/linux/microblaze/Makefile`
 **Status:** independent; not sent upstream (Assisted-by trailer, list-ready)

@@ -2,7 +2,7 @@
 
 # glibc 0003: `_start` passes null `rtld_fini`, so no destructor runs in a dynamic MicroBlaze program
 
-**Patch:** `glibc-longjmp-chk/patches/0003-microblaze-pass-dl_fini-to-libc_start_main.patch`
+**Patch:** `patches/glibc/0003-microblaze-pass-dl_fini-to-libc_start_main.patch`
 **Target:** glibc (`sourceware.org/git/glibc.git`) at base commit `10ed541ad145` (2026-08-25)
 **Files touched:** `sysdeps/microblaze/start.S`
 **Status:** independent; sent to Neal Frager as part of the 3-patch set on 2026-09-02; not yet on libc-alpha.

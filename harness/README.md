@@ -3,8 +3,8 @@
 One container, one script, reproduces the "round four" configuration from
 `../glibc-longjmp-chk/README.md`: binutils master with `patches/binutils/0006`
 to `0009`, gcc (the `microblaze-fixes` branch of thesamprice/gcc) with
-`patches/gcc/0001` and `0002`, and glibc master with the seven patches in
-`glibc-longjmp-chk/patches/`, then glibc's full `make check` run through
+`patches/gcc/0001` and `0002`, and glibc master with the nine patches in
+`patches/glibc/`, then glibc's full `make check` run through
 `qemu-microblazeel`.
 
 ## Run it

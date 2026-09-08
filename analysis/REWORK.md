@@ -26,7 +26,7 @@ file itself.
 |---|---|---|
 | binutils 0003-0009 | master `193340ad3` | applies clean as an ordered series |
 | gcc 0001, 0002 | master `08794c636` | apply clean |
-| glibc 0001-0007 | master `fe03757f` | applies clean as an ordered series |
+| glibc 0001-0007 (old numbering; now `patches/glibc/0001-0004, 0007-0009`) | master `fe03757f` | applies clean as an ordered series |
 
 The apply order matters: binutils 0009 needs 0006 first (both touch
 `tc-microblaze.h` and `cfi.d`); glibc 0005 needs 0003 (both touch `start.S`) and
@@ -55,7 +55,7 @@ harness (`../harness/run.sh`) now pins these master commits and applies
 - **binutils:** submit 0003, 0004, 0006, 0007, 0008, 0009; 0005 (arch-neutral
   addr2line) separately; 0001, 0002 done.
 - **gcc:** submit 0001 (as a fix to Ramin's file) and 0002 (needs binutils 0009).
-- **glibc:** submit 0001-0007, after the cancellation-path reconciliation in
+- **glibc:** submit the series (consolidated 2026-09-08 into `patches/glibc/0001-0009`, reconciliation done) — originally 0001-0007 after the cancellation-path reconciliation in
   [MERGE-AUDIT.md](MERGE-AUDIT.md).
 
 ## Re-check 2026-09-08: Ramin's OpenADK work
@@ -81,3 +81,17 @@ Correction: an earlier pass the same day said the kernel series was in
 neither linux-next nor patchwork. It missed the 2026-09-07 linux-next merge;
 the file-level grep (`abi_gap`, `ret_from_trap_no_rval`, `MSR_CC`,
 `sys_sigaltstack`, `PTO`) against linux-next is the check that settled it.
+
+## Housekeeping 2026-09-08: one glibc series
+
+The two glibc patch folders were merged into `patches/glibc/` as one series:
+old EH 0001-0004 keep their numbers, the cancellation branch's 0001/0002
+became 0005/0006, and EH 0005-0007 became 0007-0009. The `syscall_cancel.S`
+hunk of the CFI patch (now 0007) was dropped, since the tail-call in 0006
+leaves no frame to describe. `glibc-longjmp-chk/` keeps its README, evidence
+and the Neal correspondence only. The series was re-checked with
+`git apply --check` in order against glibc master (see below).
+
+Re-verified after the consolidation: `patches/glibc/0001-0009` apply cleanly in
+order (`git apply`, each on top of the previous) to glibc master `04e750e7`
+(2026-09-08).

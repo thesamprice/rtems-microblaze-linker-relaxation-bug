@@ -3,7 +3,7 @@
 
 # glibc 0004: implement getcontext/setcontext/swapcontext/makecontext for MicroBlaze
 
-**Patch:** `glibc-longjmp-chk/patches/0004-microblaze-ucontext.patch`
+**Patch:** `patches/glibc/0004-microblaze-ucontext.patch`
 **Target:** glibc (`sourceware.org/git/glibc.git`) at base commit `10ed541ad145` (2026-08-25)
 **Files touched:** `sysdeps/unix/sysv/linux/microblaze/{getcontext.S, setcontext.S, swapcontext.S, makecontext.c, ucontext_i.sym, Makefile}`
 **Status:** ready — from patches README (round two, not yet sent)

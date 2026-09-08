@@ -1,8 +1,8 @@
 <!-- Per-patch analysis. Follows analysis/TEMPLATE.md. Cite code as path:line. -->
 
-# glibc 0007: terminate `ld.so`'s `.eh_frame`
+# glibc 0009: terminate `ld.so`'s `.eh_frame`
 
-**Patch:** `glibc-longjmp-chk/patches/0007-elf-terminate-ld-so-eh_frame.patch`
+**Patch:** `patches/glibc/0009-elf-terminate-ld-so-eh_frame.patch`
 **Target:** `glibc.git` at base commit `10ed541` (2026-08-25); built in the glibc-cfi tree
 **Files touched:** `elf/Makefile`
 **Status:** independent; not sent upstream (Assisted-by trailer, list-ready)

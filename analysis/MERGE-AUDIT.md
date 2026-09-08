@@ -95,10 +95,10 @@ the stock and the reserve kernel. Full evidence in
 Both branches make `-fexceptions` cancellation unwind through
 `sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S`, differently:
 
-- **This session** (`glibc-longjmp-chk/patches/0005-microblaze-asm-cfi.patch`)
+- **This session** (`patches/glibc/0007-microblaze-asm-cfi.patch`)
   adds CFI to the asm, saving r15 on the cancel path so the unwinder can step the
   `__syscall_cancel_arch` frame.
-- **The cancellation branch** (`patches/glibc/0002-...tail-call __syscall_do_cancel`)
+- **The cancellation branch** (`patches/glibc/0006-...tail-call __syscall_do_cancel`, was 0002)
   makes `__syscall_cancel_arch` tail-call `__syscall_do_cancel`, so there is no
   frame to unwind through and no CFI is needed there.
 
@@ -106,12 +106,16 @@ The tail-call is the cleaner fix for the cancel frame and should win *for that
 frame*. But 0005 also adds CFI to `start.S`, `dl-trampoline.S`, `_mcount.S`,
 `clone.S` and the syscall-error path, which the tail-call does not touch and
 which a full `_Unwind_Backtrace` still needs. **Recommendation:** adopt the
-tail-call (`patches/glibc/0002`) for the cancel path and drop only the
+tail-call (`patches/glibc/0006`) for the cancel path and drop only the
 `syscall_cancel.S` hunk from 0005, keeping the rest of its CFI. Both still need
-`patches/glibc/0001` (the syscall_cancel stack-argument-offset fix for
+`patches/glibc/0005` (the syscall_cancel stack-argument-offset fix for
 `aio_suspend`/`tst-cancel17`), which is a separate real bug 0005 does not fix and
 which edits the same file — so 0001, 0002 and the trimmed 0005 must be staged
 together and re-tested as a unit.
+
+**Resolved 2026-09-08:** done exactly this way. The glibc patches now form one
+series in `patches/glibc/` (0005 offsets, 0006 tail-call, 0007 CFI without the
+`syscall_cancel.S` hunk).
 
 ## What each upstream submission should be, after reconciliation
 

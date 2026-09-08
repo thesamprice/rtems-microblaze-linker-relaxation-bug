@@ -114,10 +114,11 @@ Plus a latent correctness bug found along the way:
 
 ## Patches in this repo
 
-`patches/glibc/`:
-- `0001-microblaze-fix-syscall_cancel-stack-arg-offsets.patch` — bug #6, MAILED
+`patches/glibc/` (renumbered 2026-09-08 when all glibc patches were merged
+into one series there):
+- `0005-microblaze-fix-syscall_cancel-stack-arg-offsets.patch` — bug #6, MAILED
   2026-08-16 to Neal (Cc Ramin + Sam).
-- `0002-microblaze-tail-call-__syscall_do_cancel-so-fexceptio.patch` — bug #7,
+- `0006-microblaze-tail-call-__syscall_do_cancel-so-fexceptio.patch` — bug #7,
   not yet mailed. Both are glibc patches → libc-alpha / MicroBlaze maintainers.
   Both bugs are still present in glibc git master (HEAD).
 

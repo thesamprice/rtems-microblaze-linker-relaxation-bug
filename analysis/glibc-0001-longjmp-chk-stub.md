@@ -2,7 +2,7 @@
 
 # glibc 0001: `____longjmp_chk` is a do-nothing stub, so every fortified `longjmp` hangs
 
-**Patch:** `glibc-longjmp-chk/patches/0001-microblaze-Implement-____longjmp_chk-using-the-gener.patch`
+**Patch:** `patches/glibc/0001-microblaze-Implement-____longjmp_chk-using-the-gener.patch`
 **Target:** glibc (`sourceware.org/git/glibc.git`) at base commit `10ed541ad145` (2026-08-25)
 **Files touched:** adds `sysdeps/microblaze/jmpbuf-offsets.h`; deletes `sysdeps/unix/sysv/linux/microblaze/____longjmp_chk.S`
 **Status:** sent upstream to Neal Frager (AMD), Cc Gopi Kumar Bulusu, 2026-09-01; not yet on libc-alpha.

@@ -180,7 +180,7 @@ or1k should confirm the prefix `uc_flags, uc_link, uc_stack` = `2*long +
 stack_t` matches the kernel `struct ucontext`.
 
 ## Same-processor code that does related logic
-- **glibc patch 0004** (`glibc-longjmp-chk/patches/0004-microblaze-ucontext.patch`,
+- **glibc patch 0004** (`patches/glibc/0004-microblaze-ucontext.patch`,
   `sysdeps/unix/sysv/linux/microblaze/ucontext_i.sym`) encodes the *same*
   mcontext shape from the other side: `MCONTEXT_PC = offsetof(uc_mcontext) +
   32*4`, i.e. r0..r31 then pc. The unwinder's `&sc->regs.r0 + i*4` for 32 regs

@@ -97,7 +97,7 @@ MicroBlaze port's move out of `ports/`.
 
 ## Fix
 
-`patches/0001-microblaze-Implement-____longjmp_chk-using-the-gener.patch`,
+`../patches/glibc/0001-microblaze-Implement-____longjmp_chk-using-the-gener.patch`,
 against glibc master. It deletes the stub and adds
 `sysdeps/microblaze/jmpbuf-offsets.h`:
 
@@ -169,7 +169,7 @@ exception macros, and nothing told the test harness, so `test_exceptions`
 found no exception class to test and tripped `assert (ran == 1)` before
 evaluating anything. Every other soft-float-only port (arc, riscv, loongarch,
 or1k) carries a `nofpu/math-tests-exceptions.h` and `math-tests-rounding.h`
-for exactly this. `patches/0002-microblaze-libm-tests-nofpu.patch` adds the
+for exactly this. `../patches/glibc/0002-microblaze-libm-tests-nofpu.patch` adds the
 MicroBlaze pair. That run was discarded and the full check restarted with both
 patches applied (`evidence/full-check-results.txt`, every failure with its
 exit status and first line of output). Patch 0003 came out of this run and is
@@ -227,7 +227,7 @@ object. Static programs are fine because `call_fini` handles them. Before
 Bootlin glibc 2.41 the destructor runs in the static build and not in the
 dynamic one.
 
-`patches/0003-microblaze-pass-dl_fini-to-libc_start_main.patch` makes
+`../patches/glibc/0003-microblaze-pass-dl_fini-to-libc_start_main.patch` makes
 `_start` use r15 when it is non-zero. The kernel's `ELF_PLAT_INIT` for
 MicroBlaze zeroes every register at exec, and qemu-user does the same, so
 zero r15 reliably means "started by the kernel, no rtld_fini". Verified

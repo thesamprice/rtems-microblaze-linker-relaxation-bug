@@ -64,7 +64,7 @@ exists upstream.
 | binutils 0009 (PC-relative relocs) | open |
 | gcc 0001 (signal-frame unwinder) | **corrects an existing upstream file** that is only right for uClibc, not glibc |
 | gcc 0002 (PC-relative EH encodings) | open (master still `DW_EH_PE_aligned`) |
-| glibc 0001-0007 | all open; the MicroBlaze port has never had its testsuite run |
+| glibc 0001-0009 | all open; the MicroBlaze port has never had its testsuite run |
 
 The headline: **the linker-relaxation miscompile that this repository was opened
 to track (binutils 0001) is fixed in binutils master.** So is the discarded-section
@@ -103,9 +103,16 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 | 0002 | libm tests: tell the harness soft-float has no exceptions/rounding | [libm-tests-nofpu](glibc-0002-libm-tests-nofpu.md) |
 | 0003 | `start.S`: pass `_dl_fini` so destructors run in dynamic programs | [pass-dl-fini](glibc-0003-pass-dl-fini.md) |
 | 0004 | implement `getcontext`/`setcontext`/`swapcontext`/`makecontext` | [ucontext](glibc-0004-ucontext.md) |
-| 0005 | CFI on the hand-written assembly (configure-gated) | [asm-cfi](glibc-0005-asm-cfi.md) |
-| 0006 | use the generic unwinder-based `backtrace()` | [generic-backtrace](glibc-0006-generic-backtrace.md) |
-| 0007 | terminate `ld.so`'s own `.eh_frame` | [ldso-eh-frame](glibc-0007-ldso-eh-frame.md) |
+| 0005 | `__syscall_cancel_arch`: read syscall args 5/6 from the right stack slots (aio_suspend, tst-cancel17) | see `LINUX-CANCEL-HANG-CORRECTION.md` bug #6 |
+| 0006 | `__syscall_cancel_arch`: tail-call `__syscall_do_cancel` so `-fexceptions` cancellation unwinds | see `LINUX-CANCEL-HANG-CORRECTION.md` bug #7 |
+| 0007 | CFI on the hand-written assembly (configure-gated) | [asm-cfi](glibc-0007-asm-cfi.md) |
+| 0008 | use the generic unwinder-based `backtrace()` | [generic-backtrace](glibc-0008-generic-backtrace.md) |
+| 0009 | terminate `ld.so`'s own `.eh_frame` | [ldso-eh-frame](glibc-0009-ldso-eh-frame.md) |
+
+All nine live in `patches/glibc/` since 2026-09-08 (before that 0001-0004 and
+0007-0009 were `glibc-longjmp-chk/patches/0001-0007`, and 0005/0006 were
+`patches/glibc/0001-0002`). Re-verified with `git apply --check` in order
+against glibc master `04e750e7` (2026-09-08).
 
 ## Hardware-accelerated build
 

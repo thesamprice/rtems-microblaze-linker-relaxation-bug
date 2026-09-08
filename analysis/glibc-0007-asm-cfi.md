@@ -1,20 +1,20 @@
 <!-- Per-patch analysis. Reviewer-facing. path:line citations are into the
      patched glibc tree at /src/glibc-cfi (base 10ed541ad145, 2026-08-25). -->
 
-# glibc 0005: add CFI to the MicroBlaze assembly sources
+# glibc 0007: add CFI to the MicroBlaze assembly sources
 
-**Patch:** `glibc-longjmp-chk/patches/0005-microblaze-asm-cfi.patch`
+**Patch:** `patches/glibc/0007-microblaze-asm-cfi.patch`
 **Target:** glibc (`sourceware.org/git/glibc.git`) at base commit `10ed541ad145` (2026-08-25)
-**Files touched:** `config.h.in`, `sysdeps/microblaze/{sysdep.h, configure, configure.ac, start.S, dl-trampoline.S, _mcount.S}`, `sysdeps/unix/sysv/linux/microblaze/{clone.S, setcontext.S, syscall_cancel.S, sysdep.h}`
-**Status:** ready — from patches README (round two + a round-three correction; depends on binutils 0006). Not yet sent.
+**Files touched:** `config.h.in`, `sysdeps/microblaze/{sysdep.h, configure, configure.ac, start.S, dl-trampoline.S, _mcount.S}`, `sysdeps/unix/sysv/linux/microblaze/{clone.S, setcontext.S, sysdep.h}`
+**Status:** ready (round two + a round-three correction; depends on binutils 0006). Not yet sent. Renumbered 0005 → 0007 on 2026-09-08 when the glibc patches were consolidated under `patches/glibc/`; the `syscall_cancel.S` hunk was dropped then in favour of the tail-call in 0006.
 
-> **History (this session).** After the `main`-branch merge, the cancellation
-> branch's tail-call fix (`patches/glibc/0002`, make `__syscall_cancel_arch`
-> tail-call `__syscall_do_cancel`) supersedes this patch's `syscall_cancel.S`
-> hunk for the cancel frame — a tail call leaves no frame to unwind, so no CFI is
-> needed there. The rest of this patch's CFI (`start.S`, `dl-trampoline.S`,
-> `_mcount.S`, `clone.S`, the syscall-error handler) is still wanted for general
-> unwinding and backtraces. See [MERGE-AUDIT.md](MERGE-AUDIT.md) zone D.
+> **History.** The cancellation branch's tail-call fix (`patches/glibc/0006`,
+> make `__syscall_cancel_arch` tail-call `__syscall_do_cancel`) supersedes the
+> `syscall_cancel.S` hunk this patch originally carried — a tail call leaves no
+> frame to unwind, so no CFI is needed there. That hunk was removed from the
+> patch on 2026-09-08 (MERGE-AUDIT.md zone D, resolved). The rest of the CFI
+> (`start.S`, `dl-trampoline.S`, `_mcount.S`, `clone.S`, the syscall-error
+> handler) is still wanted for general unwinding and backtraces.
 
 ## What it does
 No hand-written MicroBlaze assembly in glibc carries unwind info: `ENTRY`/`END`

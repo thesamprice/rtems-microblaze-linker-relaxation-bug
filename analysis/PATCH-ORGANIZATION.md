@@ -63,26 +63,27 @@ picking up from OpenADK: Ramin's `moddi3.S` fix (`toolchain/gcc/patches/16.2.0/
 
 ## glibc  → `libc-alpha`
 
-Two sets that overlap on the cancellation path — reconcile before submitting.
-
-`glibc-longjmp-chk/patches/` (EH/runtime, this repo's main glibc work):
+`patches/glibc/`, one series in apply order. Until 2026-09-08 this was two
+folders from two investigations (`glibc-longjmp-chk/patches/` and the
+cancellation branch's `patches/glibc/`); they were merged, renumbered, and
+the cancel-path overlap (MERGE-AUDIT zone D) resolved by dropping the
+`syscall_cancel.S` hunk from the CFI patch. Old numbers in brackets.
 
 | # | what | status |
 |---|---|---|
-| 0001 | `____longjmp_chk` via the generic version (the fortified-longjmp hang) | READY |
-| 0002 | libm tests: soft-float has no exceptions/rounding | READY (correct even for hard-float; the FPU has no fenv) |
-| 0003 | `start.S`: pass `_dl_fini` so destructors run | READY |
+| 0001 | `____longjmp_chk` via the generic version (the fortified-longjmp hang) | READY (sent to Neal 2026-09-01) |
+| 0002 | libm tests: soft-float has no exceptions/rounding | READY (sent 2026-09-02; correct even for hard-float, the FPU has no fenv) |
+| 0003 | `start.S`: pass `_dl_fini` so destructors run | READY (sent 2026-09-02) |
 | 0004 | implement `getcontext`/`setcontext`/`swapcontext`/`makecontext` | READY |
-| 0005 | CFI on the asm (configure-gated) | **RECONCILE** — drop the `syscall_cancel.S` hunk if the tail-call (glibc-branch 0002) wins; keep the rest (MERGE-AUDIT zone D) |
-| 0006 | use the generic unwinder-based `backtrace()` | READY |
-| 0007 | terminate `ld.so`'s own `.eh_frame` | READY |
+| 0005 [cancel 0001] | fix `__syscall_cancel_arch` stack-arg offsets (aio_suspend) | READY (sent 2026-08-16) |
+| 0006 [cancel 0002] | tail-call `__syscall_do_cancel` so `-fexceptions` cancellation unwinds | READY |
+| 0007 [EH 0005] | CFI on the asm (configure-gated on binutils 0006) | READY — `syscall_cancel.S` hunk dropped, 0006 covers that frame |
+| 0008 [EH 0006] | use the generic unwinder-based `backtrace()` | READY |
+| 0009 [EH 0007] | terminate `ld.so`'s own `.eh_frame` | READY |
 
-`patches/glibc/` (cancellation branch):
-
-| # | what | status |
-|---|---|---|
-| 0001 | fix `__syscall_cancel_arch` stack-arg offsets (aio_suspend) | READY (real bug, edits the same file as 0005) |
-| 0002 | tail-call `__syscall_do_cancel` so `-fexceptions` cancellation unwinds | **RECONCILE** — supersedes 0005's cancel-path CFI hunk |
+Apply in number order: 0003 and 0007 both touch `start.S`; 0005, 0006 and
+(formerly) 0007 touch `syscall_cancel.S`; 0004 and 0008 touch the linux
+`Makefile`.
 
 ## Linux kernel  → `LKML` / `linux-microblaze`
 
@@ -135,17 +136,16 @@ Reconciliations, detailed in [MERGE-AUDIT.md](MERGE-AUDIT.md):
   form (broken under glibc) and the earlier CFA form (broken by the kernel's
   front reserve, now Ramin's Linux 0003). It passes on both stock and reserve kernels; verified in
   [sigframe-test/FINDINGS.md](sigframe-test/FINDINGS.md).
-- **D. cancellation path** — adopt the tail-call (glibc-branch 0002) and drop the
-  `syscall_cancel.S` hunk of glibc EH 0005; keep the rest of its CFI. Both need
-  glibc-branch 0001 (the arg-offset fix), which edits the same file.
+- **D. cancellation path** — resolved 2026-09-08: the tail-call (now glibc 0006)
+  handles the cancel frame and the `syscall_cancel.S` hunk was dropped from the
+  CFI patch (now glibc 0007); the arg-offset fix (glibc 0005) precedes both.
 
 ## Build / apply order for a working toolchain
 
 1. **binutils** master + `patches/binutils/000[3-9]` (+ 0010). Build gas/ld.
 2. **gcc** on that binutils + `patches/gcc/0001`,`0002` (0002 needs binutils
    0009). Build with objdump on `PATH`.
-3. **glibc** with that gcc + `glibc-longjmp-chk/patches/000[1-7]` (and the
-   cancellation set after the zone-D reconciliation).
+3. **glibc** with that gcc + `patches/glibc/000[1-9]` in order.
 4. **Linux** from linux-next (or a stable kernel plus `patches/linux/landed/`)
    for a board/qemu-system run; gcc 0001 is layout-independent, so it works
    with or without the signal-frame change (FINDINGS.md).

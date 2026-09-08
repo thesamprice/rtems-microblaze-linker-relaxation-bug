@@ -28,7 +28,7 @@ BOOTLIN_URL=${BOOTLIN_URL:-https://toolchains.bootlin.com/downloads/releases/too
 # space-separated list of files, or an empty string for none.
 BINUTILS_PATCHES=${BINUTILS_PATCHES-"$REPO/patches/binutils/000[3-9]-*.patch"}   # 0001+0002 landed upstream; 0003-0009 are the still-open set
 GCC_PATCHES=${GCC_PATCHES-"$REPO/patches/gcc/000[1-2]-*.patch"}
-GLIBC_PATCHES=${GLIBC_PATCHES-"$REPO/glibc-longjmp-chk/patches/000[1-7]-*.patch"}
+GLIBC_PATCHES=${GLIBC_PATCHES-"$REPO/patches/glibc/000[1-9]-*.patch"}
 
 TARGET=microblazeel-linux-gnu
 TC=$WORK/tc

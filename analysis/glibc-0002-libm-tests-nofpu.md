@@ -2,7 +2,7 @@
 
 # glibc 0002: libm tests abort on soft-float MicroBlaze (no exception/rounding config)
 
-**Patch:** `glibc-longjmp-chk/patches/0002-microblaze-libm-tests-nofpu.patch`
+**Patch:** `patches/glibc/0002-microblaze-libm-tests-nofpu.patch`
 **Target:** glibc (`sourceware.org/git/glibc.git`) at base commit `10ed541ad145` (2026-08-25)
 **Files touched:** adds `sysdeps/microblaze/math-tests-exceptions.h`, `sysdeps/microblaze/math-tests-rounding.h`
 **Status:** independent; sent to Neal Frager as part of the 3-patch set on 2026-09-02; not yet on libc-alpha.
