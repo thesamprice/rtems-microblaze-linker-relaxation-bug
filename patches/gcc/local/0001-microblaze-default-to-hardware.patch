@@ -34,11 +34,15 @@ Assisted-by: Claude <noreply@anthropic.com>
  
  /* Do we have CLZ?  */
  #define TARGET_HAS_CLZ      (TARGET_PATTERN_COMPARE && microblaze_has_clz)
-@@ -71,7 +71,7 @@
- /* What is the default setting for -mcpu= . We set it to v4.00.a even though
-    we are actually ahead. This is safest version that has generate code
-    compatible for the original ISA */
+@@ -71,7 +71,8 @@
+-/* What is the default setting for -mcpu= . We set it to v4.00.a even though
+-   we are actually ahead. This is safest version that has generate code
+-   compatible for the original ISA */
 -#define MICROBLAZE_DEFAULT_CPU      "v4.00.a"
++/* What is the default setting for -mcpu= .  LOCAL: v11.0, the core this
++   toolchain is built for, so the hardware units enabled in TARGET_DEFAULT
++   above are also selected by the ISA level.  Upstream uses v4.00.a, the
++   safest version that generates code compatible with the original ISA.  */
 +#define MICROBLAZE_DEFAULT_CPU      "v11.0"
  
  /* Macros to decide whether certain features are available or not,
