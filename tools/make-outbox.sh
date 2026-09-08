@@ -24,6 +24,8 @@ trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP"
 
 # series <name> <tree> <base> <cover-or-"-"> <patch>...
+# Order = what reviewers want: bug fixes first, prerequisites before their
+# users, testsuite-only changes last.  Repo file numbers are bookkeeping.
 series() {
   name=$1 tree=$2 base=$3 cover=$4; shift 4
   [ -n "$tree" ] || { echo "skip $name (no tree)"; return; }
@@ -52,11 +54,13 @@ PY
 
 B=${BINUTILS_TREE:-}; G=${GCC_TREE:-}; L=${GLIBC_TREE:-}
 series binutils        "$B" "${BINUTILS_BASE:-master}" "$P/binutils/0000-cover-letter.txt" \
-  "$P"/binutils/0003-*.patch "$P"/binutils/0004-*.patch "$P"/binutils/0006-*.patch \
-  "$P"/binutils/0007-*.patch "$P"/binutils/0008-*.patch "$P"/binutils/0009-*.patch \
+  "$P"/binutils/0004-*.patch "$P"/binutils/0008-*.patch "$P"/binutils/0007-*.patch \
+  "$P"/binutils/0006-*.patch "$P"/binutils/0009-*.patch "$P"/binutils/0003-*.patch \
   "$P"/binutils/0010-*.patch
 series binutils-dwarf2 "$B" "${BINUTILS_BASE:-master}" - "$P"/binutils/0005-*.patch
 series gcc-0001        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0001-*.patch
 series gcc-0002        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0002-*.patch
 series glibc           "$L" "${GLIBC_BASE:-master}"    "$P/glibc/0000-cover-letter.txt" \
-  "$P"/glibc/000[1-9]-*.patch
+  "$P"/glibc/0001-*.patch "$P"/glibc/0003-*.patch "$P"/glibc/0005-*.patch \
+  "$P"/glibc/0006-*.patch "$P"/glibc/0009-*.patch "$P"/glibc/0002-*.patch \
+  "$P"/glibc/0004-*.patch "$P"/glibc/0007-*.patch "$P"/glibc/0008-*.patch

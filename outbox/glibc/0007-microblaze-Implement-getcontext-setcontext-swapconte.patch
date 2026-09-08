@@ -1,7 +1,7 @@
-From dafd640110e96f4199db73777f04a83c5fefc6e4 Mon Sep 17 00:00:00 2001
+From ea1be3d48c95fbb31c703280cb9f20fda95b7fa1 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 12:39:11 -0400
-Subject: [PATCH 4/9] microblaze: Implement getcontext, setcontext, swapcontext
+Subject: [PATCH 7/9] microblaze: Implement getcontext, setcontext, swapcontext
  and makecontext
 
 MicroBlaze has only ever had the generic ENOSYS stubs, so the 13

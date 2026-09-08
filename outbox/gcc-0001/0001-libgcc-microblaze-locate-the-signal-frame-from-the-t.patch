@@ -1,6 +1,6 @@
-From c04c86b1e323dd9f31bd8300189708e0b77f273e Mon Sep 17 00:00:00 2001
+From 4c0ce3a08df65ddaa8c97dbf8803da2ad674c073 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Mon, 7 Sep 2026 23:54:12 -0400
+Date: Mon, 7 Sep 2026 23:58:18 -0400
 Subject: [PATCH] libgcc: microblaze: locate the signal frame from the
  trampoline
 

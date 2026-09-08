@@ -1,7 +1,7 @@
-From 32f7df2605d5bb3181329d6b6869e19d027eabee Mon Sep 17 00:00:00 2001
+From 8bfe19c9bc1e7e2713bb8ce34ef41750f848826b Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 12:50:07 -0400
-Subject: [PATCH 7/9] microblaze: Add CFI to the assembly sources
+Subject: [PATCH 8/9] microblaze: Add CFI to the assembly sources
 
 No hand-written MicroBlaze assembly in glibc carries unwind
 information: ENTRY and END do not emit cfi_startproc/cfi_endproc, and

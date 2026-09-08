@@ -35,14 +35,14 @@ still-open series is verified clean on master `193340ad3`
 |---|---|---|
 | 0001 | relaxation: locals-cache OOB miscompile | **LANDED** 2026-08-13 (`landed/`) |
 | 0002 | neutralise relocations against discarded sections | **LANDED** 2026-08-13 (`landed/`) |
-| 0003 | widen the pr24511 xfail to all MicroBlaze | READY (needs a `#noxfail` first) |
-| 0004 | write the value for `BFD_RELOC_8`/`16` | READY |
-| 0005 | `addr2line` DIE-offset tie-break (arch-neutral) | READY (send separately) |
-| 0006 | gas `.cfi_*` directives | READY (superseded the merge branch's CFI patch, MERGE-AUDIT zone A) |
-| 0007 | apply the relocation the `.eh_frame` editor keeps | READY |
-| 0008 | canonical PLT / pointer equality | READY |
-| 0009 | `sym - .` across sections, `R_MICROBLAZE_32_PCREL` | READY (gcc 0002 depends on it) |
-| 0010 | exclude `microblazeel-*` from the gas diff1 test | READY (testsuite only) |
+| 0003 | widen the pr24511 xfail to all MicroBlaze | READY (needs a `#noxfail` first) — mail 6/7 |
+| 0004 | write the value for `BFD_RELOC_8`/`16` | READY — mail 1/7 |
+| 0005 | `addr2line` DIE-offset tie-break (arch-neutral) | READY (send separately, own thread) |
+| 0006 | gas `.cfi_*` directives | READY — mail 4/7 |
+| 0007 | apply the relocation the `.eh_frame` editor keeps | READY — mail 3/7 |
+| 0008 | canonical PLT / pointer equality | READY — mail 2/7 |
+| 0009 | `sym - .` across sections, `R_MICROBLAZE_32_PCREL` | READY (gcc 0002 depends on it) — mail 5/7 |
+| 0010 | exclude `microblazeel-*` from the gas diff1 test | READY (testsuite only) — mail 7/7 |
 
 ## gcc  → `gcc-patches`
 
@@ -78,15 +78,15 @@ the cancel-path overlap (MERGE-AUDIT zone D) resolved by dropping the
 
 | # | what | status |
 |---|---|---|
-| 0001 | `____longjmp_chk` via the generic version (the fortified-longjmp hang) | READY (sent to Neal 2026-09-01) |
-| 0002 | libm tests: soft-float has no exceptions/rounding | READY (sent 2026-09-02; correct even for hard-float, the FPU has no fenv) |
-| 0003 | `start.S`: pass `_dl_fini` so destructors run | READY (sent 2026-09-02) |
-| 0004 | implement `getcontext`/`setcontext`/`swapcontext`/`makecontext` | READY |
-| 0005 [cancel 0001] | fix `__syscall_cancel_arch` stack-arg offsets (aio_suspend) | READY (sent 2026-08-16) |
-| 0006 [cancel 0002] | tail-call `__syscall_do_cancel` so `-fexceptions` cancellation unwinds | READY |
-| 0007 [EH 0005] | CFI on the asm (configure-gated on binutils 0006) | READY — `syscall_cancel.S` hunk dropped, 0006 covers that frame |
-| 0008 [EH 0006] | use the generic unwinder-based `backtrace()` | READY |
-| 0009 [EH 0007] | terminate `ld.so`'s own `.eh_frame` | READY |
+| 0001 | `____longjmp_chk` via the generic version (the fortified-longjmp hang) | READY (sent to Neal 2026-09-01) — mail 1/9 |
+| 0002 | libm tests: soft-float has no exceptions/rounding | READY (sent 2026-09-02; correct even for hard-float, the FPU has no fenv) — mail 6/9 |
+| 0003 | `start.S`: pass `_dl_fini` so destructors run | READY (sent 2026-09-02) — mail 2/9 |
+| 0004 | implement `getcontext`/`setcontext`/`swapcontext`/`makecontext` | READY — mail 7/9 |
+| 0005 [cancel 0001] | fix `__syscall_cancel_arch` stack-arg offsets (aio_suspend) | READY (sent 2026-08-16) — mail 3/9 |
+| 0006 [cancel 0002] | tail-call `__syscall_do_cancel` so `-fexceptions` cancellation unwinds | READY — mail 4/9 |
+| 0007 [EH 0005] | CFI on the asm (configure-gated on binutils 0006) | READY — `syscall_cancel.S` hunk dropped, 0006 covers that frame — mail 8/9 |
+| 0008 [EH 0006] | use the generic unwinder-based `backtrace()` | READY — mail 9/9 |
+| 0009 [EH 0007] | terminate `ld.so`'s own `.eh_frame` | READY — mail 5/9 (arch-neutral; may be asked to split out) |
 
 Apply in number order: 0003 and 0007 both touch `start.S`; 0005, 0006 and
 (formerly) 0007 touch `syscall_cancel.S`; 0004 and 0008 touch the linux
@@ -173,11 +173,14 @@ The result is committed under `outbox/`:
 
 | series | files | base it was generated on |
 |---|---|---|
-| `outbox/binutils/` | cover + 7 (repo 0003, 0004, 0006-0010) | binutils master `d715260f420` |
+| `outbox/binutils/` | cover + 7: fixes 0004, 0008, 0007; then CFI 0006, pcrel 0009; testsuite 0003, 0010 | binutils master `d715260f420` |
 | `outbox/binutils-dwarf2/` | 1 (repo 0005, arch-neutral, own thread) | same |
 | `outbox/gcc-0001/`, `outbox/gcc-0002/` | 1 each, no cover letter | gcc master `5792827ef` |
-| `outbox/glibc/` | cover + 9 (repo 0001-0009) | glibc master `04e750e7` |
+| `outbox/glibc/` | cover + 9: bugs 0001, 0003, 0005, 0006, 0009; testsuite 0002; features 0004, 0007, 0008 | glibc master `04e750e7` |
 
+The mail order is bug fixes first, prerequisites before their users,
+testsuite-only changes last ("mail n/N" in the tables above); each series
+was re-applied in that order with `git am` before generating.
 Send with `git send-email --to=<list> outbox/<series>/*.patch`; the cover
 letter goes first and the rest thread under it. Regenerate after editing any
 patch or cover letter. Kernel and RTEMS have nothing to send.

@@ -1,7 +1,7 @@
-From 63c69e1cd5390877037cd22271236e1cf66ab73a Mon Sep 17 00:00:00 2001
+From b887af89369191e78f8bbaa36562ef619178a58d Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 12:11:32 -0400
-Subject: [PATCH 2/7] microblaze: write the value for BFD_RELOC_8 and
+Subject: [PATCH 1/7] microblaze: write the value for BFD_RELOC_8 and
  BFD_RELOC_16 fixups
 
 md_apply_fix has cases for BFD_RELOC_32 and BFD_RELOC_64 and for the
@@ -36,6 +36,8 @@ gas/
 	* config/tc-microblaze.c (md_apply_fix): Handle BFD_RELOC_8 and
 	BFD_RELOC_16.
 	* testsuite/gas/all/forward.d: Remove the microblaze-*-* xfail.
+
+Assisted-by: Claude <noreply@anthropic.com>
 ---
  gas/config/tc-microblaze.c      | 23 +++++++++++++++++++++++
  gas/testsuite/gas/all/forward.d |  2 +-

@@ -1,7 +1,7 @@
-From 2b935a03af7bef160e77c5831298d6f2ea19d570 Mon Sep 17 00:00:00 2001
+From 1d38ca449fe8047e33db1fdaed247fc160580347 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 18:38:29 -0400
-Subject: [PATCH 8/9] microblaze: Use the generic unwinder-based backtrace
+Subject: [PATCH 9/9] microblaze: Use the generic unwinder-based backtrace
 
 The MicroBlaze backtrace walks the stack by scanning backwards from
 each return address for an "addik r1,r1,-N" instruction and treating

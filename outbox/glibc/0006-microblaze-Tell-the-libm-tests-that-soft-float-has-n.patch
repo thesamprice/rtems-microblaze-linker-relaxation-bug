@@ -1,7 +1,7 @@
-From c512d5788e254fff79c512f47ff2c38afe659d99 Mon Sep 17 00:00:00 2001
+From bef4fd1f8e110d1c6454dddf296ad48d1ae494ca Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 07:13:46 -0400
-Subject: [PATCH 2/9] microblaze: Tell the libm tests that soft-float has no
+Subject: [PATCH 6/9] microblaze: Tell the libm tests that soft-float has no
  exceptions or rounding modes
 
 MicroBlaze uses ieee754/soft-fp and the generic <bits/fenv.h>, which

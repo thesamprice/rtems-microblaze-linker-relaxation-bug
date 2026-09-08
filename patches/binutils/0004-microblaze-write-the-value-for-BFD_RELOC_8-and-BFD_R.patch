@@ -36,6 +36,8 @@ gas/
 	* config/tc-microblaze.c (md_apply_fix): Handle BFD_RELOC_8 and
 	BFD_RELOC_16.
 	* testsuite/gas/all/forward.d: Remove the microblaze-*-* xfail.
+
+Assisted-by: Claude <noreply@anthropic.com>
 ---
  gas/config/tc-microblaze.c      | 23 +++++++++++++++++++++++
  gas/testsuite/gas/all/forward.d |  2 +-

@@ -1,7 +1,7 @@
-From fb2a6bd54366abcc37af358e66a77e10229cbe6e Mon Sep 17 00:00:00 2001
+From 31c1c6372f0bb434464c0508c30460a2e0a831a7 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 18:38:29 -0400
-Subject: [PATCH 9/9] elf: Terminate the .eh_frame section of ld.so
+Subject: [PATCH 5/9] elf: Terminate the .eh_frame section of ld.so
 
 ld.so is linked from librtld.os alone, so unlike libc.so and every
 other shared object glibc builds it never gets sofini.os, and its

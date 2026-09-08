@@ -1,7 +1,7 @@
-From 4a6658d23c066f839151cd47531093fa38700c2e Mon Sep 17 00:00:00 2001
+From fb29caf3143354923360a8ed7b64e6f50b0acf1c Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 23:05:43 -0400
-Subject: [PATCH 6/7] microblaze: support "sym - ." across sections, and relax
+Subject: [PATCH 5/7] microblaze: support "sym - ." across sections, and relax
  R_MICROBLAZE_32_PCREL
 
 MicroBlaze gas rejects "sym - ." when sym lives in another section

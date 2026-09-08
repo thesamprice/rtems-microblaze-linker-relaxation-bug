@@ -45,6 +45,7 @@ binutils/
 	* testsuite/binutils-all/dw2-inline-tie.d: New test.
 	* testsuite/binutils-all/addr2line.exp: Run it.
 
+Assisted-by: Claude <noreply@anthropic.com>
 ---
 diff --git a/bfd/dwarf2.c b/bfd/dwarf2.c
 index 4c88add7bc7..208b6db29a5 100644

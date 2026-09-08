@@ -1,6 +1,6 @@
-From 21e1465557a138e50538a5fd0254aba3d0fefdd4 Mon Sep 17 00:00:00 2001
+From 14194490804fb8ae9f475ccf4ab0af6acb99c24d Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Mon, 7 Sep 2026 23:53:50 -0400
+Date: Mon, 7 Sep 2026 23:57:56 -0400
 Subject: [PATCH] bfd/dwarf2: break equal-range function ties by DIE offset,
  not pointer
 
@@ -47,6 +47,8 @@ binutils/
 	* testsuite/binutils-all/dw2-inline-tie.S: New test.
 	* testsuite/binutils-all/dw2-inline-tie.d: New test.
 	* testsuite/binutils-all/addr2line.exp: Run it.
+
+Assisted-by: Claude <noreply@anthropic.com>
 ---
  bfd/dwarf2.c                                  |  11 +-
  binutils/testsuite/binutils-all/addr2line.exp |   7 +

@@ -1,7 +1,7 @@
-From bc32875e052e403a9d7a1c189a32e87dc07b9fea Mon Sep 17 00:00:00 2001
+From b45c7977515e0417ee2907418229c2b10c1bd521 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 21:49:30 -0400
-Subject: [PATCH 5/7] bfd: microblaze: keep the PLT address of address-taken
+Subject: [PATCH 2/7] bfd: microblaze: keep the PLT address of address-taken
  functions in executables
 
 When a non-PIC executable takes the address of a function defined in
@@ -35,10 +35,10 @@ Assisted-by: Claude <noreply@anthropic.com>
  1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
-index 86429e772a4..0b0c4bc288b 100644
+index 027b1886e9a..568de3f6351 100644
 --- a/bfd/elf32-microblaze.c
 +++ b/bfd/elf32-microblaze.c
-@@ -3333,9 +3333,17 @@ microblaze_elf_finish_dynamic_symbol (struct bfd_link_info *info,
+@@ -3321,9 +3321,17 @@ microblaze_elf_finish_dynamic_symbol (struct bfd_link_info *info,
        if (!h->def_regular)
  	{
  	  /* Mark the symbol as undefined, rather than as defined in

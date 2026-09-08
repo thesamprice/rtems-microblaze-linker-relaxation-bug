@@ -1,7 +1,7 @@
-From f91c66c927bed3c8026d9c370a16d94b8e97f6ec Mon Sep 17 00:00:00 2001
+From 52ba287fb4b33065a5d2dc7784ee4cc8f16d21a8 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 11:58:00 -0400
-Subject: [PATCH 3/9] microblaze: Pass _dl_fini to __libc_start_main so
+Subject: [PATCH 2/9] microblaze: Pass _dl_fini to __libc_start_main so
  destructors run
 
 The MicroBlaze _start has always passed a null rtld_fini to

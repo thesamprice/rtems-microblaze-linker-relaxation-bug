@@ -1,7 +1,7 @@
-From d154c2fc50905fed491209968716dc74be525a1f Mon Sep 17 00:00:00 2001
+From a6e5f75a280a31951c62c782baf1b77a63e40dce Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 12:43:42 -0400
-Subject: [PATCH 3/7] gas: Support CFI directives for MicroBlaze
+Subject: [PATCH 4/7] gas: Support CFI directives for MicroBlaze
 
 MicroBlaze is one of the few ELF targets on which .cfi_* directives
 are rejected with "CFI is not supported for this target".  GCC works

@@ -23,6 +23,8 @@ that changes what real links produce and is a separate question.
 ld/
 	* testsuite/ld-elf/pr24511.d: Widen the MicroBlaze xfail from
 	microblaze*-*-elf* to microblaze*-*-*.
+
+Assisted-by: Claude <noreply@anthropic.com>
 ---
  ld/testsuite/ld-elf/pr24511.d | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

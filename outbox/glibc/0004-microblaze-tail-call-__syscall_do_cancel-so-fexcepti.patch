@@ -1,7 +1,7 @@
-From 72944378c872556cb49b663ca99eb789ee94d01b Mon Sep 17 00:00:00 2001
+From 586b710a4b408c7303f8f431402dcacea41d73fe Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Mon, 7 Sep 2026 23:54:55 -0400
-Subject: [PATCH 6/9] microblaze: tail-call __syscall_do_cancel so -fexceptions
+Date: Mon, 7 Sep 2026 23:59:01 -0400
+Subject: [PATCH 4/9] microblaze: tail-call __syscall_do_cancel so -fexceptions
  cancellation unwinds
 
 On the cancel path, __syscall_cancel_arch reaches __syscall_do_cancel with
@@ -28,6 +28,8 @@ a separate issue.)
 	* sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S
 	(__syscall_cancel_arch): Tail-call __syscall_do_cancel with brid
 	instead of brlid so the asm frame is transparent to the unwinder.
+
+Assisted-by: Claude <noreply@anthropic.com>
 ---
  sysdeps/unix/sysv/linux/microblaze/syscall_cancel.S | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

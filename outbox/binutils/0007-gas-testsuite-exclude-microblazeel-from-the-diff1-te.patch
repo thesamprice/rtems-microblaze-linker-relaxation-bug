@@ -1,6 +1,6 @@
-From 27cc7a7ec078d7953b3a3eb314b0d8a5d7e5c32f Mon Sep 17 00:00:00 2001
+From 16fa11417b0e9deac3c25c54ef1850f3a3b82a40 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Mon, 7 Sep 2026 23:53:41 -0400
+Date: Mon, 7 Sep 2026 23:57:48 -0400
 Subject: [PATCH 7/7] gas: testsuite: exclude microblazeel from the diff1 test
 
 gas/all/gas.exp skips "difference of two undefined symbols" for targets that

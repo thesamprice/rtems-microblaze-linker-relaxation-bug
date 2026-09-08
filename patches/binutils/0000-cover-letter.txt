@@ -1,38 +1,40 @@
-MicroBlaze: gas CFI, PC-relative .eh_frame data, PLT pointer equality, and gas fixups
+MicroBlaze: gas and ld fixes, CFI directives, PC-relative .eh_frame data
 
 This series is the still-open MicroBlaze binutils work from the
 investigation that produced the relaxation fix already in master
-(a639e0adaf2, f55053f1dc9).  It applies to current master with git am, in
-this order; 6/7 needs 3/7 (both touch tc-microblaze.h and the cfi test).
+(a639e0adaf2, f55053f1dc9).  It applies to current master with git am in
+this order.  Patches 1-3 are independent bug fixes; 4 and 5 add what a
+PC-relative .eh_frame needs (5 depends on 4: both touch tc-microblaze.h
+and the cfi test); 6 and 7 are testsuite-only.
 
-  1/7  ld/testsuite: widen the pr24511 xfail to all MicroBlaze targets
-       Testsuite only.  elfmicroblaze.sc defines no __init_array_start, so
-       the test fails rather than xfails on every non-elf MicroBlaze triple.
-  2/7  microblaze: write the value for BFD_RELOC_8 and BFD_RELOC_16 fixups
+  1/7  microblaze: write the value for BFD_RELOC_8 and BFD_RELOC_16 fixups
        md_apply_fix had no case for them, so ".dc.b L1-L0" assembled to 0
        and no relocation survived to correct it.
-  3/7  gas: Support CFI directives for MicroBlaze
+  2/7  bfd: microblaze: keep the PLT address of address-taken functions
+       finish_dynamic_symbol zeroed st_value unconditionally, so &func in
+       a non-PIC executable differed from &func inside the library.
+  3/7  bfd: microblaze: apply relocations the .eh_frame editor asks to keep
+       _bfd_elf_section_offset returning -2 was treated as "skip" instead
+       of "apply statically", leaving the field unrelocated.
+  4/7  gas: Support CFI directives for MicroBlaze
        TARGET_USE_CFIPOP was never defined; gas rejected .cfi_* with "CFI
        is not supported for this target".  Adds the hooks, register-name
        mapping, and a testsuite.
-  4/7  bfd: microblaze: apply relocations the .eh_frame editor asks to keep
-       _bfd_elf_section_offset returning -2 was treated as "skip" instead
-       of "apply statically", leaving the field unrelocated.
-  5/7  bfd: microblaze: keep the PLT address of address-taken functions
-       finish_dynamic_symbol zeroed st_value unconditionally, so &func in
-       a non-PIC executable differed from &func inside the library.
-  6/7  microblaze: support "sym - ." across sections, and relax
+  5/7  microblaze: support "sym - ." across sections, and relax
        R_MICROBLAZE_32_PCREL
        DIFF_EXPR_OK was never defined, so gas could not assemble the
        difference a PC-relative .eh_frame pointer is made of.
+  6/7  ld/testsuite: widen the pr24511 xfail to all MicroBlaze targets
+       elfmicroblaze.sc defines no __init_array_start, so the test fails
+       rather than xfails on every non-elf MicroBlaze triple.
   7/7  gas: testsuite: exclude microblazeel from the diff1 test
-       Testsuite only; the guard matched microblaze-* but not microblazeel-*.
+       The guard matched microblaze-* but not microblazeel-*.
 
 Testing: with the series on master, the MicroBlaze gas suite
 (gas/microblaze/*.exp) and ld-microblaze plus ld-elf/eh* pass with no
 failures, and the whole gas, ld and binutils suites for microblaze-elf show
 no change other than the tests the series adds.  The set was also used
-end to end: with 3/7 and 6/7 the gcc MicroBlaze port can switch its
+end to end: with 4/7 and 5/7 the gcc MicroBlaze port can switch its
 .eh_frame encoding to PC-relative (patch to follow on gcc-patches), which
 took libc.so from 711 dynamic relocations in .eh_frame to none and made
 the section read-only with an .eh_frame_hdr table; glibc's full make check
