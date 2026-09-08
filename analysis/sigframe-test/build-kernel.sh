@@ -1,8 +1,9 @@
 #!/bin/sh
 # build-kernel.sh -- cross-build a MicroBlaze petalogix kernel for qemu-system,
-# optionally with patches/linux/ applied (Ramin's series; set PATCHES=
-# ../../patches/linux/superseded for the original 32-byte arg_save form), so
-# the signal-frame test can run against a real kernel with the front reserve.
+# optionally with the signal-frame patches applied, so the test can run against
+# a real kernel with the front reserve. Default: patches/linux/landed (Ramin's
+# series, in linux-next); PATCHES=../../patches/linux/superseded gives the
+# original 32-byte arg_save form these findings were recorded with.
 #
 #   CROSS_COMPILE=microblazeel-buildroot-linux-gnu- ./build-kernel.sh [stock|patched]
 #
@@ -15,7 +16,7 @@ KVER=${KVER:-6.12.9}
 MODE=${1:-stock}                       # stock | patched
 CROSS_COMPILE=${CROSS_COMPILE:-microblazeel-buildroot-linux-gnu-}
 here=$(cd "$(dirname "$0")" && pwd)
-patches=${PATCHES:-$here/../../patches/linux}
+patches=${PATCHES:-$here/../../patches/linux/landed}
 
 [ -d linux-$KVER ] || { wget -q https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KVER.tar.xz; tar xf linux-$KVER.tar.xz; }
 cd linux-$KVER

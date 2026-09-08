@@ -86,20 +86,21 @@ Two sets that overlap on the cancellation path — reconcile before submitting.
 
 ## Linux kernel  → `LKML` / `linux-microblaze`
 
-`patches/linux/` now carries **Ramin Moussavi's 6-patch series** (2026-08-21,
-taken from OpenADK `target/linux/patches/7.2/`, commit `5ed122100e`), which
-covers everything our own four kernel patches did. Our originals are under
-`patches/linux/superseded/`. As of 2026-09-08 the series is in **neither**
-torvalds master, linux-next nor patchwork.kernel.org — it is pending LKML, not
-landed. (Patch 1/6 of the series is not carried by OpenADK.)
+Nothing left to submit. **Ramin Moussavi's series** (2026-08-21) covers
+everything our four kernel patches did, and it is **LANDED** in Michal Simek's
+MicroBlaze tree (`git.monstr.eu/linux-2.6-microblaze.git` branch `next`,
+committed 2026-09-01) and merged into linux-next on 2026-09-07
+(`5172f7bae34d`). Not yet in a Linus release; expect it in the next merge
+window. The series is kept under `patches/linux/landed/` (copies from OpenADK
+`target/linux/patches/7.2/`) and our originals under `patches/linux/superseded/`.
 
-| # | what | replaces | status |
+| # | what | replaces | linux-next commit |
 |---|---|---|---|
-| 0002 | wire up `sigaltstack` (was `sys_ni_syscall`) | — | pending LKML |
-| 0003 | 28-byte ABI argument-home gap at the front of `rt_sigframe` | our 0001 (32-byte `arg_save[8]`) | pending LKML |
-| 0004 | `ret_from_trap_no_rval`: rt_sigreturn skips the r3/r4 stores | our 0004 (trampoline variant) | pending LKML |
-| 0005 | restore the pre-2011 `PTO` offset below `pt_regs` (GCC-15 boot death) | our 0003 (`C_ARG_SIZE` r1 lowering) | pending LKML |
-| 0006 | preserve MSR carry across signals | our 0002 — same patch, Sam's Signed-off-by kept | pending LKML |
+| 0002 | wire up `sigaltstack` (was `sys_ni_syscall`) | — | `730e01d93249` |
+| 0003 | 28-byte ABI argument-home gap at the front of `rt_sigframe` | our 0001 (32-byte `arg_save[8]`) | `c5947d28c209` |
+| 0004 | `ret_from_trap_no_rval`: rt_sigreturn skips the r3/r4 stores | our 0004 (trampoline variant) | `da6829138a39` |
+| 0005 | restore the pre-2011 `PTO` offset below `pt_regs` (GCC-15 boot death) | our 0003 (`C_ARG_SIZE` r1 lowering) | `c35d40a3efd2` |
+| 0006 | preserve MSR carry across signals | our 0002 — same patch, authored by Sam Price | `ca35dd21a5f8` |
 
 gcc 0001 anchors on the trampoline at the *end* of the frame, so the change
 from a 32-byte to a 28-byte front gap does not affect it.
@@ -145,9 +146,9 @@ Reconciliations, detailed in [MERGE-AUDIT.md](MERGE-AUDIT.md):
    0009). Build with objdump on `PATH`.
 3. **glibc** with that gcc + `glibc-longjmp-chk/patches/000[1-7]` (and the
    cancellation set after the zone-D reconciliation).
-4. **Linux** with `patches/linux/` (Ramin's series) for a board/qemu-system
-   run; gcc 0001 is layout-independent, so it works with or without it
-   (FINDINGS.md).
+4. **Linux** from linux-next (or a stable kernel plus `patches/linux/landed/`)
+   for a board/qemu-system run; gcc 0001 is layout-independent, so it works
+   with or without the signal-frame change (FINDINGS.md).
 
 `harness/run.sh` automates 1-3; [hardware-build.md](hardware-build.md) adds the
 hardware flag set.

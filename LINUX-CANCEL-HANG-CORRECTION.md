@@ -122,8 +122,8 @@ Plus a latent correctness bug found along the way:
   Both bugs are still present in glibc git master (HEAD).
 
 `patches/linux/` (2026-09-08: these four are now under `patches/linux/superseded/`;
-Ramin's 6-patch series, which covers all of them, is in `patches/linux/` — see
-`analysis/PATCH-ORGANIZATION.md`):
+Ramin's series, which covers all of them, is in linux-next as of 2026-09-07 and
+kept under `patches/linux/landed/` — see `analysis/PATCH-ORGANIZATION.md`):
 - `0001-microblaze-reserve-the-ABI-argument-save-area-in-the.patch` — bug #4,
   mailed to Neal + Ramin, Msg-Id `<20260816205752.66769-1-thesamprice@gmail.com>`.
 - `0002-microblaze-preserve-the-MSR-carry-flags-across-signals.patch` — bug #5,

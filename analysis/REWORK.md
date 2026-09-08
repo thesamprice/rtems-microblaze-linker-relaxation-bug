@@ -68,12 +68,16 @@ OpenADK `wbx-github/openadk`, sourceware and kernel patchwork).
 |---|---|
 | RTEMS FDT fix | **landed** — Sebastian Huber `91401c423f` (2026-08-17), identical code. Moved to `patches/rtems/landed/`. |
 | `ramin-0001` libgcc unwinder | already in gcc master/releases/gcc-15; moved from `patches/linux/` to `patches/gcc/landed/`. |
-| Linux 0001-0004 | **superseded** by Ramin's 6-patch series (2026-08-21, OpenADK `target/linux/patches/7.2/000[2-6]`): same four fixes, his entry.S form restores `PTO` instead of lowering r1. Moved to `patches/linux/superseded/`; his series now sits in `patches/linux/`. Not upstream anywhere yet. |
+| Linux 0001-0004 | **superseded and landed**: Ramin's series (2026-08-21) covers the same four fixes (his entry.S form restores `PTO` instead of lowering r1) and is in Michal Simek's MicroBlaze tree, merged into linux-next 2026-09-07 (`730e01d93249`, `c5947d28c209`, `da6829138a39`, `c35d40a3efd2`, `ca35dd21a5f8`). Ours moved to `patches/linux/superseded/`, his to `patches/linux/landed/`. Not in a Linus release yet. |
 | binutils 0003-0010 | still open; no MicroBlaze commits since 0002 landed. |
 | gcc 0001, 0002 | still open; OpenADK carries only the upstream unwinder form, no glibc correction; `microblaze.h` still `DW_EH_PE_aligned`. |
 | glibc (all) | still open; zero MicroBlaze changes upstream in 2026; Ramin works on uClibc-ng. |
 | RTEMS relax 0001/0002 | local; RTEMS main `abi.yml` still has empty `ldflags`. |
 
 New from Ramin, not in this repo: libgcc `moddi3.S` fix (wrong since 2010,
-hangs on LE), the kernel `sigaltstack` wiring (now in `patches/linux/0002`),
-and backports of Gopi's PR118280/PR103383 gcc patches.
+hangs on LE) and backports of Gopi's PR118280/PR103383 gcc patches.
+
+Correction: an earlier pass the same day said the kernel series was in
+neither linux-next nor patchwork. It missed the 2026-09-07 linux-next merge;
+the file-level grep (`abi_gap`, `ret_from_trap_no_rval`, `MSR_CC`,
+`sys_sigaltstack`, `PTO`) against linux-next is the check that settled it.

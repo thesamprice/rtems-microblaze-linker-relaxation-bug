@@ -120,7 +120,7 @@ together and re-tested as a unit.
 | binutils | 0003, 0004, 0006, 0007, 0008, 0009 (+ optional `.debug_line` min-insn-length) | 0001, 0002 already landed; 0005 (dwarf2 tiebreak) is arch-neutral, send separately |
 | gcc | `gcc/0001` (as a fix to Ramin's file), `gcc/0002` | 0002 depends on binutils 0009; ramin-0001 is already upstream |
 | glibc | `glibc/0001`, `glibc/0002`, the trimmed `glibc-longjmp-chk/0005`, and 0001-0004, 0006, 0007 | resolve the `syscall_cancel.S` overlap first |
-| linux | Ramin's 6-patch series in `patches/linux/` (2026-09-08: our four originals are under `superseded/`) | covers the same four fixes plus `sigaltstack`; MSR patch keeps Sam's Signed-off-by; pending LKML, not yet in mainline |
+| linux | nothing — Ramin's series is in linux-next (2026-09-07) via Michal Simek's tree | `patches/linux/landed/`; covers the same four fixes plus `sigaltstack`; MSR patch is Sam's; our originals under `superseded/` |
 
 ## Decisions that are yours, not mine
 
