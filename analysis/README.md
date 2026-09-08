@@ -94,6 +94,7 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 |---|---|---|
 | 0001 | libgcc: fix the MicroBlaze signal-frame unwinder for glibc's `ucontext_t` layout | [signal-frame-glibc-layout](gcc-0001-signal-frame-glibc-layout.md) |
 | 0002 | PC-relative `.eh_frame` encodings instead of `DW_EH_PE_aligned` | [pcrel-eh-encodings](gcc-0002-pcrel-eh-encodings.md) |
+| ramin-0002 | libgcc `moddi3.S`: fix the 64-bit signed modulo (Ramin Moussavi's, from OpenADK; his to submit) | applies to gcc master, no analysis doc |
 
 ## glibc
 

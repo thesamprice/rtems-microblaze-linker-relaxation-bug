@@ -74,8 +74,11 @@ OpenADK `wbx-github/openadk`, sourceware and kernel patchwork).
 | glibc (all) | still open; zero MicroBlaze changes upstream in 2026; Ramin works on uClibc-ng. |
 | RTEMS relax 0001/0002 | local; RTEMS main `abi.yml` still has empty `ldflags`. |
 
-New from Ramin, not in this repo: libgcc `moddi3.S` fix (wrong since 2010,
-hangs on LE) and backports of Gopi's PR118280/PR103383 gcc patches.
+New from Ramin: the libgcc `moddi3.S` fix (wrong since 2010, hangs on LE),
+now carried as `patches/gcc/ramin-0002-...` (applies to gcc master). His
+OpenADK backports of Gopi's PR118280/PR103383 are backports of commits that
+are already in gcc master (`7894c00982`, `9e3e6ceb3b`), so nothing to carry;
+likewise Gopi's native-Linux gdb (`d62f64e17b3`, 2026-05-07).
 
 Correction: an earlier pass the same day said the kernel series was in
 neither linux-next nor patchwork. It missed the 2026-09-07 linux-next merge;

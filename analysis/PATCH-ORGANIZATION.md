@@ -51,15 +51,22 @@ still-open series is verified clean on master `193340ad3`
 | # | what | status |
 |---|---|---|
 | 0001 | libgcc signal-frame unwinder: trampoline anchor, kernel-sized ucontext | READY — corrects Ramin's upstream `4ef64ad1a`; fixes a live glibc bug; layout-independent, so it is unaffected by the kernel's front reserve (MERGE-AUDIT zones B/C, sigframe-test/FINDINGS.md) |
+| ramin-0002 | libgcc `moddi3.S`: 64-bit signed modulo wrong for nearly every input since 2010, hangs on little-endian | READY — Ramin's, carried from OpenADK (`toolchain/gcc/patches/16.2.0/0010`), applies to gcc master; not yet on gcc-patches, **his to submit** |
 | landed/ramin-0001 | Ramin's libgcc unwinder | **LANDED** — gcc master + releases/gcc-15 (`4ef64ad1a`, 2026-06); OpenADK carries it for 12.5/15.3/16.2 |
 | 0002 | PC-relative `.eh_frame` encodings | READY (needs binutils 0009) |
 | local/0001 | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream (`patches/gcc/local/`, [hardware-build.md](hardware-build.md)) |
 
-Note: `patches/gcc/landed/ramin-0001-libgcc-...` is **not ours to submit** — it
-is Ramin Moussavi's upstream commit, kept only as the thing to add to an old
-toolchain. gcc 0001 is the correction on top of it. Not in this repo but worth
-picking up from OpenADK: Ramin's `moddi3.S` fix (`toolchain/gcc/patches/16.2.0/
-0010-microblaze-moddi3-endianness-and-sign.patch`), not yet on gcc-patches.
+Note: the `ramin-*` patches are **not ours to submit**. `landed/ramin-0001` is
+Ramin Moussavi's upstream unwinder commit, kept only as the thing to add to an
+old toolchain (gcc 0001 is the correction on top of it); `ramin-0002` is his
+moddi3 fix, carried here so a toolchain build picks it up until he sends it.
+
+Third-party MicroBlaze gcc/gdb work that is **already upstream** (patchwork
+still shows these as "new", but they are committed): Gopi's PR118280 atomics
+(`7894c00982`, 2025-09-19, committed by Michael Eager), Gopi's PR103383
+bswap16 length fix (`9e3e6ceb3b`, 2026-04-02), Gopi's native-Linux gdb support
+(binutils-gdb `d62f64e17b3`, 2026-05-07), and Neal's cpu-version-check fix
+(`strverscmp` is in `microblaze.cc`). Nothing to carry for any of them.
 
 ## glibc  → `libc-alpha`
 
