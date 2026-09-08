@@ -39,6 +39,3 @@ end to end: with 4/7 and 5/7 the gcc MicroBlaze port can switch its
 took libc.so from 711 dynamic relocations in .eh_frame to none and made
 the section read-only with an .eh_frame_hdr table; glibc's full make check
 under qemu showed no unwinding or exception-table regression.
-
-The arch-neutral bfd/dwarf2.c addr2line tie-break fix found in the same
-work is sent separately.

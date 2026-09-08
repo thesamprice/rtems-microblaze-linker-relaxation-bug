@@ -57,7 +57,6 @@ series binutils        "$B" "${BINUTILS_BASE:-master}" "$P/binutils/0000-cover-l
   "$P"/binutils/0004-*.patch "$P"/binutils/0008-*.patch "$P"/binutils/0007-*.patch \
   "$P"/binutils/0006-*.patch "$P"/binutils/0009-*.patch "$P"/binutils/0003-*.patch \
   "$P"/binutils/0010-*.patch
-series binutils-dwarf2 "$B" "${BINUTILS_BASE:-master}" - "$P"/binutils/0005-*.patch
 series gcc-0001        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0001-*.patch
 series gcc-0002        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0002-*.patch
 series glibc           "$L" "${GLIBC_BASE:-master}"    "$P/glibc/0000-cover-letter.txt" \

@@ -57,7 +57,7 @@ exists upstream.
 | binutils 0002 (discarded sections) | **LANDED** upstream 2026-08-13; present in the base commit |
 | binutils 0003 (pr24511 xfail) | open (testsuite only; needs a `#noxfail` first) |
 | binutils 0004 (`BFD_RELOC_8`/`16`) | open (`md_apply_fix` still has no 8/16 case) |
-| binutils 0005 (addr2line determinism) | open (arch-neutral; not submitted) |
+| binutils 0005 (addr2line determinism) | removed from this repo 2026-09-08; being submitted separately from the tcgcov work |
 | binutils 0006 (gas CFI) | open |
 | binutils 0007 (`.eh_frame` static reloc) | open |
 | binutils 0008 (canonical PLT) | open (master still zeroes `st_value`) |
@@ -81,7 +81,7 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 | 0002 | neutralise relocations against discarded linkonce sections | [discarded-sections](binutils-0002-discarded-sections.md) |
 | 0003 | widen the pr24511 testsuite xfail to all MicroBlaze targets | [pr24511-xfail](binutils-0003-pr24511-xfail.md) |
 | 0004 | write the value for `BFD_RELOC_8` / `BFD_RELOC_16` fixups | [reloc-8-16](binutils-0004-reloc-8-16.md) |
-| 0005 | `addr2line` determinism: tie-break by DIE offset, not heap pointer | [dwarf2-tiebreak](binutils-0005-dwarf2-tiebreak.md) |
+| 0005 | `addr2line` determinism: tie-break by DIE offset, not heap pointer | removed 2026-09-08; submitted separately (tcgcov), not a MicroBlaze fix |
 | 0006 | gas: accept `.cfi_*` directives for MicroBlaze | [gas-cfi-directives](binutils-0006-gas-cfi-directives.md) |
 | 0007 | bfd: apply the relocation statically when the `.eh_frame` editor deletes it | [eh-frame-static-reloc](binutils-0007-eh-frame-static-reloc.md) |
 | 0008 | bfd: keep the PLT address of address-taken functions (canonical PLT) | [canonical-plt](binutils-0008-canonical-plt-pointer-equality.md) |

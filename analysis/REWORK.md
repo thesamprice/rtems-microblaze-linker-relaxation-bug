@@ -52,8 +52,8 @@ harness (`../harness/run.sh`) now pins these master commits and applies
 
 ## Net effect on the submission set
 
-- **binutils:** submit 0003, 0004, 0006, 0007, 0008, 0009; 0005 (arch-neutral
-  addr2line) separately; 0001, 0002 done.
+- **binutils:** submit 0003, 0004, 0006, 0007, 0008, 0009, 0010; 0001, 0002 done;
+  0005 (arch-neutral addr2line) removed 2026-09-08, handled outside this repo.
 - **gcc:** submit 0001 (as a fix to Ramin's file) and 0002 (needs binutils 0009).
 - **glibc:** submit the series (consolidated 2026-09-08 into `patches/glibc/0001-0009`, reconciliation done) — originally 0001-0007 after the cancellation-path reconciliation in
   [MERGE-AUDIT.md](MERGE-AUDIT.md).

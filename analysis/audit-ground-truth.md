@@ -12,7 +12,7 @@
 - 0002 RELOC_AGAINST_DISCARDED_SECTION: ALREADY UPSTREAM — in BASE (elf32-microblaze.c:1120).
 - 0003 pr24511 xfail widen: STILL OPEN — base ld-elf/pr24511.d xfails microblaze*-*-elf* only, not microblaze*-linux*. Testsuite only.
 - 0004 md_apply_fix BFD_RELOC_8/16: STILL OPEN — base md_apply_fix has case 32/RVA/64 but NOT 8/16.
-- 0005 dwarf2 equal-range tiebreak by unit_offset: STILL OPEN (independent, arch-neutral; not sent). Base best_fit tiebreak at dwarf2.c:3365-3369.
+- 0005 dwarf2 equal-range tiebreak by unit_offset: removed from this repo 2026-09-08 (handled separately via tcgcov). Was STILL OPEN at audit time (independent, arch-neutral; not sent). Base best_fit tiebreak at dwarf2.c:3365-3369.
 - 0006 gas CFI: STILL OPEN — no TARGET_USE_CFIPOP/tc_cfi_* in master.
 - 0007 eh_frame -2 static reloc: STILL OPEN — master -2 arm sets skip only, no relocate/bfd_put_32.
 - 0008 canonical PLT: STILL OPEN — master still "Zero the value" sym->st_value=0 at 3326 unconditionally.

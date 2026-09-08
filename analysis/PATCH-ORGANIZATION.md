@@ -37,7 +37,7 @@ still-open series is verified clean on master `193340ad3`
 | 0002 | neutralise relocations against discarded sections | **LANDED** 2026-08-13 (`landed/`) |
 | 0003 | widen the pr24511 xfail to all MicroBlaze | READY (needs a `#noxfail` first) — mail 6/7 |
 | 0004 | write the value for `BFD_RELOC_8`/`16` | READY — mail 1/7 |
-| 0005 | `addr2line` DIE-offset tie-break (arch-neutral) | READY (send separately, own thread) |
+| 0005 | `addr2line` DIE-offset tie-break (arch-neutral) | **removed 2026-09-08** — handled outside this repo (the tcgcov work), not part of the MicroBlaze series |
 | 0006 | gas `.cfi_*` directives | READY — mail 4/7 |
 | 0007 | apply the relocation the `.eh_frame` editor keeps | READY — mail 3/7 |
 | 0008 | canonical PLT / pointer equality | READY — mail 2/7 |
@@ -174,7 +174,6 @@ The result is committed under `outbox/`:
 | series | files | base it was generated on |
 |---|---|---|
 | `outbox/binutils/` | cover + 7: fixes 0004, 0008, 0007; then CFI 0006, pcrel 0009; testsuite 0003, 0010 | binutils master `d715260f420` |
-| `outbox/binutils-dwarf2/` | 1 (repo 0005, arch-neutral, own thread) | same |
 | `outbox/gcc-0001/`, `outbox/gcc-0002/` | 1 each, no cover letter | gcc master `5792827ef` |
 | `outbox/glibc/` | cover + 9: bugs 0001, 0003, 0005, 0006, 0009; testsuite 0002; features 0004, 0007, 0008 | glibc master `04e750e7` |
 

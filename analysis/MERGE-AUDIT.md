@@ -121,7 +121,7 @@ series in `patches/glibc/` (0005 offsets, 0006 tail-call, 0007 CFI without the
 
 | Target | Submit | Note |
 |---|---|---|
-| binutils | 0003, 0004, 0006, 0007, 0008, 0009 (+ optional `.debug_line` min-insn-length) | 0001, 0002 already landed; 0005 (dwarf2 tiebreak) is arch-neutral, send separately |
+| binutils | 0003, 0004, 0006, 0007, 0008, 0009 (+ optional `.debug_line` min-insn-length) | 0001, 0002 already landed; 0005 (dwarf2 tiebreak) removed from this repo, submitted separately via the tcgcov work |
 | gcc | `gcc/0001` (as a fix to Ramin's file), `gcc/0002` | 0002 depends on binutils 0009; ramin-0001 is already upstream |
 | glibc | `glibc/0001`, `glibc/0002`, the trimmed `glibc-longjmp-chk/0005`, and 0001-0004, 0006, 0007 | resolve the `syscall_cancel.S` overlap first |
 | linux | nothing — Ramin's series is in linux-next (2026-09-07) via Michal Simek's tree | `patches/linux/landed/`; covers the same four fixes plus `sigaltstack`; MSR patch is Sam's; our originals under `superseded/` |
