@@ -65,14 +65,28 @@ generic path (__udivmoddi4 via longlong.h) is a different algorithm --
 Knuth's Algorithm D, TAOCP volume 2 section 4.3.1 -- so the two are not
 comparable step for step.
 
+Every register the routine uses is now listed with the value it holds, and
+the operand macros say which of Koren's X, D, Q and R each pair is.  The
+labels are renamed to match: $La1_Pos and $La2_Pos said nothing and were
+not even accurate -- negating LLONG_MIN leaves it negative -- so they
+become $LaX_Abs and $LaD_Abs, with a note that what the loop needs is the
+unsigned magnitude, which that bit pattern is.  $LaDIV1 and $LaDIV2 name
+neither a "div 1" nor a "div 2" and become $LaNormalize and $LaRecurrence,
+and $LaMOD_TOO_SMALL becomes $LaQ_Bit_Is_Zero, which is what too small
+means here.  Section 3.2 numbers equations rather than steps, so there were
+no labels in the reference to adopt; a comment says so, and warns off
+Knuth's D1..D8, which belong to the other algorithm.
+
 The rest of the tidy-up: the header said "modsi3.S ... modulo
 operation for 64 bit integers", several comments transcribed the
 instruction rather than explaining it, one still described the dividend by
-register number after the halves were renamed, and the epilogue claimed to
-restore CSRs and the operands when it restores callee-saved registers.
-Trailing whitespace on the touched lines is removed.  Stripping every
-comment from the result leaves .text byte-identical on both byte orders,
-so none of the comment work reached the instruction stream.
+register number after the halves were renamed, one claimed to "shift a '1'
+into the quotient" where the instruction doubles the quotient to make room
+for the next bit, and the epilogue claimed to restore CSRs and the operands
+when it restores callee-saved registers.  Trailing whitespace on the
+touched lines is removed.  Stripping every comment from the result leaves
+.text byte-identical on both byte orders, so none of the comment work
+reached the instruction stream.
 
 The macros resolve at assembly time, so the endianness fix costs nothing at
 run time: over a 4701-value check the two byte orders execute 3605340 and

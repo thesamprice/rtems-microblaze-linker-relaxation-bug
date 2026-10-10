@@ -68,7 +68,19 @@
 /* A 64-bit value held in a register pair keeps its high word in the
    lower-numbered register on big-endian and in the higher-numbered one on
    little-endian.  Name the halves so that the implementation below is
-   independent of endianness.  */
+   independent of endianness.
+
+   Koren section 3.2 calls the four values X the dividend, D the divisor,
+   Q the quotient and R the remainder.  They live here as
+
+     OP1   X.  The loop consumes it from the top, so once it is running OP1
+           holds only the bits of X not yet shifted into the remainder.
+     OP2   D.  Never modified after the sign fix-up.
+     RES   R.  While the loop runs this is Koren's partial remainder r[i];
+           RES:OP1 together are his double-length remainder register.
+     r29:r30
+           Q.  Accumulated as the algorithm requires but never returned --
+           see the scratch register list below.  */
 #ifdef __MICROBLAZEEL__
 # define OP1_L	r5
 # define OP1_H	r6
@@ -85,6 +97,23 @@
 # define RES_L	r4
 #endif
 
+/* The scratch and callee-saved registers, with the value each one holds.
+   Unlike the operand pairs above these need no endianness treatment: none of
+   them is half of a value passed in or returned through the ABI, so there is
+   no high/low to swap.  All six are callee-saved and so are spilled by the
+   prologue below; r9 is caller-saved and is used without saving.
+
+     r9        scratch for the two zero tests, dead immediately afterwards
+     r25:r26   the trial subtraction 2*r[i-1] - D, high word in r25
+     r27       the sign of X, as the whole high word rather than just its
+               sign bit -- only BGEI reads it, which tests the sign
+     r28       iterations remaining, 64 less whatever normalization skipped
+     r29:r30   Koren's quotient Q.  The remainder is what this function
+               returns, so Q is dead, but the recurrence is written out in
+               full to keep the code readable against the reference.  Leaving
+               it out saves eleven instructions; see moddi3-noquo.S in the
+               harness for that variant.  */
+
 	.globl	__moddi3
 	.ent	__moddi3
 __moddi3:
@@ -94,10 +123,10 @@ __moddi3:
 	addik	r1,r1,-24
 	swi	r25,r1,0
 	swi	r26,r1,4
-	swi	r27,r1,8	# Dividend sign.
-	swi	r28,r1,12	# Loop count.
-	swi	r29,r1,16	# Quotient high word.
-	swi	r30,r1,20	# Quotient low word.
+	swi	r27,r1,8	# Sign of X.
+	swi	r28,r1,12	# Iterations remaining.
+	swi	r29,r1,16	# Q, high word.
+	swi	r30,r1,20	# Q, low word.
 
 	ADDIK	RES_L,r0,0	# Clear the remainder.
 	ADDIK	RES_H,r0,0
@@ -109,34 +138,45 @@ __moddi3:
 					# the target.
 	OR	r9,OP2_H,OP2_L
 	BEQI	r9,$LaDiv_By_Zero
-	BGEId	OP1_H,$La1_Pos
-	OR	r27,r0,OP1_H		# Save the dividend sign.
-	RSUBI	OP1_L,OP1_L,0		# Negate the dividend magnitude.
+	# Divide the magnitudes.  Reaching $LaX_Abs means OP1 holds |X| and
+	# reaching $LaD_Abs that OP2 holds |D| -- read as unsigned, which is
+	# what matters here: negating LLONG_MIN leaves it negative as a signed
+	# value, but the bit pattern it leaves is 2^63, and 2^63 is exactly
+	# the magnitude the loop needs.
+	BGEId	OP1_H,$LaX_Abs
+	OR	r27,r0,OP1_H		# Save the sign of X.
+	RSUBI	OP1_L,OP1_L,0
 	RSUBIC	OP1_H,OP1_H,0
-$La1_Pos:
-	BGEI	OP2_H,$La2_Pos
-	RSUBI	OP2_L,OP2_L,0		# Negate the divisor magnitude.
+$LaX_Abs:
+	BGEI	OP2_H,$LaD_Abs
+	RSUBI	OP2_L,OP2_L,0
 	RSUBIC	OP2_H,OP2_H,0
-$La2_Pos:
-	ADDIK	r29,r0,0		# Clear the quotient.
+$LaD_Abs:
+	ADDIK	r29,r0,0		# Clear Q.
 	ADDIK	r30,r0,0
-	ADDIK	r28,r0,64		# Initialize the loop count.
-	BLTi	OP1_H,$LaDIV2		# Already normalized: use all 64 bits.
-					# LLONG_MIN stays negative when negated,
-					# so skipping this check would shift its
-					# only set bit out below and leave the
-					# loop non-terminating.
+	ADDIK	r28,r0,64		# One iteration per bit of X.
+	# Already normalized, so every one of the 64 bits counts.  LLONG_MIN
+	# stays negative when negated, so without this check normalization
+	# would shift its only set bit out and never see a clear sign bit,
+	# leaving the loop non-terminating.
+	BLTi	OP1_H,$LaRecurrence
 
 	# Shift the dividend's first set bit up to the high bit of OP1_H and
 	# drop the loop count to match.  This is not Koren's D1-style operand
 	# scaling -- it changes no value, it only skips the leading iterations
 	# whose quotient bits are known to be zero.
-$LaDIV1:
+	#
+	# Section 3.2 numbers equations rather than steps, so there are no
+	# labels in the reference to borrow for any of this; the names below
+	# pair Koren's symbol with what has just happened to it.  Resist
+	# reaching for Knuth's D1..D8 -- those name the steps of the other
+	# algorithm, the one the generic C path uses.
+$LaNormalize:
 	ADD	OP1_L,OP1_L,OP1_L
 	ADDC	OP1_H,OP1_H,OP1_H
-	BGEID	OP1_H,$LaDIV1
+	BGEID	OP1_H,$LaNormalize
 	ADDIK	r28,r28,-1
-$LaDIV2:
+$LaRecurrence:
 	# One step of r[i] = 2*r[i-1] - q[i]*D.
 	#
 	# RES:OP1 together hold Koren's double-length remainder, so shifting
@@ -153,19 +193,19 @@ $LaDIV2:
 	# result is non-negative, 0 otherwise.
 	RSUB	r26,OP2_L,RES_L
 	RSUBC	r25,OP2_H,RES_H
-	BLTi	r25,$LaMOD_TOO_SMALL	# q[i] = 0.  Nothing to undo: the old
+	BLTi	r25,$LaQ_Bit_Is_Zero	# q[i] = 0.  Nothing to undo: the old
 					# remainder was never overwritten, so
 					# the restore costs nothing.
 	OR	RES_H,r0,r25		# q[i] = 1.  Keep 2*r[i-1] - D.
 	OR	RES_L,r0,r26
 	ADDI	r30,r30,1
 	ADDC	r29,r29,r0
-$LaMOD_TOO_SMALL:
+$LaQ_Bit_Is_Zero:
 	ADDIK	r28,r28,-1
 	BEQi	r28,$LaLOOP_END
-	ADD	r30,r30,r30		# Shift a '1' into the quotient.
+	ADD	r30,r30,r30		# Shift Q up to make room for q[i-1].
 	ADDC	r29,r29,r29
-	BRI	$LaDIV2
+	BRI	$LaRecurrence
 $LaLOOP_END:
 	BGEI	r27,$LaRETURN_HERE
 	# Koren section 3.3: "the sign of the final remainder must equal that
