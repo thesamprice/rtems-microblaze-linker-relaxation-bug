@@ -1,0 +1,202 @@
+###################################
+# 
+#  Copyright (C) 2009-2026 Free Software Foundation, Inc.
+#
+#  Contributed by Michael Eager <eager@eagercon.com>.
+#
+#  This file is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; either version 3, or (at your option) any
+#  later version.
+#
+#  GCC is distributed in the hope that it will be useful, but WITHOUT
+#  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+#  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+#  License for more details.
+#
+#  Under Section 7 of GPL version 3, you are granted additional
+#  permissions described in the GCC Runtime Library Exception, version
+#  3.1, as published by the Free Software Foundation.
+#
+#  You should have received a copy of the GNU General Public License and
+#  a copy of the GCC Runtime Library Exception along with this program;
+#  see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+#  <http://www.gnu.org/licenses/>. 
+#
+#  moddi3.S
+#
+#  64-bit signed remainder.
+#
+#  Restoring division: one quotient bit per iteration, each step comparing
+#  the shifted remainder against the divisor and keeping the subtraction
+#  only when it does not go negative.  In the notation of Koren, Computer
+#  Arithmetic Algorithms, section 3.2 (sequential division), the loop below
+#  is
+#
+#      r[i] = 2*r[i-1] - q[i]*D          (eq. 3.11, with r[0] = X)
+#
+#  The restore is implicit.  The trial subtraction lands in scratch
+#  registers and is copied into the remainder only when it comes out
+#  non-negative -- the "retaining a copy of the previous remainder" variant
+#  Koren describes, which costs nothing where an add-back would cost an
+#  extra operation on about half the iterations.
+#
+#  Koren also states the rule this routine has to satisfy: the sign of the
+#  final remainder is the sign of the dividend, not the exclusive or of the
+#  operand signs.  That exclusive or is the quotient's rule.
+#
+#  Shifting the remainder needs one bit more than the register width.  Here
+#  that bit is the carry flag, which is why the shift is a chain of ADD
+#  followed by ADDC rather than a shift instruction.
+#
+#  modsi3.S is the 32-bit form of the same algorithm and udivsi3.S the
+#  unsigned one.  The generic C path in libgcc -- __udivmoddi4 through
+#  longlong.h -- is a different algorithm: Knuth's Algorithm D, The Art of
+#  Computer Programming volume 2, section 4.3.1, which is digit recurrence
+#  at radix 2^16 with quotient-digit estimation rather than radix 2 with
+#  none.
+# 
+#######################################
+
+
+/* An executable stack is *not* required for these functions.  */
+#ifdef __linux__
+.section .note.GNU-stack,"",%progbits
+.previous
+#endif
+
+/* A 64-bit value held in a register pair keeps its high word in the
+   lower-numbered register on big-endian and in the higher-numbered one on
+   little-endian.  Name the halves so that the implementation below is
+   independent of endianness.  */
+#ifdef __MICROBLAZEEL__
+# define OP1_L	r5
+# define OP1_H	r6
+# define OP2_L	r7
+# define OP2_H	r8
+# define RES_L	r3
+# define RES_H	r4
+#else
+# define OP1_H	r5
+# define OP1_L	r6
+# define OP2_H	r7
+# define OP2_L	r8
+# define RES_H	r3
+# define RES_L	r4
+#endif
+
+	.globl	__moddi3
+	.ent	__moddi3
+__moddi3:
+	.frame	r1,0,r15
+
+	# Allocate the stack frame and save callee-saved registers.
+	addik	r1,r1,-24
+	swi	r25,r1,0
+	swi	r26,r1,4
+	swi	r27,r1,8	# Dividend sign.
+	swi	r28,r1,12	# Loop count.
+	swi	r29,r1,16	# Quotient high word.
+	swi	r30,r1,20	# Quotient low word.
+
+	ADDIK	RES_L,r0,0	# Clear the remainder.
+	ADDIK	RES_H,r0,0
+
+	# Handle a zero dividend and a zero divisor.
+	OR	r9,OP1_H,OP1_L
+	BEQID	r9,$LaRETURN_HERE	# 0 % n == 0.  The delay-slot OR below
+					# only clobbers r9, which is dead at
+					# the target.
+	OR	r9,OP2_H,OP2_L
+	BEQI	r9,$LaDiv_By_Zero
+	BGEId	OP1_H,$La1_Pos
+	OR	r27,r0,OP1_H		# Save the dividend sign.
+	RSUBI	OP1_L,OP1_L,0		# Negate the dividend magnitude.
+	RSUBIC	OP1_H,OP1_H,0
+$La1_Pos:
+	BGEI	OP2_H,$La2_Pos
+	RSUBI	OP2_L,OP2_L,0		# Negate the divisor magnitude.
+	RSUBIC	OP2_H,OP2_H,0
+$La2_Pos:
+	ADDIK	r29,r0,0		# Clear the quotient.
+	ADDIK	r30,r0,0
+	ADDIK	r28,r0,64		# Initialize the loop count.
+	BLTi	OP1_H,$LaDIV2		# Already normalized: use all 64 bits.
+					# LLONG_MIN stays negative when negated,
+					# so skipping this check would shift its
+					# only set bit out below and leave the
+					# loop non-terminating.
+
+	# Shift the dividend's first set bit up to the high bit of OP1_H and
+	# drop the loop count to match.  This is not Koren's D1-style operand
+	# scaling -- it changes no value, it only skips the leading iterations
+	# whose quotient bits are known to be zero.
+$LaDIV1:
+	ADD	OP1_L,OP1_L,OP1_L
+	ADDC	OP1_H,OP1_H,OP1_H
+	BGEID	OP1_H,$LaDIV1
+	ADDIK	r28,r28,-1
+$LaDIV2:
+	# One step of r[i] = 2*r[i-1] - q[i]*D.
+	#
+	# RES:OP1 together hold Koren's double-length remainder, so shifting
+	# the pair left by one bit forms 2*r[i-1]: the dividend's top bit
+	# leaves OP1 through the carry flag and enters RES at the bottom.
+	# That carry is the "extra bit position in the arithmetic unit" his
+	# Example 3.4 notes the shift requires.
+	ADD	OP1_L,OP1_L,OP1_L
+	ADDC	OP1_H,OP1_H,OP1_H
+	ADDC	RES_L,RES_L,RES_L
+	ADDC	RES_H,RES_H,RES_H
+	# Compare 2*r[i-1] against D, which Koren calls the most complicated
+	# step: subtract into scratch and read the sign.  q[i] = 1 when the
+	# result is non-negative, 0 otherwise.
+	RSUB	r26,OP2_L,RES_L
+	RSUBC	r25,OP2_H,RES_H
+	BLTi	r25,$LaMOD_TOO_SMALL	# q[i] = 0.  Nothing to undo: the old
+					# remainder was never overwritten, so
+					# the restore costs nothing.
+	OR	RES_H,r0,r25		# q[i] = 1.  Keep 2*r[i-1] - D.
+	OR	RES_L,r0,r26
+	ADDI	r30,r30,1
+	ADDC	r29,r29,r0
+$LaMOD_TOO_SMALL:
+	ADDIK	r28,r28,-1
+	BEQi	r28,$LaLOOP_END
+	ADD	r30,r30,r30		# Shift a '1' into the quotient.
+	ADDC	r29,r29,r29
+	BRI	$LaDIV2
+$LaLOOP_END:
+	BGEI	r27,$LaRETURN_HERE
+	# Koren section 3.3: "the sign of the final remainder must equal that
+	# of the dividend".  Not the exclusive or of the operand signs, which
+	# is the quotient's rule.
+	RSUBI	RES_L,RES_L,0
+	RSUBIC	RES_H,RES_H,0
+	# Falls through: $LaDiv_By_Zero holds no instructions.
+$LaDiv_By_Zero:
+	# Division by zero is undefined in C.  Match the other software
+	# helpers -- divsi3.S, modsi3.S, udivsi3.S and umodsi3.S -- by
+	# returning zero.
+	#
+	# This differs from the hardware-divide path.  MicroBlaze has no
+	# remainder instruction, so GCC implements a % b as
+	#
+	#     a - (a / b) * b
+	#
+	# and hardware division by zero produces a zero quotient, making the
+	# synthesized remainder a.  Hardware division also sets MSR[DZ] and
+	# raises a divide exception where the core implements one and MSR[EE]
+	# is set.  A software helper can reproduce none of that.
+$LaRETURN_HERE:
+	# Restore the callee-saved registers and release the stack frame.
+	lwi	r25,r1,0
+	lwi	r26,r1,4
+	lwi	r27,r1,8
+	lwi	r28,r1,12
+	lwi	r29,r1,16
+	lwi	r30,r1,20
+	rtsd	r15,8
+	addik r1,r1,24
+        .end __moddi3
+	

@@ -1,0 +1,209 @@
+From 14b94f86e9bfa12453a39446842ee30a92bf7a6a Mon Sep 17 00:00:00 2001
+From: Sam Price <thesamprice@gmail.com>
+Date: Sat, 10 Oct 2026 12:51:13 -0400
+Subject: [PATCH 2/2] microblaze: use the generic __moddi3 instead of the
+ assembly one
+
+ALTERNATIVE to the previous patch -- apply one or the other, not both.
+This one applies to an unpatched tree, not on top of 1/2.
+
+MicroBlaze is the only target in the tree with a hand-written assembly
+moddi3: visium supplies a C one and bpf excludes the helper, every other
+target uses the generic libgcc2.c version.  Since that assembly turned out
+to be wrong for almost every input, the obvious question is whether it
+should exist at all.
+
+Drop it and stop excluding _moddi3.  __udivmoddi4, which the generic
+__moddi3 calls, is not in LIB2FUNCS_EXCLUDE, so nothing else is needed.
+This removes 121 lines of assembly no other port has an equivalent of, and
+removes the endianness hazard entirely: the C version reads the halves
+through a union rather than by register number.
+
+The cost is size and speed.  Measured on qemu-system-microblaze and
+qemu-system-microblazeel over 4701 values, counting executed instructions
+exactly with -icount 0, against the assembly as 1/2 leaves it:
+
+                       code size      executed insns
+  assembly __moddi3        55      be 3605340  le 3605277
+  generic C at -O2         62      be 3995016  le 3988505
+    + __udivmoddi4     be 1030
+                       le 1028
+    total              be 1092       +10.8%      +10.6%
+                       le 1090
+
+So the assembly is about 20 times smaller and about 10% faster, roughly 82
+instructions per call.  The size figure is the worst case: __udivmoddi4 is
+shared, so a program that already does 64-bit unsigned division links it
+anyway and the generic __moddi3 then costs only 62 instructions.
+
+The two also differ for x % 0, which is undefined either way.  The assembly
+returns zero, matching the port's other software helpers.  The generic
+version returns the low word of the dividend -- 0x123456789abc % 0 gives
+0x9abc -- because libgcc2.c does "d0 = 1 / d0" to provoke a hardware trap,
+and on MicroBlaze that is a call to __udivsi3, which itself returns zero
+for a zero divisor, so no trap occurs and the algorithm runs on with d0
+still zero.  For reference, neither matches the hardware-divide path: with
+idiv available GCC implements a % b as a - (a / b) * b, so a % 0 gives a.
+
+Correctness is otherwise equal -- both pass
+gcc.c-torture/execute/arith-rand-ll.c on both byte orders, where the
+unpatched tree aborts.
+
+libgcc/
+	* config/microblaze/moddi3.S: Delete.
+	* config/microblaze/t-microblaze (LIB2FUNCS_EXCLUDE): Do not
+	exclude _moddi3.
+	(LIB2ADD): Remove moddi3.S.
+
+Signed-off-by: Sam Price <thesamprice@gmail.com>
+Assisted-by: Claude (Anthropic)
+---
+ libgcc/config/microblaze/moddi3.S     | 121 --------------------------
+ libgcc/config/microblaze/t-microblaze |   3 +-
+ 2 files changed, 1 insertion(+), 123 deletions(-)
+ delete mode 100644 libgcc/config/microblaze/moddi3.S
+
+diff --git a/libgcc/config/microblaze/moddi3.S b/libgcc/config/microblaze/moddi3.S
+deleted file mode 100644
+index 71a67c11c..000000000
+--- a/libgcc/config/microblaze/moddi3.S
++++ /dev/null
+@@ -1,121 +0,0 @@
+-###################################
+-# 
+-#  Copyright (C) 2009-2026 Free Software Foundation, Inc.
+-#
+-#  Contributed by Michael Eager <eager@eagercon.com>.
+-#
+-#  This file is free software; you can redistribute it and/or modify it
+-#  under the terms of the GNU General Public License as published by the
+-#  Free Software Foundation; either version 3, or (at your option) any
+-#  later version.
+-#
+-#  GCC is distributed in the hope that it will be useful, but WITHOUT
+-#  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+-#  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+-#  License for more details.
+-#
+-#  Under Section 7 of GPL version 3, you are granted additional
+-#  permissions described in the GCC Runtime Library Exception, version
+-#  3.1, as published by the Free Software Foundation.
+-#
+-#  You should have received a copy of the GNU General Public License and
+-#  a copy of the GCC Runtime Library Exception along with this program;
+-#  see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+-#  <http://www.gnu.org/licenses/>. 
+-#
+-#  modsi3.S
+-# 
+-#  modulo operation for 64 bit integers.
+-# 
+-#######################################
+-
+-
+-/* An executable stack is *not* required for these functions.  */
+-#ifdef __linux__
+-.section .note.GNU-stack,"",%progbits
+-.previous
+-#endif
+-
+-	.globl	__moddi3
+-	.ent	__moddi3
+-__moddi3:
+-	.frame	r1,0,r15	
+-
+-#Change the stack pointer value and Save callee saved regs
+-	addik	r1,r1,-24
+-	swi	r25,r1,0
+-	swi	r26,r1,4
+-	swi	r27,r1,8	# used for sign
+-	swi	r28,r1,12	# used for loop count
+-	swi	r29,r1,16	# Used for div value High
+-	swi	r30,r1,20	# Used for div value Low
+-
+-#Check for Zero Value in the divisor/dividend
+-	OR	r9,r5,r6			# Check for the op1 being zero
+-	BEQID	r9,$LaResult_Is_Zero		# Result is zero
+-	OR	r9,r7,r8			# Check for the dividend being zero
+-	BEQI	r9,$LaDiv_By_Zero	        # Div_by_Zero   # Division Error
+-	BGEId	r5,$La1_Pos 
+-	XOR	r27,r5,r7			# Get the sign of the result
+-	RSUBI	r6,r6,0				# Make dividend positive
+-	RSUBIC	r5,r5,0				# Make dividend positive
+-$La1_Pos:
+-	BGEI	r7,$La2_Pos
+-	RSUBI	r8,r8,0				# Make Divisor Positive
+-	RSUBIC	r9,r9,0				# Make Divisor Positive
+-$La2_Pos:
+-	ADDIK	r4,r0,0				# Clear mod low
+-	ADDIK	r3,r0,0                	        # Clear mod high
+-	ADDIK	r29,r0,0			# clear div high
+-	ADDIK	r30,r0,0			# clear div low
+-	ADDIK	r28,r0,64			# Initialize the loop count
+-   # First part try to find the first '1' in the r5/r6
+-$LaDIV1:
+-	ADD	r6,r6,r6
+-	ADDC	r5,r5,r5			# left shift logical r5
+-	BGEID	r5,$LaDIV1			
+-	ADDIK	r28,r28,-1
+-$LaDIV2:
+-	ADD	r6,r6,r6
+-	ADDC	r5,r5,r5	# left shift logical r5/r6 get the '1' into the Carry
+-	ADDC	r4,r4,r4	# Move that bit into the Mod register
+-	ADDC	r3,r3,r3	# Move carry into high mod register
+-	rsub	r18,r7,r3	# Compare the High Parts of Mod and Divisor
+-	bnei	r18,$L_High_EQ
+-	rsub	r18,r6,r4	# Compare Low Parts only if Mod[h] == Divisor[h]
+-$L_High_EQ:	
+-	rSUB	r26,r8,r4	# Subtract divisor[L] from Mod[L]
+-	rsubc	r25,r7,r3	# Subtract divisor[H] from Mod[H]
+-	BLTi	r25,$LaMOD_TOO_SMALL
+-	OR	r3,r0,r25	# move r25 to mod [h]
+-	OR	r4,r0,r26	# move r26 to mod [l]
+-	ADDI	r30,r30,1
+-	ADDC	r29,r29,r0
+-$LaMOD_TOO_SMALL:
+-	ADDIK	r28,r28,-1
+-	BEQi	r28,$LaLOOP_END
+-	ADD	r30,r30,r30		# Shift in the '1' into div [low]
+-	ADDC	r29,r29,r29		# Move the carry generated into high
+-	BRI	$LaDIV2   # Div2
+-$LaLOOP_END:
+-	BGEI	r27,$LaRETURN_HERE
+-	rsubi	r30,r30,0
+-	rsubc	r29,r29,r0
+-	BRI	$LaRETURN_HERE
+-$LaDiv_By_Zero:
+-$LaResult_Is_Zero:
+-	or	r29,r0,r0	# set result to 0 [High]
+-	or	r30,r0,r0	# set result to 0 [Low]
+-$LaRETURN_HERE:
+-# Restore values of CSRs and that of r29 and the divisor and the dividend
+-	
+-	lwi	r25,r1,0
+-	lwi	r26,r1,4
+-	lwi	r27,r1,8
+-	lwi	r28,r1,12
+-	lwi	r29,r1,16
+-	lwi	r30,r1,20
+-	rtsd	r15,8
+-	addik r1,r1,24
+-        .end __moddi3
+-	
+diff --git a/libgcc/config/microblaze/t-microblaze b/libgcc/config/microblaze/t-microblaze
+index 96959f029..8d954a495 100644
+--- a/libgcc/config/microblaze/t-microblaze
++++ b/libgcc/config/microblaze/t-microblaze
+@@ -1,8 +1,7 @@
+-LIB2FUNCS_EXCLUDE += _divsi3 _modsi3 _moddi3 _mulsi3 _udivsi3 _umodsi3
++LIB2FUNCS_EXCLUDE += _divsi3 _modsi3 _mulsi3 _udivsi3 _umodsi3
+ 
+ LIB2ADD += \
+         $(srcdir)/config/microblaze/divsi3.S \
+-        $(srcdir)/config/microblaze/moddi3.S \
+         $(srcdir)/config/microblaze/modsi3.S \
+         $(srcdir)/config/microblaze/muldi3_hard.S \
+         $(srcdir)/config/microblaze/mulsi3.S \
+-- 
+2.39.5 (Apple Git-154)
+

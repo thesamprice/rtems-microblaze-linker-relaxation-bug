@@ -1,0 +1,59 @@
+Base:      gcc master 8361264a1 (2026-09-26)
+Toolchain: microblaze-rtems7-gcc 12.4.1, "le" multilib for little-endian
+Emulator:  qemu-system-microblaze / -microblazeel, machine petalogix-s3adsp1800
+Counting:  -icount 0, so the virtual-clock delta is the exact instruction count
+
+4701-vector check, expected values computed on the host
+-------------------------------------------------------
+  be  stock   5 wrong answers then NO TERMINATION in 90 s
+  be  fixed   RESULT total=4701 bad=0 -- ALL PASS
+  le  stock   5 wrong answers then NO TERMINATION in 90 s
+  le  fixed   RESULT total=4701 bad=0 -- ALL PASS
+
+Sample stock failures (big-endian):
+  a=0x0000000000000001 b=0xffffffffffffffff want=0x0 got=0x0000000100000000
+  a=0x0000000000000001 b=0xfffffffffffffffe want=0x1 got=0x00000000ffffffff
+The same inputs little-endian give different wrong answers (0x00000004fffffffb),
+which is the swapped-halves defect showing directly.
+
+gcc.c-torture/execute/arith-rand-ll.c -- the EXISTING upstream test
+--------------------------------------------------------------------
+  be  stock   TEST-ABORT
+  be  fixed   TEST-PASS
+  le  stock   TEST-ABORT
+  le  fixed   TEST-PASS
+
+This is the finding that killed the planned testsuite patch.  The upstream
+test already detects the bug on both byte orders.  Its first division block is
+unsigned, which is what misled an earlier pass, but a signed long long block
+follows it and does exactly the right thing.  So the coverage is not missing --
+the execute testsuite simply is not being run for MicroBlaze.
+
+Executed instructions over the 4701 vectors
+--------------------------------------------
+  be  assembly   3607673
+  be  C at -O2   3995016      +10.7 %
+  le  assembly   3607610
+  le  C at -O2   3988505      +10.6 %
+  ~82 extra instructions per call for the C version.
+
+Static size (instructions)
+---------------------------
+  assembly __moddi3     56
+  C c_moddi3 at -O2     62
+  C __udivmoddi4      1030   (be; 1028 le)
+  C total             1092   -> the assembly is 19x smaller
+
+Notes
+-----
+* The two byte orders differ by 63 instructions out of 3.6 million for the
+  assembly, so the #ifdef __MICROBLAZEEL__ half-naming costs nothing at run
+  time; it resolves at assembly time.
+* The patched routine is four instructions smaller than stock (56 vs 61): it
+  drops three dead r18 comparison instructions and two redundant zero-stores
+  and adds one BLTi guard.
+* The counter device is DEVICE_LITTLE_ENDIAN, so a big-endian guest must
+  byte-swap the 32-bit read or the delta is nonsense.  bench.c does this.
+* __udivmoddi4 is shared: a program already doing 64-bit unsigned division
+  links it regardless, and there the generic __moddi3 costs only 62
+  instructions rather than 1092.

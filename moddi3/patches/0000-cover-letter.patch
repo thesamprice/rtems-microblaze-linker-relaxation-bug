@@ -1,0 +1,189 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Price <thesamprice@gmail.com>
+Date: Sat, 10 Oct 2026 12:50:42 -0400
+Subject: [PATCH 0/2] microblaze: __moddi3 is wrong for almost every input
+
+libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
+It returns the wrong answer for most inputs on big-endian, different wrong
+answers on little-endian, and does not terminate at all for LLONG_MIN on
+either.
+
+These are two ways to fix it, and you should apply one or the other, not
+both.  I measured them rather than guessing, and would rather ask than choose
+for you.
+
+  1/2  Ramin Moussavi's fix to the existing assembly, with my additions.
+  2/2  Delete the assembly and use the generic libgcc2.c version.
+
+Each patch applies to an unpatched master on its own; 2/2 is not a follow-on
+to 1/2.  Both touch libgcc only, and there are no compiler changes.
+
+Which test proves it
+--------------------
+
+gcc.c-torture/execute/arith-rand-ll.c.  It calls __moddi3 through its
+
+    { signed long long xx = x, yy = y, r1, r2; ... r2 = xx % yy; ... }
+
+block over 10000 random bitstrings and checks r1 * yy + r2 == xx, so a wrong
+remainder fails the invariant and it calls abort().  Run on
+qemu-system-microblaze and qemu-system-microblazeel, machine
+petalogix-s3adsp1800:
+
+                      unpatched    with 1/2    with 2/2
+  microblaze-elf        abort        pass        pass
+  microblazeel-elf      abort        pass        pass
+
+So the bug is provable and each fix is confirmed with a test already in the
+tree, on both byte orders, and no new test is required.  More on that below.
+
+2/2 is tempting because MicroBlaze is the only target in the tree with a
+hand-written assembly moddi3 -- visium has a C one, bpf excludes the helper,
+everyone else uses the generic version.  A routine no other port felt the need
+to hand-write, and which turned out to be wrong for sixteen years, is a
+reasonable thing to delete.
+
+The measurements say otherwise.  qemu-system-microblaze and
+qemu-system-microblazeel, machine petalogix-s3adsp1800, 4701 vectors with
+expected values computed on the host, executed instructions counted exactly
+with -icount 0.  The generic __moddi3 was compiled at -O2, the level libgcc
+builds LIB2FUNCS at:
+
+                       code size      executed insns
+  assembly __moddi3        55      be 3605340  le 3605277
+  generic C at -O2         62      be 3995016  le 3988505
+    + __udivmoddi4     be 1030
+                       le 1028
+    total              be 1092       +10.8%      +10.6%
+                       le 1090
+
+The assembly is about 20 times smaller and about 10% faster -- roughly 82
+instructions per call.  On an embedded target that is not a close call, so my
+recommendation is 1/2.  One caveat in fairness to 2/2: __udivmoddi4 is shared,
+so a program already doing 64-bit unsigned division links it anyway, and the
+generic __moddi3 then costs 62 instructions rather than 1092.
+
+Division by zero
+----------------
+
+Undefined behaviour either way, but the two disagree and it is worth stating.
+
+  assembly            x % 0  ->  0
+  generic C at -O2    x % 0  ->  low word of x   (0x123456789abc -> 0x9abc)
+
+The C result is not the generic code misbehaving so much as an assumption that
+does not hold here.  libgcc2.c does "d0 = 1 / d0" to provoke a hardware
+divide-by-zero trap, but on MicroBlaze that compiles to a call to __udivsi3,
+whose own divide-by-zero path returns zero, so no trap occurs and the
+algorithm continues with d0 still zero.
+
+Zero is the more defensible answer, since it is what divsi3.S, modsi3.S,
+udivsi3.S and umodsi3.S all return, and 1/2 records that in a comment.
+
+Worth noting separately, since it predates this series and is not something
+either patch changes: neither matches a core with hardware divide.  MicroBlaze
+has no remainder instruction, so GCC implements a % b as a - (a / b) * b, and
+idiv by zero yields a zero quotient, so a % 0 evaluates to a.  Measured under
+QEMU, 5 % 0 gives 5 with hardware divide against 0 through the helper.  The
+hardware also sets MSR[DZ] and raises a divide exception where the core
+implements one and MSR[EE] is set, which Linux reports as SIGFPE/FPE_INTDIV;
+a software helper can do none of that.  Aligning the two would touch all five
+helpers and belongs in its own discussion.
+
+No new test, and why
+--------------------
+
+As above, arith-rand-ll.c already covers this.  I checked, having first assumed
+otherwise -- its first division block is unsigned, and it was only on reading
+further that the signed long long block turned up.
+
+Which raises the more useful point.  The coverage exists and works, so the
+reason a routine this broken went unnoticed from 2010 to 2026 is that the
+execute testsuite does not appear to be run for MicroBlaze at all.  Fixing
+__moddi3 does not fix that, and it is likely not the only thing hiding.
+
+Coverage of the routine 1/2 produces, traced with a QEMU TCG plugin over the
+4701 vectors: 55 of 55 instructions and 17 of 18 conditional branch outcomes,
+identically on both byte orders.  The single missing outcome is the branch to
+the divide-by-zero label, which the vectors deliberately exclude.
+
+Provenance, and what I changed
+------------------------------
+
+The assembly fix in 1/2 is Ramin Moussavi's, from OpenADK.  He has agreed to
+my submitting it, and 1/2 credits him in its first paragraph; I am signing it
+off because the additions below are mine and he is not sending it himself.
+
+I changed five things.  Two of them reach the instruction stream, so here is
+what they cost, measured the same way as above:
+
+                        code size      executed insns
+  his patch as sent          56      be 3607673  le 3607610
+  1/2 as sent here           55      be 3605340  le 3605277
+
+That is one instruction less of code and 2333 fewer executed instructions
+over the 4701 calls, the same on both byte orders.  The two changes:
+
+  - Removed $LaResult_Is_Zero, and with it the BRI that existed only to jump
+    over the label.  His change redirects the only branch that reached
+    $LaResult_Is_Zero, so it was left unreferenced, and the sign fix-up can
+    now fall through into the empty divide-by-zero label instead of
+    branching past it.
+
+  - Restored the delay slot on the first zero test.  His version turns
+    BEQID into BEQI, leaving the following OR -- which computes the divisor
+    zero test and is dead at the branch target -- outside the slot.  Putting
+    it back in the slot is free.
+
+The other three do not:
+
+  - Added the divide-by-zero comment described above.
+
+  - Tidied the surrounding comments, and annotated the loop body,
+    normalization and sign fix-up against the reference algorithm.  The
+    header still said "modsi3.S ... modulo operation for 64 bit integers";
+    several comments transcribed the instruction instead of explaining it;
+    one described the dividend by register number after the halves were
+    renamed; and the epilogue claimed to restore CSRs and the operands when
+    it restores callee-saved registers.  Trailing whitespace on the touched
+    lines is gone.  Stripping every comment from the result leaves .text
+    byte-identical on both byte orders, so none of this reached the code.
+
+  - Corrected the commit message.  It said big-endian got 30079 of 40420
+    values wrong while little-endian hung, which reads as though big-endian
+    completes.  It does not: both byte orders hang, at the same point, after
+    the same five wrong answers.  His own text says as much further down
+    ("LLONG_MIN % 1 hangs on both endiannesses"), so the summary contradicted
+    the detail.
+
+Algorithm, for anyone comparing the two
+---------------------------------------
+
+They are different algorithms, which is why the measurements differ by tens
+of percent rather than a constant factor.
+
+  1/2  restoring division, radix 2, one quotient bit per iteration.  Koren,
+       Computer Arithmetic Algorithms, section 3.2, eq. 3.11.  The restore
+       is implicit: the trial subtraction goes to scratch and is kept only
+       when non-negative, which is the variant Koren notes avoids the
+       restore penalty.  The file now says so in its header, and the loop,
+       the normalization step and the sign fix-up each name the part of that
+       section they implement.
+
+  2/2  Knuth's Algorithm D, TAOCP volume 2 section 4.3.1 -- digit
+       recurrence at radix 2^16 with quotient-digit estimation and
+       add-back.  __udiv_qrnnd_c in longlong.h is step D3 and its
+       correction; UDIV_NEEDS_NORMALIZATION is D1.
+
+Koren is also where the rule defect 3 broke is stated outright: the sign of
+the remainder is the sign of the dividend, not the exclusive or of the
+operand signs.  That exclusive or is the quotient's rule, and it is what the
+original code used.
+
+Sam Price (2):
+  microblaze: fix the hand-written 64-bit signed modulo
+  microblaze: use the generic __moddi3 instead of the assembly one
+
+-- 
+2.39.5 (Apple Git-154)
+
