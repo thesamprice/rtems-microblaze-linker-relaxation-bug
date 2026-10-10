@@ -26,31 +26,42 @@
 /* A 64-bit value held in a register pair keeps its high word in the
    lower-numbered register on big-endian and in the higher-numbered one on
    little-endian.  Name the halves so that the implementation below is
-   independent of endianness.  */
+   independent of endianness.
+
+   Same naming as moddi3.S, after Koren section 3.2: X the dividend, D the
+   divisor, Q the quotient, R the remainder.  The two functions differ only
+   in which of the last two they return, so here Q is the return value in
+   r3:r4 and R is the scratch pair.  */
 #ifdef __MICROBLAZEEL__
-# define OP1_L	r5
-# define OP1_H	r6
-# define OP2_L	r7
-# define OP2_H	r8
+# define OPX_L	r5
+# define OPX_H	r6
+# define OPD_L	r7
+# define OPD_H	r8
 # define QUO_L	r3
 # define QUO_H	r4
 #else
-# define OP1_H	r5
-# define OP1_L	r6
-# define OP2_H	r7
-# define OP2_L	r8
+# define OPX_H	r5
+# define OPX_L	r6
+# define OPD_H	r7
+# define OPD_L	r8
 # define QUO_H	r3
 # define QUO_L	r4
 #endif
 
-/* Scratch.  Fixed regardless of byte order: none of these cross the ABI.  */
-#define SIGN	r27		/* Sign of the quotient.  */
-#define COUNT	r28		/* Loop counter.  */
-#define REM_H	r29		/* Running remainder.  */
+/* Scratch.  No __MICROBLAZEEL__ treatment, and none wanted: QUO above needs
+   it because the ABI decides which register returns which half, while REM and
+   TRIAL are this function's own, so it assigns their halves itself and
+   swapping the numbers would be equally correct.  The real constraint is
+   instruction order -- low half first, since ADD and RSUB set the carry that
+   ADDC and RSUBC consume.  */
+#define SIGN	r27	/* Sign of Q, the exclusive or of the operand signs --
+			   unlike a remainder, which takes the dividend's.  */
+#define COUNT	r28	/* Iterations remaining.  */
+#define REM_H	r29	/* R, Koren's partial remainder r[i].  */
 #define REM_L	r30
-#define TRIAL_H	r25		/* Trial subtraction result.  */
+#define TRIAL_H	r25	/* The trial subtraction 2*r[i-1] - D.  */
 #define TRIAL_L	r26
-#define ZERO_T	r9		/* Scratch for the zero tests.  */
+#define ZERO_T	r9	/* Scratch for the two zero tests.  */
 
 	.globl	__divdi3
 	.ent	__divdi3
@@ -70,49 +81,49 @@ __divdi3:
 	ADDIK	QUO_H,r0,0
 
 	# Handle a zero dividend and a zero divisor.
-	OR	ZERO_T,OP1_H,OP1_L
+	OR	ZERO_T,OPX_H,OPX_L
 	BEQID	ZERO_T,$LaRETURN_HERE	# 0 / n == 0.  The delay-slot OR below
 					# only clobbers ZERO_T, dead at the
 					# target.
-	OR	ZERO_T,OP2_H,OP2_L
+	OR	ZERO_T,OPD_H,OPD_L
 	BEQI	ZERO_T,$LaDiv_By_Zero
-	BGEId	OP1_H,$La1_Pos
-	XOR	SIGN,OP1_H,OP2_H	# Quotient sign: dividend XOR divisor.
+	BGEId	OPX_H,$La1_Pos
+	XOR	SIGN,OPX_H,OPD_H	# Quotient sign: dividend XOR divisor.
 					# Both are still un-negated here.
-	RSUBI	OP1_L,OP1_L,0		# Negate the dividend magnitude.
-	RSUBIC	OP1_H,OP1_H,0
+	RSUBI	OPX_L,OPX_L,0		# Negate the dividend magnitude.
+	RSUBIC	OPX_H,OPX_H,0
 $La1_Pos:
-	BGEI	OP2_H,$La2_Pos
-	RSUBI	OP2_L,OP2_L,0		# Negate the divisor magnitude.
-	RSUBIC	OP2_H,OP2_H,0
+	BGEI	OPD_H,$La2_Pos
+	RSUBI	OPD_L,OPD_L,0		# Negate the divisor magnitude.
+	RSUBIC	OPD_H,OPD_H,0
 $La2_Pos:
 	ADDIK	REM_H,r0,0		# Clear the remainder.
 	ADDIK	REM_L,r0,0
 	ADDIK	COUNT,r0,64		# Initialize the loop count.
-	BLTi	OP1_H,$LaDIV2		# Already normalized: use all 64 bits.
+	BLTi	OPX_H,$LaDIV2		# Already normalized: use all 64 bits.
 					# LLONG_MIN stays negative when negated,
 					# so skipping this check would shift its
 					# only set bit out below and leave the
 					# loop non-terminating.
 
 	# Normalize the dividend by shifting its first set bit into the
-	# high bit of OP1_H.
+	# high bit of OPX_H.
 $LaDIV1:
-	ADD	OP1_L,OP1_L,OP1_L
-	ADDC	OP1_H,OP1_H,OP1_H
-	BGEID	OP1_H,$LaDIV1
+	ADD	OPX_L,OPX_L,OPX_L
+	ADDC	OPX_H,OPX_H,OPX_H
+	BGEID	OPX_H,$LaDIV1
 	ADDIK	COUNT,COUNT,-1
 $LaDIV2:
 	# Shift the quotient first so the loop tail needs no special case for
 	# the final iteration; bit 0 is then free for the bit decided below.
 	ADD	QUO_L,QUO_L,QUO_L
 	ADDC	QUO_H,QUO_H,QUO_H
-	ADD	OP1_L,OP1_L,OP1_L
-	ADDC	OP1_H,OP1_H,OP1_H	# Shift the next dividend bit into carry.
+	ADD	OPX_L,OPX_L,OPX_L
+	ADDC	OPX_H,OPX_H,OPX_H	# Shift the next dividend bit into carry.
 	ADDC	REM_L,REM_L,REM_L	# Shift it into the remainder.
 	ADDC	REM_H,REM_H,REM_H
-	RSUB	TRIAL_L,OP2_L,REM_L	# Trial subtraction.
-	RSUBC	TRIAL_H,OP2_H,REM_H
+	RSUB	TRIAL_L,OPD_L,REM_L	# Trial subtraction.
+	RSUBC	TRIAL_H,OPD_H,REM_H
 	BLTi	TRIAL_H,$LaDIV_TOO_SMALL
 	OR	REM_H,r0,TRIAL_H	# Keep the reduced remainder,
 	OR	REM_L,r0,TRIAL_L

@@ -66,8 +66,10 @@ Knuth's Algorithm D, TAOCP volume 2 section 4.3.1 -- so the two are not
 comparable step for step.
 
 Every register the routine uses is now listed with the value it holds, and
-the operand macros say which of Koren's X, D, Q and R each pair is.  The
-labels are renamed to match: $La1_Pos and $La2_Pos said nothing and were
+the operand macros carry Koren's letter for the value they hold: OP1 and OP2
+become OPX and OPD, for his dividend X and divisor D.  RES keeps its name,
+since it is both his R and the return value.  The labels are renamed to
+match: $La1_Pos and $La2_Pos said nothing and were
 not even accurate -- negating LLONG_MIN leaves it negative -- so they
 become $LaX_Abs and $LaD_Abs, with a note that what the loop needs is the
 unsigned magnitude, which that bit pattern is.  $LaDIV1 and $LaDIV2 name

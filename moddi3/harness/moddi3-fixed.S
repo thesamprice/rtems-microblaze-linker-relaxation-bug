@@ -71,37 +71,48 @@
    independent of endianness.
 
    Koren section 3.2 calls the four values X the dividend, D the divisor,
-   Q the quotient and R the remainder.  They live here as
+   Q the quotient and R the remainder, and the names below carry his letter:
 
-     OP1   X.  The loop consumes it from the top, so once it is running OP1
-           holds only the bits of X not yet shifted into the remainder.
-     OP2   D.  Never modified after the sign fix-up.
-     RES   R.  While the loop runs this is Koren's partial remainder r[i];
-           RES:OP1 together are his double-length remainder register.
-     r29:r30
-           Q.  Accumulated as the algorithm requires but never returned --
-           see the scratch register list below.  */
+     OPX   X, the dividend.  The loop consumes it from the top, so once it
+           is running OPX holds only the bits of X not yet shifted into the
+           remainder.
+     OPD   D, the divisor.  Not modified after the sign fix-up.
+     RES   R, the remainder, which is what this function returns.  While the
+           loop runs it is Koren's partial remainder r[i], and RES:OPX
+           together are his double-length remainder register.
+
+   Q has no pair of its own: it is accumulated in r29:r30 because the
+   recurrence produces it, but it is never returned.  See the scratch
+   register list below.  */
 #ifdef __MICROBLAZEEL__
-# define OP1_L	r5
-# define OP1_H	r6
-# define OP2_L	r7
-# define OP2_H	r8
+# define OPX_L	r5
+# define OPX_H	r6
+# define OPD_L	r7
+# define OPD_H	r8
 # define RES_L	r3
 # define RES_H	r4
 #else
-# define OP1_H	r5
-# define OP1_L	r6
-# define OP2_H	r7
-# define OP2_L	r8
+# define OPX_H	r5
+# define OPX_L	r6
+# define OPD_H	r7
+# define OPD_L	r8
 # define RES_H	r3
 # define RES_L	r4
 #endif
 
 /* The scratch and callee-saved registers, with the value each one holds.
-   Unlike the operand pairs above these need no endianness treatment: none of
-   them is half of a value passed in or returned through the ABI, so there is
-   no high/low to swap.  All six are callee-saved and so are spilled by the
-   prologue below; r9 is caller-saved and is used without saving.
+   All six are callee-saved and so are spilled by the prologue below; r9 is
+   caller-saved and is used without saving.
+
+   These get no __MICROBLAZEEL__ treatment, and must not: a pair needs it only
+   when something outside this function decides which register holds which
+   half, which is true of the argument and return pairs above and of nothing
+   else.  An internal pair assigns its own roles -- r25 is the high half
+   because the code consistently writes and reads it as one -- so swapping the
+   two numbers would assemble to equally correct code.  What does carry a real
+   constraint is instruction order, not register numbering: the low half must
+   be done before the high one, because RSUB and ADD set the carry that RSUBC
+   and ADDC consume.
 
      r9        scratch for the two zero tests, dead immediately afterwards
      r25:r26   the trial subtraction 2*r[i-1] - D, high word in r25
@@ -132,25 +143,25 @@ __moddi3:
 	ADDIK	RES_H,r0,0
 
 	# Handle a zero dividend and a zero divisor.
-	OR	r9,OP1_H,OP1_L
+	OR	r9,OPX_H,OPX_L
 	BEQID	r9,$LaRETURN_HERE	# 0 % n == 0.  The delay-slot OR below
 					# only clobbers r9, which is dead at
 					# the target.
-	OR	r9,OP2_H,OP2_L
+	OR	r9,OPD_H,OPD_L
 	BEQI	r9,$LaDiv_By_Zero
-	# Divide the magnitudes.  Reaching $LaX_Abs means OP1 holds |X| and
-	# reaching $LaD_Abs that OP2 holds |D| -- read as unsigned, which is
+	# Divide the magnitudes.  Reaching $LaX_Abs means OPX holds |X| and
+	# reaching $LaD_Abs that OPD holds |D| -- read as unsigned, which is
 	# what matters here: negating LLONG_MIN leaves it negative as a signed
 	# value, but the bit pattern it leaves is 2^63, and 2^63 is exactly
 	# the magnitude the loop needs.
-	BGEId	OP1_H,$LaX_Abs
-	OR	r27,r0,OP1_H		# Save the sign of X.
-	RSUBI	OP1_L,OP1_L,0
-	RSUBIC	OP1_H,OP1_H,0
+	BGEId	OPX_H,$LaX_Abs
+	OR	r27,r0,OPX_H		# Save the sign of X.
+	RSUBI	OPX_L,OPX_L,0
+	RSUBIC	OPX_H,OPX_H,0
 $LaX_Abs:
-	BGEI	OP2_H,$LaD_Abs
-	RSUBI	OP2_L,OP2_L,0
-	RSUBIC	OP2_H,OP2_H,0
+	BGEI	OPD_H,$LaD_Abs
+	RSUBI	OPD_L,OPD_L,0
+	RSUBIC	OPD_H,OPD_H,0
 $LaD_Abs:
 	ADDIK	r29,r0,0		# Clear Q.
 	ADDIK	r30,r0,0
@@ -159,9 +170,9 @@ $LaD_Abs:
 	# stays negative when negated, so without this check normalization
 	# would shift its only set bit out and never see a clear sign bit,
 	# leaving the loop non-terminating.
-	BLTi	OP1_H,$LaRecurrence
+	BLTi	OPX_H,$LaRecurrence
 
-	# Shift the dividend's first set bit up to the high bit of OP1_H and
+	# Shift the dividend's first set bit up to the high bit of OPX_H and
 	# drop the loop count to match.  This is not Koren's D1-style operand
 	# scaling -- it changes no value, it only skips the leading iterations
 	# whose quotient bits are known to be zero.
@@ -172,27 +183,27 @@ $LaD_Abs:
 	# reaching for Knuth's D1..D8 -- those name the steps of the other
 	# algorithm, the one the generic C path uses.
 $LaNormalize:
-	ADD	OP1_L,OP1_L,OP1_L
-	ADDC	OP1_H,OP1_H,OP1_H
-	BGEID	OP1_H,$LaNormalize
+	ADD	OPX_L,OPX_L,OPX_L
+	ADDC	OPX_H,OPX_H,OPX_H
+	BGEID	OPX_H,$LaNormalize
 	ADDIK	r28,r28,-1
 $LaRecurrence:
 	# One step of r[i] = 2*r[i-1] - q[i]*D.
 	#
-	# RES:OP1 together hold Koren's double-length remainder, so shifting
+	# RES:OPX together hold Koren's double-length remainder, so shifting
 	# the pair left by one bit forms 2*r[i-1]: the dividend's top bit
-	# leaves OP1 through the carry flag and enters RES at the bottom.
+	# leaves OPX through the carry flag and enters RES at the bottom.
 	# That carry is the "extra bit position in the arithmetic unit" his
 	# Example 3.4 notes the shift requires.
-	ADD	OP1_L,OP1_L,OP1_L
-	ADDC	OP1_H,OP1_H,OP1_H
+	ADD	OPX_L,OPX_L,OPX_L
+	ADDC	OPX_H,OPX_H,OPX_H
 	ADDC	RES_L,RES_L,RES_L
 	ADDC	RES_H,RES_H,RES_H
 	# Compare 2*r[i-1] against D, which Koren calls the most complicated
 	# step: subtract into scratch and read the sign.  q[i] = 1 when the
 	# result is non-negative, 0 otherwise.
-	RSUB	r26,OP2_L,RES_L
-	RSUBC	r25,OP2_H,RES_H
+	RSUB	r26,OPD_L,RES_L
+	RSUBC	r25,OPD_H,RES_H
 	BLTi	r25,$LaQ_Bit_Is_Zero	# q[i] = 0.  Nothing to undo: the old
 					# remainder was never overwritten, so
 					# the restore costs nothing.
