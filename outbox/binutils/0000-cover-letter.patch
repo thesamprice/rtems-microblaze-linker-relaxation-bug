@@ -1,7 +1,7 @@
-From 16fa11417b0e9deac3c25c54ef1850f3a3b82a40 Mon Sep 17 00:00:00 2001
+From cc0051b52c9caaecaa7821260ec0385fe28faf44 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Mon, 7 Sep 2026 23:57:48 -0400
-Subject: [PATCH 0/7] MicroBlaze: gas and ld fixes, CFI directives, PC-relative .eh_frame data
+Date: Sun, 27 Sep 2026 16:22:05 -0400
+Subject: [PATCH 0/5] MicroBlaze: gas and ld fixes, CFI directives, PC-relative .eh_frame data
 
 This series is the still-open MicroBlaze binutils work from the
 investigation that produced the relaxation fix already in master
@@ -43,11 +43,7 @@ took libc.so from 711 dynamic relocations in .eh_frame to none and made
 the section read-only with an .eh_frame_hdr table; glibc's full make check
 under qemu showed no unwinding or exception-table regression.
 
-The arch-neutral bfd/dwarf2.c addr2line tie-break fix found in the same
-work is sent separately.
-
-Samuel Price (7):
-  microblaze: write the value for BFD_RELOC_8 and BFD_RELOC_16 fixups
+Samuel Price (5):
   bfd: microblaze: keep the PLT address of address-taken functions in
     executables
   bfd: microblaze: apply relocations the .eh_frame editor asks to keep
@@ -56,21 +52,18 @@ Samuel Price (7):
   microblaze: support "sym - ." across sections, and relax
     R_MICROBLAZE_32_PCREL
   ld/testsuite: widen the pr24511 xfail to all MicroBlaze targets
-  gas: testsuite: exclude microblazeel from the diff1 test
 
- bfd/elf32-microblaze.c                       | 31 +++++++--
- gas/config/tc-microblaze.c                   | 70 +++++++++++++++++++-
- gas/config/tc-microblaze.h                   | 23 +++++++
- gas/testsuite/gas/all/forward.d              |  2 +-
- gas/testsuite/gas/all/gas.exp                |  2 +-
- gas/testsuite/gas/microblaze/cfi.d           | 22 ++++++
- gas/testsuite/gas/microblaze/cfi.exp         |  5 ++
- gas/testsuite/gas/microblaze/cfi.s           | 13 ++++
- gas/testsuite/gas/microblaze/reloc_pcrel.d   | 11 +++
- gas/testsuite/gas/microblaze/reloc_pcrel.exp |  5 ++
- gas/testsuite/gas/microblaze/reloc_pcrel.s   | 11 +++
+ bfd/elf32-microblaze.c                       | 31 ++++++++++---
+ gas/config/tc-microblaze.c                   | 47 +++++++++++++++++++-
+ gas/config/tc-microblaze.h                   | 23 ++++++++++
+ gas/testsuite/gas/microblaze/cfi.d           | 22 +++++++++
+ gas/testsuite/gas/microblaze/cfi.exp         |  5 +++
+ gas/testsuite/gas/microblaze/cfi.s           | 13 ++++++
+ gas/testsuite/gas/microblaze/reloc_pcrel.d   | 11 +++++
+ gas/testsuite/gas/microblaze/reloc_pcrel.exp |  5 +++
+ gas/testsuite/gas/microblaze/reloc_pcrel.s   | 11 +++++
  ld/testsuite/ld-elf/pr24511.d                |  2 +-
- 12 files changed, 188 insertions(+), 9 deletions(-)
+ 10 files changed, 163 insertions(+), 7 deletions(-)
  create mode 100644 gas/testsuite/gas/microblaze/cfi.d
  create mode 100644 gas/testsuite/gas/microblaze/cfi.exp
  create mode 100644 gas/testsuite/gas/microblaze/cfi.s

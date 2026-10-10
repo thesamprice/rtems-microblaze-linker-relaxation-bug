@@ -48,15 +48,38 @@ PY
   else
     ( cd "$wt" && git format-patch -q -o "$OUT/$name" -1 )
   fi
+  # Reviewer notes: patches/<repo>/<stem>.notes is inserted after the "---"
+  # line of the corresponding generated mail.  git am ignores everything
+  # between "---" and the first "diff --git", so these reach reviewers but
+  # never land in the commit message.  Source patches and generated mails are
+  # in the same order, so zip them.
+  i=0
+  for src in "$@"; do
+    i=$((i + 1))
+    notes=${src%.patch}.notes
+    [ -f "$notes" ] || continue
+    gen=$(ls "$OUT/$name"/$(printf '%04d' "$i")-*.patch 2>/dev/null) || continue
+    python3 - "$gen" "$notes" <<'PY'
+import sys
+gen, notes = sys.argv[1], sys.argv[2]
+s = open(gen).read()
+marker = "\n---\n"
+i = s.index(marker) + len(marker)
+open(gen, "w").write(s[:i] + open(notes).read().rstrip("\n") + "\n\n" + s[i:])
+PY
+    echo "  + notes from $(basename "$notes")"
+  done
   git -C "$tree" worktree remove --force "$wt"
   echo "$name: $(ls "$OUT/$name" | wc -l | tr -d ' ') files on $(git -C "$tree" rev-parse --short "$base")"
 }
 
 B=${BINUTILS_TREE:-}; G=${GCC_TREE:-}; L=${GLIBC_TREE:-}
+
+# 0004, 0010, 0011 and 0012 landed upstream 2026-09-24 as the v3 series and are
+# no longer generated; see patches/binutils/landed/README.md.
 series binutils        "$B" "${BINUTILS_BASE:-master}" "$P/binutils/0000-cover-letter.txt" \
-  "$P"/binutils/0004-*.patch "$P"/binutils/0008-*.patch "$P"/binutils/0007-*.patch \
-  "$P"/binutils/0006-*.patch "$P"/binutils/0009-*.patch "$P"/binutils/0003-*.patch \
-  "$P"/binutils/0010-*.patch
+  "$P"/binutils/0008-*.patch "$P"/binutils/0007-*.patch \
+  "$P"/binutils/0006-*.patch "$P"/binutils/0009-*.patch "$P"/binutils/0003-*.patch
 series gcc-0001        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0001-*.patch
 series gcc-0002        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0002-*.patch
 series glibc           "$L" "${GLIBC_BASE:-master}"    "$P/glibc/0000-cover-letter.txt" \

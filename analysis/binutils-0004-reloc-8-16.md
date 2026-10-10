@@ -1,6 +1,6 @@
 # binutils 0004: write the value for `BFD_RELOC_8`/`BFD_RELOC_16` fixups
 
-**Patch:** `patches/binutils/0004-microblaze-write-the-value-for-BFD_RELOC_8-and-BFD_R.patch`
+**Patch:** `patches/binutils/0004-microblaze-add-the-missing-BFD_RELOC_8-and-BFD_RELOC_.patch`
 **Files:** `gas/config/tc-microblaze.c`, `gas/testsuite/gas/all/forward.d`
 
 ## What it does

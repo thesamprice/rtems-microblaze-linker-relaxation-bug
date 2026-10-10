@@ -1,7 +1,7 @@
-From fb29caf3143354923360a8ed7b64e6f50b0acf1c Mon Sep 17 00:00:00 2001
+From b8f86e3117b1db024cfdc86f8fa13142cbdc30d3 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 23:05:43 -0400
-Subject: [PATCH 5/7] microblaze: support "sym - ." across sections, and relax
+Subject: [PATCH 4/5] microblaze: support "sym - ." across sections, and relax
  R_MICROBLAZE_32_PCREL
 
 MicroBlaze gas rejects "sym - ." when sym lives in another section
@@ -89,10 +89,10 @@ index 0b0c4bc288b..3315fd65193 100644
  		{
  		  isym = isymbuf + ELF32_R_SYM (irelscan->r_info);
 diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
-index 24e42dfd0e9..662cb1f3a27 100644
+index e28bfb4fc62..1b655c8e9fc 100644
 --- a/gas/config/tc-microblaze.c
 +++ b/gas/config/tc-microblaze.c
-@@ -2524,10 +2524,14 @@ tc_gen_reloc (asection * section ATTRIBUTE_UNUSED, fixS * fixp)
+@@ -2441,10 +2441,14 @@ tc_gen_reloc (asection * section ATTRIBUTE_UNUSED, fixS * fixp)
  
    switch (fixp->fx_r_type)
      {
@@ -108,7 +108,7 @@ index 24e42dfd0e9..662cb1f3a27 100644
      case BFD_RELOC_MICROBLAZE_32_LO:
      case BFD_RELOC_MICROBLAZE_32_LO_PCREL:
      case BFD_RELOC_RVA:
-@@ -2637,6 +2641,21 @@ cons_fix_new_microblaze (fragS * frag,
+@@ -2554,6 +2558,21 @@ cons_fix_new_microblaze (fragS * frag,
  			 expressionS *exp,
  			 bfd_reloc_code_real_type r)
  {

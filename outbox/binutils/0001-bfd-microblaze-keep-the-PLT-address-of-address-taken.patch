@@ -1,7 +1,7 @@
-From b45c7977515e0417ee2907418229c2b10c1bd521 Mon Sep 17 00:00:00 2001
+From fe28955acaa61e2a959d2b51a5f2f83ccd49794f Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 21:49:30 -0400
-Subject: [PATCH 2/7] bfd: microblaze: keep the PLT address of address-taken
+Subject: [PATCH 1/5] bfd: microblaze: keep the PLT address of address-taken
  functions in executables
 
 When a non-PIC executable takes the address of a function defined in

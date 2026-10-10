@@ -1,7 +1,7 @@
-From 7333178667f10f61d3731998a078dacd2f34725f Mon Sep 17 00:00:00 2001
+From e75e514e75d58fac92bba7ac6b629cecd379e9ad Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 14:14:39 -0400
-Subject: [PATCH 3/7] bfd: microblaze: apply relocations the .eh_frame editor
+Subject: [PATCH 2/5] bfd: microblaze: apply relocations the .eh_frame editor
  asks to keep static
 
 When a shared object is linked, _bfd_elf_section_offset returns -2 for

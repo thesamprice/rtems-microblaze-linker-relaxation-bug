@@ -28,21 +28,24 @@ on what.
 
 `patches/binutils/` (landed ones under `landed/`). Apply order 0003-0010; the
 still-open series is verified clean on master `193340ad3`
-([REWORK.md](REWORK.md)), and the MicroBlaze gas/ld/binutils suites pass with it
-(ld and binutils clean, gas clean of MicroBlaze-attributable failures).
+([REWORK.md](REWORK.md)) and re-verified on `f621e384d9c` (2026-09-20), and the
+MicroBlaze gas/ld/binutils suites pass with it (ld and binutils clean, gas clean
+of MicroBlaze-attributable failures).
 
 | # | what | status |
 |---|---|---|
 | 0001 | relaxation: locals-cache OOB miscompile | **LANDED** 2026-08-13 (`landed/`) |
 | 0002 | neutralise relocations against discarded sections | **LANDED** 2026-08-13 (`landed/`) |
 | 0003 | widen the pr24511 xfail to all MicroBlaze | READY (needs a `#noxfail` first) — mail 6/7 |
-| 0004 | write the value for `BFD_RELOC_8`/`16` | READY — mail 1/7 |
-| 0005 | `addr2line` DIE-offset tie-break (arch-neutral) | **removed 2026-09-08** — handled outside this repo (the tcgcov work), not part of the MicroBlaze series |
+| 0004 | write the value for `BFD_RELOC_8`/`16` | **LANDED** 2026-09-24 (`ee6b7f5bb8e`, `landed/`) |
+| 0005 | `addr2line` DIE-offset tie-break (arch-neutral) | **LANDED 2026-09-18** (`b2e68bf063e`) — removed from this repo 2026-09-08 and sent standalone from the tcgcov work, never part of the MicroBlaze series |
 | 0006 | gas `.cfi_*` directives | READY — mail 4/7 |
 | 0007 | apply the relocation the `.eh_frame` editor keeps | READY — mail 3/7 |
 | 0008 | canonical PLT / pointer equality | READY — mail 2/7 |
 | 0009 | `sym - .` across sections, `R_MICROBLAZE_32_PCREL` | READY (gcc 0002 depends on it) — mail 5/7 |
-| 0010 | exclude `microblazeel-*` from the gas diff1 test | READY (testsuite only) — mail 7/7 |
+| 0010 | exclude `microblazeel-*` from the gas diff1 **and end** tests | **LANDED** 2026-09-24 (`ad8ac4b8993`, `landed/`) |
+| 0011 | `md_number_to_chars` in `md_apply_fix` | **LANDED** 2026-09-24 (`5047dd4a3a2`, `landed/`) |
+| 0012 | `md_number_to_chars` in `md_assemble`, `INST_BYTE` macros deleted | **LANDED** 2026-09-24 (`0dabe1eeb6d`, `landed/`) |
 
 ## gcc  → `gcc-patches`
 
@@ -51,7 +54,7 @@ still-open series is verified clean on master `193340ad3`
 | # | what | status |
 |---|---|---|
 | 0001 | libgcc signal-frame unwinder: trampoline anchor, kernel-sized ucontext | READY — corrects Ramin's upstream `4ef64ad1a`; fixes a live glibc bug; layout-independent, so it is unaffected by the kernel's front reserve (MERGE-AUDIT zones B/C, sigframe-test/FINDINGS.md) |
-| ramin-0002 | libgcc `moddi3.S`: 64-bit signed modulo wrong for nearly every input since 2010, hangs on little-endian | READY — Ramin's, carried from OpenADK (`toolchain/gcc/patches/16.2.0/0010`), applies to gcc master; not yet on gcc-patches, **his to submit** |
+| ramin-0002 | libgcc `moddi3.S`: 64-bit signed modulo wrong for nearly every input since 2010, hangs on little-endian | READY — Ramin's, carried from OpenADK (`toolchain/gcc/patches/16.2.0/0010`), applies to gcc master; still not on gcc-patches and still not upstream as of 2026-09-20 (`moddi3.S` has no `__MICROBLAZEEL__` handling), **his to submit** |
 | landed/ramin-0001 | Ramin's libgcc unwinder | **LANDED** — gcc master + releases/gcc-15 (`4ef64ad1a`, 2026-06); OpenADK carries it for 12.5/15.3/16.2 |
 | 0002 | PC-relative `.eh_frame` encodings | READY (needs binutils 0009) |
 | local-0001 | `microblaze.h` `TARGET_DEFAULT` + default cpu → hardware | **LOCAL** — a hardware-target toolchain default, not upstream (`patches/gcc/local-0001-...`, [hardware-build.md](hardware-build.md)) |
@@ -92,15 +95,23 @@ Apply in number order: 0003 and 0007 both touch `start.S`; 0005, 0006 and
 (formerly) 0007 touch `syscall_cancel.S`; 0004 and 0008 touch the linux
 `Makefile`.
 
+**None of these have been sent to libc-alpha yet.** "sent" in the table above means
+sent to Neal Frager for testing. As of 2026-09-20 sourceware patchwork has no glibc
+submissions at all from `thesamprice@gmail.com`, and glibc master has had no
+MicroBlaze change in 2026. `outbox/glibc/` is ready to send.
+
 ## Linux kernel  → `LKML` / `linux-microblaze`
 
 Nothing left to submit. **Ramin Moussavi's series** (2026-08-21) covers
 everything our four kernel patches did, and it is **LANDED** in Michal Simek's
 MicroBlaze tree (`git.monstr.eu/linux-2.6-microblaze.git` branch `next`,
 committed 2026-09-01) and merged into linux-next on 2026-09-07
-(`5172f7bae34d`). Not yet in a Linus release; expect it in the next merge
-window. The series is kept under `patches/linux/landed/` (copies from OpenADK
-`target/linux/patches/7.2/`) and our originals under `patches/linux/superseded/`.
+(`5172f7bae34d`). **Still not in mainline as of 2026-09-20** — mainline is at
+7.3-rc4 and `git compare` of each of the five commits against `torvalds/linux`
+master reports `diverged`, so they are in Michal's tree and linux-next only.
+Expect them in the 7.4 merge window. The series is kept under
+`patches/linux/landed/` (copies from OpenADK `target/linux/patches/7.2/`) and our
+originals under `patches/linux/superseded/`.
 
 | # | what | replaces | linux-next commit |
 |---|---|---|---|

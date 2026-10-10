@@ -9,7 +9,9 @@ how to verify the fix on real MicroBlaze hardware without the qemu/docker harnes
 The patches span three trees. Base commits: binutils `6f24afa` (2026-08-31),
 gcc the `microblaze-fixes` branch tip `95e1193`, glibc `10ed541` (2026-08-25).
 Upstream was re-checked against binutils master `193340ad3` and gcc/glibc master
-on 2026-09-04.
+on 2026-09-04, and again on **2026-09-20** against binutils `f621e384d9c`, glibc
+`d5bd0f22305`, the gcc mirror `549ec717abb`, Linux mainline 7.3-rc4 and RTEMS main
+([REWORK.md](REWORK.md)).
 
 ## Start here: the patch map
 
@@ -20,11 +22,14 @@ the cross-component dependencies, the overlaps to resolve, and the build order.
 
 ## Reworked against current upstream
 
-[REWORK.md](REWORK.md) records the 2026-09-04 re-check against current master
-(binutils `193340ad3`, gcc `08794c636`, glibc `fe03757f`): binutils 0001 and
-0002 are dropped as already-merged, and every other patch still applies cleanly
-with no rebase. The reworked binutils series builds and passes its MicroBlaze
-suites on today's master.
+[REWORK.md](REWORK.md) is the dated audit trail of re-checks against current
+master. **2026-09-04** (binutils `193340ad3`, gcc `08794c636`, glibc `fe03757f`):
+binutils 0001 and 0002 dropped as already-merged, every other patch still applies
+with no rebase, and the reworked binutils series builds and passes its MicroBlaze
+suites. **2026-09-08**: Ramin Moussavi's OpenADK work reconciled — the RTEMS and
+Linux fixes moved to `landed/`. **2026-09-20**: the arch-neutral addr2line
+tie-break landed (`b2e68bf063e`), nothing else moved, and all three `outbox/`
+series still `git am` clean onto today's binutils, gcc and glibc.
 
 ## glibc vs uClibc
 
@@ -47,7 +52,7 @@ glibc-vs-uClibc offset and its dependency on the kernel signal-frame reserve.
 
 ## Upstream audit summary
 
-Two patches are already upstream and need no further action; the rest are
+Seven patches are already upstream and need no further action; the rest are
 genuinely still open. gcc 0001 is special: it corrects a file that already
 exists upstream.
 
@@ -56,8 +61,9 @@ exists upstream.
 | binutils 0001 (relaxation OOB miscompile) | **LANDED** upstream 2026-08-13; present in the base commit |
 | binutils 0002 (discarded sections) | **LANDED** upstream 2026-08-13; present in the base commit |
 | binutils 0003 (pr24511 xfail) | open (testsuite only; needs a `#noxfail` first) |
-| binutils 0004 (`BFD_RELOC_8`/`16`) | open (`md_apply_fix` still has no 8/16 case) |
-| binutils 0005 (addr2line determinism) | removed from this repo 2026-09-08; being submitted separately from the tcgcov work |
+| binutils 0004 (`BFD_RELOC_8`/`16`) | **LANDED** 2026-09-24, `ee6b7f5bb8e` |
+| binutils 0010, 0011, 0012 (gas.exp globs, `md_number_to_chars` ×2) | **LANDED** 2026-09-24 — `ad8ac4b8993`, `5047dd4a3a2`, `0dabe1eeb6d` |
+| binutils 0005 (addr2line determinism) | removed from this repo 2026-09-08 and sent standalone; **LANDED** upstream 2026-09-18 as `b2e68bf063e` (v3 verbatim) |
 | binutils 0006 (gas CFI) | open |
 | binutils 0007 (`.eh_frame` static reloc) | open |
 | binutils 0008 (canonical PLT) | open (master still zeroes `st_value`) |
@@ -68,7 +74,8 @@ exists upstream.
 
 The headline: **the linker-relaxation miscompile that this repository was opened
 to track (binutils 0001) is fixed in binutils master.** So is the discarded-section
-bug (0002). The remaining work is the exception-handling and glibc-runtime series.
+bug (0002), and so is the arch-neutral addr2line tie-break that left this repo as
+0005. The remaining work is the exception-handling and glibc-runtime series.
 
 The exact file:line checks behind this table, so the audit can be re-run, are in
 [audit-ground-truth.md](audit-ground-truth.md).
@@ -81,12 +88,14 @@ The exact file:line checks behind this table, so the audit can be re-run, are in
 | 0002 | neutralise relocations against discarded linkonce sections | [discarded-sections](binutils-0002-discarded-sections.md) |
 | 0003 | widen the pr24511 testsuite xfail to all MicroBlaze targets | [pr24511-xfail](binutils-0003-pr24511-xfail.md) |
 | 0004 | write the value for `BFD_RELOC_8` / `BFD_RELOC_16` fixups | [reloc-8-16](binutils-0004-reloc-8-16.md) |
-| 0005 | `addr2line` determinism: tie-break by DIE offset, not heap pointer | removed 2026-09-08; submitted separately (tcgcov), not a MicroBlaze fix |
+| 0005 | `addr2line` determinism: tie-break by DIE offset, not heap pointer | removed 2026-09-08, sent standalone (tcgcov), not a MicroBlaze fix; **landed** `b2e68bf063e` |
 | 0006 | gas: accept `.cfi_*` directives for MicroBlaze | [gas-cfi-directives](binutils-0006-gas-cfi-directives.md) |
 | 0007 | bfd: apply the relocation statically when the `.eh_frame` editor deletes it | [eh-frame-static-reloc](binutils-0007-eh-frame-static-reloc.md) |
 | 0008 | bfd: keep the PLT address of address-taken functions (canonical PLT) | [canonical-plt](binutils-0008-canonical-plt-pointer-equality.md) |
 | 0009 | gas + bfd: `sym - .` across sections, `R_MICROBLAZE_32_PCREL` | [pcrel-data-relocs](binutils-0009-pcrel-data-relocs.md) |
-| 0010 | gas testsuite: exclude `microblazeel-*` from the `diff1` test | [diff1-microblazeel-exclude](binutils-0010-diff1-microblazeel-exclude.md) |
+| 0010 | gas testsuite: exclude `microblazeel-*` from the `diff1` **and `end`** tests | **landed** `ad8ac4b8993`; [diff1-microblazeel-exclude](binutils-0010-diff1-microblazeel-exclude.md) |
+| 0011 | `md_number_to_chars` in `md_apply_fix` (Eager's review of 0004) | **landed** `5047dd4a3a2`; no analysis doc |
+| 0012 | `md_number_to_chars` in `md_assemble`; delete the `INST_BYTE` macros | **landed** `0dabe1eeb6d`; no analysis doc |
 
 ## gcc
 

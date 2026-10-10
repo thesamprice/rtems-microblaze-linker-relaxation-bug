@@ -1,0 +1,65 @@
+From 68dda9a2f64777e18504a5af3b30d8e105059ef3 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Tue, 22 Sep 2026 21:49:40 -0400
+Subject: [PATCH v3 3/4] gas: testsuite: exclude microblazeel from the diff1
+ and end tests
+
+gas/all/gas.exp excludes MicroBlaze from two tests, and both guards spell the
+target "microblaze-*-*".  That matches the big-endian triplet but not the
+little-endian "microblazeel-*-*", so both tests run on microblazeel and fail
+there while the assembler is behaving exactly as intended.
+
+  - "difference of two undefined symbols" (diff1.s) is skipped for targets
+    that resolve such differences at link time via relaxation, MicroBlaze
+    among them; the comment above the list says so.
+
+  - "all end" (end.s) is skipped where .end means something else.  MicroBlaze
+    maps it to a function end point -- md_pseudo_table in tc-microblaze.c has
+    {"end", microblaze_s_func, 1} -- so assembly does not stop there, and the
+    deliberate garbage the test places after .end gets diagnosed, which is
+    the one thing end.l asserts must not happen.
+
+Widen both globs to "microblaze*-*-*" to cover either endianness, the shape
+the avr, rl78 and rx entries in the same file already use.
+
+With this the gas testsuite has no unexpected failures on either byte order.
+On microblazeel-elf the two tests are excluded rather than fixed, so the
+count goes from 328 passes and 2 unexpected failures to 328 and 0.
+microblaze-elf is unaffected at 329 and 0, since microblaze*-*-* still
+matches it.
+
+gas/
+	* testsuite/gas/all/gas.exp: Exclude microblaze*-*-* rather than
+	microblaze-*-* from the diff1 and end tests.
+
+Signed-off-by: Sam Price <thesamprice@gmail.com>
+Assisted-by: Claude (Anthropic)
+---
+ gas/testsuite/gas/all/gas.exp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gas/testsuite/gas/all/gas.exp b/gas/testsuite/gas/all/gas.exp
+index 46451fb5a90..8ae48b2aeb6 100644
+--- a/gas/testsuite/gas/all/gas.exp
++++ b/gas/testsuite/gas/all/gas.exp
+@@ -70,7 +70,7 @@ if {    ![istarget alpha*-*-*vms*]
+      && ![istarget avr-*-*]
+      && ![istarget ft32-*-*]
+      && ![istarget hppa*-*-*]
+-     && ![istarget microblaze-*-*]
++     && ![istarget microblaze*-*-*]
+      && ![istarget loongarch*-*-*]
+      && ![istarget mn10300-*-*]
+      && ![istarget msp430*-*-*]
+@@ -472,7 +472,7 @@ switch -glob $target_triplet {
+     alpha*-*-* { }
+     hppa*-*-* { }
+     iq2000-*-* { }
+-    microblaze-*-* { }
++    microblaze*-*-* { }
+     mips*-*-* { }
+     score*-*-* { }
+     xtensa*-*-* { }
+-- 
+2.39.5 (Apple Git-154)
+

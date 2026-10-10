@@ -1,7 +1,7 @@
-From a6e5f75a280a31951c62c782baf1b77a63e40dce Mon Sep 17 00:00:00 2001
+From 3c125d82baae18c85a3e57fc8d2f11fe392e78fe Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 12:43:42 -0400
-Subject: [PATCH 4/7] gas: Support CFI directives for MicroBlaze
+Subject: [PATCH 3/5] gas: Support CFI directives for MicroBlaze
 
 MicroBlaze is one of the few ELF targets on which .cfi_* directives
 are rejected with "CFI is not supported for this target".  GCC works
@@ -38,7 +38,7 @@ Assisted-by: Claude <noreply@anthropic.com>
  create mode 100644 gas/testsuite/gas/microblaze/cfi.s
 
 diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
-index 36b98bbd8fc..24e42dfd0e9 100644
+index 75cf721a4a2..e28bfb4fc62 100644
 --- a/gas/config/tc-microblaze.c
 +++ b/gas/config/tc-microblaze.c
 @@ -27,6 +27,7 @@
@@ -49,7 +49,7 @@ index 36b98bbd8fc..24e42dfd0e9 100644
  #include <string.h>
  #include <dwarf2dbg.h>
  #include "aout/stab_gnu.h"
-@@ -394,6 +395,31 @@ md_begin (void)
+@@ -391,6 +392,31 @@ md_begin (void)
      str_hash_insert (opcode_hash_control, opcode->name, opcode, 0);
  }
  

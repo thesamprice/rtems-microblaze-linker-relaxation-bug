@@ -1,0 +1,81 @@
+From 4eb8da450e9b7ad82e667e8ab16c6ef56f484809 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Tue, 22 Sep 2026 20:55:24 -0400
+Subject: [PATCH v3 1/4] microblaze: add BFD_RELOC_8 and BFD_RELOC_16 cases
+
+md_apply_fix has cases for BFD_RELOC_32, BFD_RELOC_64 and for the
+MicroBlaze-specific relocations, but none for BFD_RELOC_8 or BFD_RELOC_16.
+Those fall through to the default and nothing is written, so a byte or
+halfword datum whose value is only known at fixup time assembles to zero.
+The fixup is then resolved and turned into BFD_RELOC_NONE, so no relocation
+survives for the linker to correct it either, and the zero is permanent.
+
+Write the value with md_number_to_chars, as aarch64, mips and sparc do for
+these relocations.  It writes in target byte order, so the two cases need no
+endianness test of their own.  The guard is fx_done, which is what actually
+means "no relocation will survive, so resolve it here".
+
+Fixes gas/all/simple-forward.  It also fixes gas/all/forward, which was
+xfailed for microblaze-*-*, so drop it from that xfail list and update the
+comment above it, which still named microblaze.
+
+gas testsuite, whole suite, pristine master:
+
+  microblaze-elf      327 pass, 1 unexpected failure -> 329 pass, 0
+  microblazeel-elf    326 pass, 4 unexpected failures -> 328 pass, 2
+
+The xfail glob never covered microblazeel-*, so on that target
+gas/all/forward was failing outright rather than xfailing; it passes now.
+The two remaining microblazeel failures, "difference of two undefined
+symbols" and "all end", are pre-existing and untouched by this patch.
+
+gas/
+	* config/tc-microblaze.c (md_apply_fix): Handle BFD_RELOC_8 and
+	BFD_RELOC_16.
+	* testsuite/gas/all/forward.d: Remove the microblaze-*-* xfail.
+
+Signed-off-by: Sam Price <thesamprice@gmail.com>
+Assisted-by: Claude (Anthropic)
+---
+ gas/config/tc-microblaze.c      | 7 +++++++
+ gas/testsuite/gas/all/forward.d | 4 ++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
+index 3e3dca81921..fcc41a7f1f2 100644
+--- a/gas/config/tc-microblaze.c
++++ b/gas/config/tc-microblaze.c
+@@ -2145,6 +2145,13 @@ md_apply_fix (fixS *   fixP,
+ 	    }
+ 	}
+       break;
++    case BFD_RELOC_8:
++    case BFD_RELOC_16:
++      /* md_number_to_chars writes in target byte order.  */
++      if (fixP->fx_done)
++	md_number_to_chars (buf, val, fixP->fx_size);
++      break;
++
+     case BFD_RELOC_32:
+     case BFD_RELOC_RVA:
+     case BFD_RELOC_32_PCREL:
+diff --git a/gas/testsuite/gas/all/forward.d b/gas/testsuite/gas/all/forward.d
+index d921ec517be..39f7b2941e8 100644
+--- a/gas/testsuite/gas/all/forward.d
++++ b/gas/testsuite/gas/all/forward.d
+@@ -8,10 +8,10 @@
+ # choose to emit them even though the relocs are in .data, leading to
+ # "redefined symbol cannot be used on reloc".
+ #xfail: am33*-*-* crx*-*-* h8300*-*-* mn10200*-*-* mn10300*-*-*
+-# mep and microblaze use complex relocs and don't resolve the relocs.
++# mep uses complex relocs and doesn't resolve the relocs.
+ # one of the relocs references minus_one, which is a bug, but no one
+ # seems bothered enough to fix this.
+-#xfail: mep-*-* microblaze-*-*
++#xfail: mep-*-*
+ 
+ .*: .*
+ 
+-- 
+2.39.5 (Apple Git-154)
+

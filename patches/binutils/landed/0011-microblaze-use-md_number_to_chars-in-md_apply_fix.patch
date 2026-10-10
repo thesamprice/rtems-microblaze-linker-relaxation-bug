@@ -1,0 +1,167 @@
+From e4696049b04ae02deb662502f1ac264a7c01f280 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Tue, 22 Sep 2026 20:59:55 -0400
+Subject: [PATCH v3 2/4] microblaze: use md_number_to_chars in md_apply_fix
+
+The remaining cases open-code their writes as buf[n] |= ..., each with its
+own target_big_endian branch.  md_number_to_chars does the same job and is
+what aarch64, mips, sparc and most other backends use.
+
+For the data relocations the branch disappears entirely: BFD_RELOC_32 and
+friends become a single call, since md_number_to_chars writes in target byte
+order.
+
+For the instruction relocations it does not.  A 32-bit instruction word is
+itself stored in target byte order, so its 16-bit immediate field moves as
+well as its bytes: it is the low half of the word, which sits at offset 2
+big-endian and offset 0 little-endian.  md_number_to_chars handles the order
+but not the offset, so that part stays, named INST_IMM_OFFSET next to the
+INST_BYTE macros it belongs with.  The 64-bit cases then address the second
+instruction word as INST_WORD_SIZE + INST_IMM_OFFSET rather than by the
+literal subscripts 4 through 7.
+
+For instruction relocations only the data is swapped.  A macro 
+'INST_IMM_OFFSET' was added to move past instruction.  Mips does does not
+use the macro, but does the calc inline.  INST_BYTE macros were replaced 
+where with md_number_to_chars.
+
+|= gave me a bit of pause, data is zeroed by emit_expr_fix gas/read.c
+before the fixup is created.
+
+No functional change intended.  Whole testsuite, pristine master plus this
+series, both byte orders, as expected passes / unexpected failures:
+
+                       gas        binutils      ld
+  microblaze-elf       329/0      240/0         480/0
+  microblazeel-elf     328/2      241/0         480/0
+
+No unexpected successes anywhere.  The two microblazeel gas failures,
+"difference of two undefined symbols" and "all end", are pre-existing and
+unrelated to this series.
+
+gas/
+	* config/tc-microblaze.c (INST_IMM_OFFSET): Define.
+	(md_apply_fix): Use md_number_to_chars throughout.
+
+Signed-off-by: Sam Price <thesamprice@gmail.com>
+Assisted-by: Claude (Anthropic)
+---
+ gas/config/tc-microblaze.c | 63 +++++++-------------------------------
+ 1 file changed, 11 insertions(+), 52 deletions(-)
+
+diff --git a/gas/config/tc-microblaze.c b/gas/config/tc-microblaze.c
+index fcc41a7f1f2..b2edce8831b 100644
+--- a/gas/config/tc-microblaze.c
++++ b/gas/config/tc-microblaze.c
+@@ -49,6 +49,11 @@ static bool check_spl_reg (unsigned *);
+ #define	INST_BYTE1(x)  (target_big_endian ? (((x) >> 16) & 0xFF) : (((x) >> 8) & 0xFF))
+ #define	INST_BYTE2(x)  (target_big_endian ? (((x) >> 8) & 0xFF) : (((x) >> 16) & 0xFF))
+ #define	INST_BYTE3(x)  (target_big_endian ? ((x) & 0xFF) : (((x) >> 24) & 0xFF))
++/* Offset of the 16-bit immediate field within an instruction word.  The
++   word is stored in target byte order, so the field moves as well as its
++   bytes: it is the low half, which is at offset 2 big-endian and 0
++   little-endian.  */
++#define	INST_IMM_OFFSET  (target_big_endian ? 2 : 0)
+ 
+ /* This array holds the chars that always start a comment.  If the
+    pre-processor is disabled, these aren't very useful.  */
+@@ -2113,16 +2118,7 @@ md_apply_fix (fixS *   fixP,
+     {
+     case BFD_RELOC_MICROBLAZE_32_LO:
+     case BFD_RELOC_MICROBLAZE_32_LO_PCREL:
+-      if (target_big_endian)
+-	{
+-	  buf[2] |= ((val >> 8) & 0xff);
+-	  buf[3] |= (val & 0xff);
+-	}
+-      else
+-	{
+-	  buf[1] |= ((val >> 8) & 0xff);
+-	  buf[0] |= (val & 0xff);
+-	}
++      md_number_to_chars (buf + INST_IMM_OFFSET, val, 2);
+       break;
+     case BFD_RELOC_MICROBLAZE_32_ROSDA:
+     case BFD_RELOC_MICROBLAZE_32_RWSDA:
+@@ -2133,16 +2129,7 @@ md_apply_fix (fixS *   fixP,
+ 	    as_bad_where (file, fixP->fx_line,
+ 			  _("pcrel for branch to %s too far (0x%x)"),
+ 			  symname, (int) val);
+-	  if (target_big_endian)
+-	    {
+-	      buf[2] |= ((val >> 8) & 0xff);
+-	      buf[3] |= (val & 0xff);
+-	    }
+-	  else
+-	    {
+-	      buf[1] |= ((val >> 8) & 0xff);
+-	      buf[0] |= (val & 0xff);
+-	    }
++	  md_number_to_chars (buf + INST_IMM_OFFSET, val, 2);
+ 	}
+       break;
+     case BFD_RELOC_8:
+@@ -2159,20 +2146,7 @@ md_apply_fix (fixS *   fixP,
+       /* Don't do anything if the symbol is not defined.  */
+       if (fixP->fx_addsy == NULL || S_IS_DEFINED (fixP->fx_addsy))
+ 	{
+-	  if (target_big_endian)
+-	    {
+-	      buf[0] |= ((val >> 24) & 0xff);
+-	      buf[1] |= ((val >> 16) & 0xff);
+-	      buf[2] |= ((val >> 8) & 0xff);
+-	      buf[3] |= (val & 0xff);
+-	    }
+-	  else
+-	    {
+-	      buf[3] |= ((val >> 24) & 0xff);
+-	      buf[2] |= ((val >> 16) & 0xff);
+-	      buf[1] |= ((val >> 8) & 0xff);
+-	      buf[0] |= (val & 0xff);
+-	    }
++	  md_number_to_chars (buf, val, 4);
+ 	}
+       break;
+     case BFD_RELOC_64_PCREL:
+@@ -2194,24 +2168,12 @@ md_apply_fix (fixS *   fixP,
+       if (fixP->fx_addsy == NULL || S_IS_DEFINED (fixP->fx_addsy))
+ 	inst1 |= ((val & 0xFFFF0000) >> 16) & IMM_MASK;
+ 
+-      buf[0] = INST_BYTE0 (inst1);
+-      buf[1] = INST_BYTE1 (inst1);
+-      buf[2] = INST_BYTE2 (inst1);
+-      buf[3] = INST_BYTE3 (inst1);
++      md_number_to_chars (buf, inst1, INST_WORD_SIZE);
+ 
+       /* Add the value only if the symbol is defined.  */
+       if (fixP->fx_addsy == NULL || S_IS_DEFINED (fixP->fx_addsy))
+ 	{
+-	  if (target_big_endian)
+-	    {
+-	      buf[6] |= ((val >> 8) & 0xff);
+-	      buf[7] |= (val & 0xff);
+-	    }
+-	  else
+-	    {
+-	      buf[5] |= ((val >> 8) & 0xff);
+-	      buf[4] |= (val & 0xff);
+-	    }
++	  md_number_to_chars (buf + INST_WORD_SIZE + INST_IMM_OFFSET, val, 2);
+ 	}
+       break;
+ 
+@@ -2242,10 +2204,7 @@ md_apply_fix (fixS *   fixP,
+ 
+       /* We can fixup call to a defined non-global address
+ 	 within the same section only.  */
+-      buf[0] = INST_BYTE0 (inst1);
+-      buf[1] = INST_BYTE1 (inst1);
+-      buf[2] = INST_BYTE2 (inst1);
+-      buf[3] = INST_BYTE3 (inst1);
++      md_number_to_chars (buf, inst1, INST_WORD_SIZE);
+       return;
+ 
+     default:
+-- 
+2.39.5 (Apple Git-154)
+
