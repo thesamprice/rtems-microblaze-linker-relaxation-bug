@@ -87,9 +87,18 @@ machine `petalogix-s3adsp1800`:
 
 | | big-endian | little-endian |
 |---|---|---|
-| upstream `moddi3.S` | hangs | hangs |
+| upstream `moddi3.S` | hangs | 1 / 8192 correct |
 | the patched routine | 8192 / 8192 | 8192 / 8192 |
 | the no-quotient variant | 8192 / 8192 | 8192 / 8192 |
+
+The two failure modes differ, which is worth noting because it is not what the
+4701-vector run shows. There the unpatched routine hangs on *both* byte orders,
+so it never reports a count at all. On this set it hangs only on big-endian;
+on little-endian it runs to completion and gets 8191 of the 8192 wrong. The
+difference has to come from the hard-coded register-pair order, since that is
+the only thing that differs between the two byte orders for that file, but
+which of its four defects ends up deciding whether the loop terminates has not
+been traced here.
 
 ## Reproducing
 
