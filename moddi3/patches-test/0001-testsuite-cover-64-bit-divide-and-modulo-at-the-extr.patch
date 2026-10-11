@@ -1,51 +1,35 @@
-From 34624b32d18f92d17910f00441a402acd8fdb72c Mon Sep 17 00:00:00 2001
+From 054d6eb6df39393c276b7f39b9f29af4b392f9cd Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 01:57:11 -0400
+Date: Sun, 11 Oct 2026 02:10:17 -0400
 Subject: [PATCH] testsuite: cover 64-bit divide and modulo at the extremes of
  the type
 
-divmod-1.c checks division and modulo at the minimum of signed char and
-signed short, using -1 as the divisor.  It cannot be extended to int or long
-long, which is worth saying because that is the obvious first thought: char
-and short promote to int, so -128 / -1 and -32768 / -1 are evaluated in int
-and are representable, while INT_MIN / -1 and LLONG_MIN / -1 are not and so
-are undefined -- as is % -1 at the minimum, since C ties the one to the other.
-Widening that test means changing the divisor, not just the type, and at that
-point it is a different hazard rather than the same one at a larger size.
+Nothing in the testsuite does 64-bit signed divide or modulo with both
+operands near the extremes of the type.  divmod-1.c covers the same ground
+for signed char and signed short, and cannot be widened: it divides by -1,
+which is fine there only because those types promote to int, while
+INT_MIN / -1 and LLONG_MIN / -1 are not representable and so undefined.
 
-So nothing covers long long at its extremes with well-defined operands, and
-that turns out to matter.
+That gap matters for any target whose 64-bit helpers do radix-2 restoring
+division.  The partial remainder lives in one 64-bit register, and a divisor
+near 2^63 can drive it to 2^63 -- the one point where a keep-or-skip decision
+taken from the sign bit of a subtraction could disagree with the unsigned
+comparison it stands in for.  Reaching it needs a dividend near 2^63 at the
+same time, and no test in the tree pairs the two: of the five
+gcc.c-torture/execute tests that call __moddi3, none reaches that state, and
+the three runnable arch-neutral tests elsewhere that call it divide by 2, 5,
+-2 or n - 10000.  pr50865.c comes closest, being INT64_MIN % 1, but its
+divisors are all 1 so its partial remainder never leaves zero.
 
-To be explicit, since poking at the extremes is where undefined behaviour
-lives: nothing here is undefined.  A signed division or modulo is undefined
-exactly when the quotient is not representable, and for 64 bits the only such
-pair is LLONG_MIN / -1.  Every quotient in the test is -1, 0 or 1, and -1 is
-never used as a divisor.  It is silent under -fsanitize=undefined at -O0 and
--O2.
+divmod-2.c pairs them, in three operand pairs plus the divide equivalents.
+The file comment carries the reasoning, including why none of it is
+undefined -- every quotient is -1, 0 or 1, and -1 is never a divisor.  It is
+silent under -fsanitize=undefined.
 
-A target whose 64-bit helpers do radix-2 restoring division keeps a partial
-remainder in one 64-bit register.  With a divisor close to 2^63 that
-remainder can reach 2^63, which is the one point where a keep-or-skip
-decision read from the sign bit of a subtraction could disagree with the
-unsigned comparison it stands in for.  Reaching it needs a dividend within a
-hair of 2^63 at the same time as such a divisor.
-
-No test in the tree pairs those.  Linking an instrumented __moddi3 into all
-1685 gcc.c-torture/execute tests and running them, five call it -- 920604-1,
-arith-rand-ll, pr33669, pr50865 and pr85582-1 -- and none reaches the state.
-Of the runnable tests elsewhere in the testsuite that do 64-bit modulo, three
-are arch-neutral and emit the call, and their divisors are 2, 5, -2 and
-n - 10000.  pr50865.c comes closest to this ground, being INT64_MIN % 1, and
-its divisors are all 1 so its partial remainder never leaves zero.
-
-divmod-2.c pairs them.  The operands are volatile so nothing is folded and
-the target's helpers are actually reached.
-
-This is not a MicroBlaze test, though MicroBlaze is where it came up: its
-hand-written __moddi3 was wrong for almost every input, and on an unpatched
-tree this test hangs on microblaze-elf and aborts on microblazeel-elf.  With
-that routine fixed, or with libgcc's generic __moddi3 in its place, it passes
-on both byte orders, as it does on the host.
+MicroBlaze is where this came up, its hand-written __moddi3 being wrong for
+almost every input, but the test is not target specific: unpatched it hangs
+on microblaze-elf and aborts on microblazeel-elf, and it passes with that
+routine fixed, with libgcc's generic __moddi3, and on the host.
 
 gcc/testsuite/
 	* gcc.c-torture/execute/divmod-2.c: New test.
