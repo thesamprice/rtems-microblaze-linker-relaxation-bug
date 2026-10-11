@@ -26,6 +26,9 @@ else
   echo "(skipping the 4701-vector pass: run ../harness/run.sh first)"
 fi
 
+echo "== the minimal expressions that reach R >= 2^63 =="
+cc -O2 -w -o "$here/corner-minimal" "$here/corner-minimal.c" && "$here/corner-minimal"
+
 echo "== exhaustive sweep of the only region that can reach R >= 2^63 =="
 cc -O2 -o "$here/corner-exhaustive" "$here/corner-exhaustive.c"
 ( cd "$here" && ./corner-exhaustive )

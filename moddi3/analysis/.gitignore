@@ -7,3 +7,4 @@ vectors-corner.h
 corner-vectors.txt
 *.o
 *.elf
+corner-minimal

@@ -112,6 +112,21 @@ cc -O2 -I../harness -o corner-over-vectors corner-over-vectors.c && ./corner-ove
 `corner-over-vectors.c` needs `../harness/vectors.h`, which `harness/run.sh`
 generates.
 
+## The three-line version
+
+8192 vectors is the exhaustive set, not the minimal one. `corner-minimal.c`
+asks which single expressions reach the state, and the answer is three:
+
+```c
+LLONG_MIN % LLONG_MIN      /* == 0  */
+LLONG_MIN % LLONG_MAX      /* == -1 */
+LLONG_MIN % -LLONG_MAX     /* == -1 */
+```
+
+`LLONG_MAX % LLONG_MAX`, `LLONG_MIN % 3` and `LLONG_MIN % 1` do not — and the
+last of those is exactly what `pr50865.c` already tests, so the gap it leaves
+is three lines wide. Tracked as #37.
+
 ## The conclusion for the submission
 
 The comparison is sound, and provably so rather than incidentally. But the
