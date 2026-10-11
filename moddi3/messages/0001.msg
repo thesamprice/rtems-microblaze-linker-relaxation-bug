@@ -73,8 +73,14 @@ comments now use.
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
 petalogix-s3adsp1800:
 
-  - gcc.c-torture/execute/arith-rand-ll.c aborts on both byte orders
-    before this patch and passes on both after it.
+  - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders.
+    Two of them separate the unpatched routine from this one:
+    pr50865.c, which is INT64_MIN % 1LL and has been in the tree since PR
+    middle-end/50865 in 2011, hangs on big-endian and aborts on
+    little-endian before this patch; arith-rand-ll.c aborts on both.  Both
+    pass on both afterwards.  The rest are unchanged: the patched routine
+    gives the same verdict as libgcc's generic C on every one of the 1685,
+    on both byte orders.
 
   - A 4701-value check -- every sign combination, the 32-bit word
     boundaries, LLONG_MAX, LLONG_MIN and 4000 random pairs, with expected

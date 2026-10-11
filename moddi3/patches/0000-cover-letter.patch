@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 00:04:44 -0400
+Date: Sun, 11 Oct 2026 00:28:55 -0400
 Subject: [PATCH 0/2] microblaze: __moddi3 is wrong for almost every input
 
 libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
@@ -17,20 +17,34 @@ Both touch libgcc only.
 
 I measured them rather than guessing, and would rather you chose.
 
-Which test proves it
+Which tests prove it
 --------------------
 
-gcc.c-torture/execute/arith-rand-ll.c, which exercises __moddi3 through its
-signed long long block over 10000 random bitstrings and checks
-r1 * yy + r2 == xx.  On qemu-system-microblaze and qemu-system-microblazeel,
-machine petalogix-s3adsp1800:
+Two, both already in the tree.  I ran all 1685 of gcc.c-torture/execute at
+-O2 on qemu-system-microblaze and qemu-system-microblazeel, machine
+petalogix-s3adsp1800, against each of the three __moddi3 implementations.
+Exactly two tests separate them:
 
-                      unpatched    with 1/2    with 2/2
-  microblaze-elf        abort        pass        pass
-  microblazeel-elf      abort        pass        pass
+                       unpatched        with 1/2   with 2/2
+  pr50865.c       be   hangs              pass       pass
+                  le   abort              pass       pass
+  arith-rand-ll.c be   abort              pass       pass
+                  le   abort              pass       pass
 
-So the bug is provable with a test already in the tree, on both byte orders,
-and no new test is needed to justify the fix.
+  all 1685        be   1590 pass        1592 pass  1592 pass
+                  le   1590 pass        1592 pass  1592 pass
+
+pr50865.c is the one to look at.  It is four lines of INT64_MIN % 1LL and
+INT64_MIN % l1 -- exactly defect 4 below, the LLONG_MIN non-termination --
+and it has been in the tree since PR middle-end/50865 in 2011.  So an
+in-tree execute test has been able to catch this for fifteen years.
+arith-rand-ll.c reaches it differently, through its signed long long block
+over 10000 random bitstrings checking r1 * yy + r2 == xx.
+
+No new test is needed to justify the fix.  1/2 also gives identical results
+to the generic C on all 1685 tests on both byte orders -- the same verdict
+test by test, not just the same total -- so it recovers what the bug costs
+and changes nothing else.
 
 Choosing between them
 ---------------------
@@ -130,10 +144,21 @@ on random bitstrings, so fixed corner values do not belong in it, and it is
 shared by every target, which makes widening it a testsuite conversation
 rather than a MicroBlaze one.
 
-The wider point: the coverage that exists does catch this, so the reason a
-routine this broken went unnoticed from 2010 to 2026 is that the execute
-testsuite does not appear to be run for MicroBlaze at all.  Fixing __moddi3
-does not fix that, and it is likely not the only thing hiding.
+The wider point is about the suite rather than this patch.  A test that
+catches this has been in the tree since 2011, so the coverage was never the
+problem.  I cannot prove nobody runs it -- gcc-testresults would settle that
+and I could not reach its archive -- but across the whole of gcc/testsuite
+only 13 files mention microblaze, almost all ChangeLogs, the only real
+references are two dg-do compile tests, and there is no xfail keyed on
+microblaze anywhere.  Not one execute test carries a microblaze marker.
+
+And it is not the only thing failing.  Of the 1685, with 1/2 applied, 1592
+pass, 54 do not link against my deliberately minimal bare-metal runtime, 6
+do not compile, and 23 fail at run time -- four of those because that
+runtime stubs out stdio, leaving 19 I have not explained, the same 19 on
+both byte orders.  Three I spot-checked pass when built natively, so the
+tests are sound.  I am not claiming those as target bugs, only that
+somebody should look.
 
 Provenance
 ----------
