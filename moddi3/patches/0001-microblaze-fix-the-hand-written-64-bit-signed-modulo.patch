@@ -1,6 +1,6 @@
-From 5a6194bf2bda317a1925645f0b8874a42d5e5ec2 Mon Sep 17 00:00:00 2001
+From 6de04b83915c18563c25971fd079c3ce860b2183 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 21:59:02 -0400
+Date: Sat, 10 Oct 2026 22:30:30 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 The fix below is Ramin Moussavi's, carried in OpenADK as
@@ -10,8 +10,8 @@ here.  What I added to it is at the end of this message.
 libgcc/config/microblaze/moddi3.S has been in the tree unchanged since the
 port landed in 2010 (809201325afb); the only commits touching it since are
 copyright-year bumps and the two libgcc reorganizations.  It is wrong for
-almost every input, and does not terminate for LLONG_MIN on either
-endianness.
+almost every input, and for an LLONG_MIN dividend it either fails to
+terminate or returns nonsense, depending on the byte order.
 
 Four defects:
 
@@ -72,10 +72,10 @@ Every register the routine uses is now listed with the value it holds, and
 the operand macros carry Koren's letter for the value they hold: OP1 and OP2
 become OPX and OPD, for his dividend X and divisor D.  RES keeps its name,
 since it is both his R and the return value.  The labels are renamed to
-match: $La1_Pos and $La2_Pos said nothing and were
-not even accurate -- negating LLONG_MIN leaves it negative -- so they
-become $LaX_Abs and $LaD_Abs, with a note that what the loop needs is the
-unsigned magnitude, which that bit pattern is.  $LaDIV1 and $LaDIV2 name
+match: $La1_Pos and $La2_Pos said nothing, and were not even accurate --
+negating LLONG_MIN leaves it negative -- so they become $LaX_Abs and
+$LaD_Abs, with a note that what the loop needs is the unsigned magnitude,
+which that bit pattern is.  $LaDIV1 and $LaDIV2 name
 neither a "div 1" nor a "div 2" and become $LaNormalize and $LaRecurrence,
 and $LaMOD_TOO_SMALL becomes $LaQ_Bit_Is_Zero, which is what too small
 means here.  Section 3.2 numbers equations rather than steps, so there were
@@ -125,7 +125,10 @@ libgcc/
 	* config/microblaze/moddi3.S: Name the register-pair halves by
 	endianness.  Fix the divisor negation, the result sign and the
 	zero paths.  Do not normalize an already-normalized dividend.
-	Tidy the comments.
+	Drop the dead comparison, the unreferenced label and the branch
+	over it.  Rename the operand macros and the labels after the
+	reference algorithm, document every register used, and state the
+	invariant the trial-subtraction test relies on.
 
 Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude (Anthropic)
