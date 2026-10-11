@@ -26,15 +26,15 @@ qemu-system-microblazeel over 4701 values, counting executed instructions
 exactly with -icount 0, against the assembly as 1/2 leaves it:
 
                        code size      executed insns
-  assembly __moddi3        55      be 3605340  le 3605277
+  assembly __moddi3        44      be 2777735  le 2777672
   generic C at -O2         62      be 3995016  le 3988505
     + __udivmoddi4     be 1030
                        le 1028
-    total              be 1092       +10.8%      +10.6%
+    total              be 1092       +43.8%      +43.6%
                        le 1090
 
-So the assembly is about 20 times smaller and about 10% faster, roughly 82
-instructions per call.  The size figure is the worst case: __udivmoddi4 is
+So the assembly is about 25 times smaller and runs about 30% fewer
+instructions, some 258 per call.  The size figure is the worst case: __udivmoddi4 is
 shared, so a program that already does 64-bit unsigned division links it
 anyway and the generic __moddi3 then costs only 62 instructions.
 

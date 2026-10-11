@@ -9,7 +9,7 @@
 # emit a diffstat for applying both.
 #
 # Sources, all in this directory:
-#   harness/moddi3-fixed.S   the file 1/2 installs
+#   harness/moddi3-noquo.S   the file 1/2 installs
 #   messages/0001.msg        1/2's commit message (first line = subject)
 #   messages/0002.msg        2/2's commit message
 #   messages/cover.txt       the cover letter (first line = subject)
@@ -32,7 +32,7 @@ commit () {  # commit <worktree> <name> <email> <message-file>
 
 # 1/2 -- Ramin's fix to the assembly.
 git -C "$GCC_TREE" worktree add -q --detach "$TMP/a" "$BASE"
-cp "$here/harness/moddi3-fixed.S" "$TMP/a/libgcc/config/microblaze/moddi3.S"
+cp "$here/harness/moddi3-noquo.S" "$TMP/a/libgcc/config/microblaze/moddi3.S"
 commit "$TMP/a" 'Sam Price' 'thesamprice@gmail.com' "$here/messages/0001.msg"
 git -C "$TMP/a" format-patch -q --subject-prefix='PATCH 1/2' -o "$OUT" -1
 git -C "$GCC_TREE" worktree remove --force "$TMP/a"

@@ -7,7 +7,7 @@ modulo. Tracked as [issue #35](https://github.com/thesamprice/rtems-microblaze-l
 |---|---|
 | [`patches/`](patches/) | the series, ready for `git send-email`. **Generated — do not hand-edit.** |
 | [`messages/`](messages/) | the commit messages and cover letter the series is built from |
-| [`make-series.sh`](make-series.sh) | regenerates `patches/` from `messages/` and `harness/moddi3-fixed.S` |
+| [`make-series.sh`](make-series.sh) | regenerates `patches/` from `messages/` and `harness/moddi3-noquo.S` |
 | [`harness/`](harness/) | everything needed to reproduce the numbers |
 | [`results/`](results/) | what the runs actually printed, 2026-09-27 |
 
@@ -21,6 +21,11 @@ unpatched master.
 |---|---|
 | `0001` | fix the assembly. Ramin Moussavi's fix plus my additions. **Recommended.** |
 | `0002` | delete the assembly, use the generic C. The alternative. |
+
+`0001` installs [`harness/moddi3-noquo.S`](harness/moddi3-noquo.S) — the
+44-instruction version, with the quotient the function never returns taken
+out. There is no separate top-level copy of it: that duplication cost an
+afternoon's edits once, so `harness/` is the only place it lives.
 
 Send to `gcc-patches@gcc.gnu.org`, CC Michael Eager `eager@eagercon.com`
 (MicroBlaze maintainer) and Ramin Moussavi `lordrasmus@gmail.com`.
@@ -85,13 +90,22 @@ meaningless — it first read as 973,879,040 instructions against little-endian'
 |---|---|---|---|
 | stock `__moddi3` | 60 | hangs | hangs |
 | Ramin's patch as sent | 56 | 3,607,673 | 3,607,610 |
-| `0001` as sent here | 55 | 3,605,340 | 3,605,277 |
+| keeping the dead quotient | 55 | 3,605,340 | 3,605,277 |
+| `0001` as sent here | 44 | 2,777,735 | 2,777,672 |
 | generic C at `-O2` | 62 + 1030/1028 for `__udivmoddi4` | 3,995,016 | 3,988,505 |
 
-Coverage of `0001`, traced with the QEMU `libexeclog` plugin over the same
-4701 vectors: 55 of 55 instructions and 17 of 18 conditional branch outcomes,
-identically on both byte orders. The missing outcome is the branch to the
-divide-by-zero label, which the vectors deliberately exclude.
+Dropping the quotient is 23% of the executed instructions and 11 of the 55
+instructions of code. It is only possible once the return value is fixed:
+the original returned `r29:r30`, the quotient, by mistake.
+
+Coverage, traced with the QEMU `libexeclog` plugin over the same 4701
+vectors: 55 of 55 instructions and 17 of 18 conditional branch outcomes on
+both byte orders, measured on the 55-instruction variant. The missing outcome
+is the branch to the divide-by-zero label, which the vectors deliberately
+exclude. Not re-measured on the 44-instruction version.
+
+See [`analysis/`](analysis/) for the corner-case coverage of the signed
+trial-subtraction test, which is the part `arith-rand-ll.c` does not reach.
 
 ## Files in `harness/`
 
@@ -100,8 +114,8 @@ divide-by-zero label, which the vectors deliberately exclude.
 | `gen.c` | host-side generator, 4701 vectors with expected values |
 | `arith-rand-ll.c` | the existing upstream test, copied here so the A/B can be re-run |
 | `moddi3-stock.S` | upstream `moddi3.S`, for the A side |
-| `moddi3-fixed.S` | what `0001` installs, for the B side. **The source of truth for the patch.** |
-| `moddi3-noquo.S` | 44-instruction variant with the dead quotient removed; not submitted |
+| `moddi3-noquo.S` | **what `0001` installs. The source of truth for the patch.** |
+| `moddi3-fixed.S` | the same fix keeping the dead quotient, 55 instructions; kept only to measure what the quotient costs |
 | `divdi3.S` | hand-written `__divdi3`; correct but loses on cycles, so not submitted |
 | `cmoddi.c` | the generic `libgcc2.c` `__moddi3`, for the C comparison |
 | `test.c` | 4701-vector checker, prints each failure |
@@ -110,6 +124,6 @@ divide-by-zero label, which the vectors deliberately exclude.
 | `rt.c` | freestanding `abort`/`exit` so a gcc execute test can run bare-metal |
 | `start.S`, `start2.S`, `link.ld` | bare-metal startup and memory map |
 
-`moddi3.S` and `moddi3-noquotient.S` at the top level are copies of
-`harness/moddi3-fixed.S` and `harness/moddi3-noquo.S`, kept there for reading
-without digging into the harness.
+There are deliberately no copies of the assembly outside `harness/`. An
+earlier layout kept reading copies at the top level and edits went into them
+instead of the file the series installs.

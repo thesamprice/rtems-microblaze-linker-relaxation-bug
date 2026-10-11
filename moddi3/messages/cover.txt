@@ -3,236 +3,137 @@ microblaze: __moddi3 is wrong for almost every input
 libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
 It returns the wrong answer for most inputs, differently on each byte order,
 and for an LLONG_MIN dividend it either fails to terminate or returns
-nonsense depending on the byte order and on what came before.
+nonsense depending on the byte order.
 
-These are two ways to fix it, and you should apply one or the other, not
-both.  I measured them rather than guessing, and would rather ask than choose
-for you.
+These are two ways to fix it, and you should apply one or the other, not both.
+Each applies to an unpatched master on its own; 2/2 is not a follow-on to 1/2.
+Both touch libgcc only.
 
   1/2  Ramin Moussavi's fix to the existing assembly, with my additions.
   2/2  Delete the assembly and use the generic libgcc2.c version.
 
-Each patch applies to an unpatched master on its own; 2/2 is not a follow-on
-to 1/2.  Both touch libgcc only, and there are no compiler changes.
+I measured them rather than guessing, and would rather you chose.
 
 Which test proves it
 --------------------
 
-gcc.c-torture/execute/arith-rand-ll.c.  It calls __moddi3 through its
-
-    { signed long long xx = x, yy = y, r1, r2; ... r2 = xx % yy; ... }
-
-block over 10000 random bitstrings and checks r1 * yy + r2 == xx, so a wrong
-remainder fails the invariant and it calls abort().  Run on
-qemu-system-microblaze and qemu-system-microblazeel, machine
-petalogix-s3adsp1800:
+gcc.c-torture/execute/arith-rand-ll.c, which exercises __moddi3 through its
+signed long long block over 10000 random bitstrings and checks
+r1 * yy + r2 == xx.  On qemu-system-microblaze and qemu-system-microblazeel,
+machine petalogix-s3adsp1800:
 
                       unpatched    with 1/2    with 2/2
   microblaze-elf        abort        pass        pass
   microblazeel-elf      abort        pass        pass
 
-So the bug is provable and each fix is confirmed with a test already in the
-tree, on both byte orders, and no new test is required.  More on that below.
+So the bug is provable with a test already in the tree, on both byte orders,
+and no new test is needed to justify the fix.
+
+Choosing between them
+---------------------
 
 2/2 is tempting because MicroBlaze is the only target in the tree with a
 hand-written assembly moddi3 -- visium has a C one, bpf excludes the helper,
 everyone else uses the generic version.  A routine no other port felt the need
-to hand-write, and which turned out to be wrong for sixteen years, is a
-reasonable thing to delete.
+to hand-write, and which was wrong for sixteen years, is a reasonable thing to
+delete.
 
-The measurements say otherwise.  qemu-system-microblaze and
-qemu-system-microblazeel, machine petalogix-s3adsp1800, 4701 vectors with
-expected values computed on the host, executed instructions counted exactly
-with -icount 0.  The generic __moddi3 was compiled at -O2, the level libgcc
-builds LIB2FUNCS at:
+The measurements argue the other way.  4701 vectors with expected values
+computed on the host, executed instructions counted exactly with -icount 0,
+the generic version at -O2 since that is what libgcc builds LIB2FUNCS at:
 
                        code size      executed insns
-  assembly __moddi3        55      be 3605340  le 3605277
+  assembly __moddi3        44      be 2777735  le 2777672
   generic C at -O2         62      be 3995016  le 3988505
     + __udivmoddi4     be 1030
                        le 1028
-    total              be 1092       +10.8%      +10.6%
+    total              be 1092       +43.8%      +43.6%
                        le 1090
 
-The assembly is about 20 times smaller and about 10% faster -- roughly 82
-instructions per call.  On an embedded target that is not a close call, so my
-recommendation is 1/2.  One caveat in fairness to 2/2: __udivmoddi4 is shared,
-so a program already doing 64-bit unsigned division links it anyway, and the
-generic __moddi3 then costs 62 instructions rather than 1092.
+About 25 times smaller and about 30% fewer instructions, some 258 a call.  On
+an embedded target that is not close, so I recommend 1/2.  Two caveats in
+fairness to 2/2: __udivmoddi4 is shared, so a program already doing 64-bit
+unsigned division links it anyway and the generic __moddi3 then costs 62
+instructions rather than 1092; and Xilinx's own GCC does not build this file.
+Both their 4.8.3 and 13.3.0 trees drop _moddi3 from LIB2FUNCS_EXCLUDE and
+moddi3.S from LIB2ADD, which is exactly 2/2's diff, so the vendor toolchain
+has been on the generic path for years.
 
-Against my own recommendation, there is a precedent worth putting on the
-table: Xilinx's own GCC does not build this file.  Both their 4.8.3 and
-13.3.0 trees drop _moddi3 from LIB2FUNCS_EXCLUDE and drop moddi3.S from
-LIB2ADD, which is exactly the diff in 2/2, so the vendor toolchain has been
-shipping the generic C version.  In 4.8.3 the file is deleted outright; in
-13.3.0 a different moddi3.S survives on disk for __arch64__ only, unbuilt,
-and its own header describes it as a 32-bit routine.  If the vendor has
-quietly been on the generic path for years, upstream matching it may be the
-smaller change whatever the instruction counts say.  I still prefer 1/2, but
-you should have that when deciding.
+The two also disagree for x % 0, undefined either way.  The assembly returns
+zero, matching divsi3.S, modsi3.S, udivsi3.S and umodsi3.S.  The generic
+version returns the low word of the dividend, because libgcc2.c does
+"d0 = 1 / d0" to provoke a hardware trap and on MicroBlaze that is a call to
+__udivsi3, which itself returns zero for a zero divisor -- so no trap, and the
+algorithm runs on with d0 still zero.  Neither matches a core with hardware
+divide, where a % b is a - (a / b) * b and a zero quotient makes a % 0 give a;
+that divergence predates this series and aligning it would touch all five
+helpers.
 
-Division by zero
-----------------
+What the existing test does not reach
+-------------------------------------
 
-Undefined behaviour either way, but the two disagree and it is worth stating.
-
-  assembly            x % 0  ->  0
-  generic C at -O2    x % 0  ->  low word of x   (0x123456789abc -> 0x9abc)
-
-The C result is not the generic code misbehaving so much as an assumption that
-does not hold here.  libgcc2.c does "d0 = 1 / d0" to provoke a hardware
-divide-by-zero trap, but on MicroBlaze that compiles to a call to __udivsi3,
-whose own divide-by-zero path returns zero, so no trap occurs and the
-algorithm continues with d0 still zero.
-
-Zero is the more defensible answer, since it is what divsi3.S, modsi3.S,
-udivsi3.S and umodsi3.S all return, and 1/2 records that in a comment.
-
-Worth noting separately, since it predates this series and is not something
-either patch changes: neither matches a core with hardware divide.  MicroBlaze
-has no remainder instruction, so GCC implements a % b as a - (a / b) * b, and
-idiv by zero yields a zero quotient, so a % 0 evaluates to a.  Measured under
-QEMU, 5 % 0 gives 5 with hardware divide against 0 through the helper.  The
-hardware also sets MSR[DZ] and raises a divide exception where the core
-implements one and MSR[EE] is set, which Linux reports as SIGFPE/FPE_INTDIV;
-a software helper can do none of that.  Aligning the two would touch all five
-helpers and belongs in its own discussion.
-
-No new test, and what the existing one does not reach
-----------------------------------------------------
-
-arith-rand-ll.c catches the bug, so no new test is needed to justify the fix.
-I checked, having first assumed otherwise -- its first division block is
-unsigned, and it was only on reading further that the signed long long block
-turned up.
-
-It does not follow that the routine is well covered, and I would rather say so
-than let "the existing test passes" carry more weight than it should.  I
-modelled the loop bit-exactly on the host and counted the states each stream
-reaches:
+arith-rand-ll.c catches the bug, but it would be misleading to let that stand
+as evidence the routine is well covered.  Modelling the loop bit-exactly on
+the host and counting the states each stream reaches:
 
                                    iterations   partial rem >= 2^63   |D| = 2^63
   arith-rand-ll.c                    331,380             0                0
   my own 4701-vector set             266,260             6               26
 
-So arith-rand-ll.c never drives the partial remainder across the sign boundary
-and never divides by LLONG_MIN.  It reaches |D| >= 2^62 411 times and stops
-there.  That matters because the keep-or-skip decision in the loop reads the
-sign bit of a 64-bit subtraction to settle an unsigned comparison, and the
-sign boundary is exactly where one would look for that to break.
+arith-rand-ll.c never drives the partial remainder across the sign boundary
+and never divides by LLONG_MIN.  That matters because the loop's keep-or-skip
+decision reads the sign bit of a 64-bit subtraction to settle an unsigned
+comparison, and the sign boundary is where one would look for that to break.
 
-It does not break, and the reason is a bound rather than luck.  D is the
-magnitude of a signed 64-bit value, so D <= 2^63, and the loop maintains
-0 <= R < D; the shift therefore gives R' <= 2D-1, and the true integer R' - D
-lies in [-D, D-1], inside the 64-bit two's complement range.  A value in range
-is stored with its sign bit equal to the sign of the true difference, so the
-signed test and a borrow test cannot disagree.  The same bound puts R' below
-2^64, which is why no 65th remainder bit is needed.  1/2 states the invariant
-where the comparison is.
+It does not break, for a reason rather than by luck: D <= 2^63 since it is the
+magnitude of a signed 64-bit value, and the loop keeps 0 <= R < D, so R' - D
+lies in [-D, D-1] and is always in signed range, where the sign bit is the
+sign of the true difference.  The same bound is why no 65th remainder bit is
+needed.  1/2 states that where the comparison is.
 
-Reaching the state at all needs both magnitudes within a hair of 2^63.
-Sweeping exactly that region exhaustively -- |X| and |D| each within 4096 of
-2^63, all four sign combinations, 67,108,864 cases -- the sign test never
-disagrees with a true unsigned compare, the invariant never breaks, no answer
-is wrong, and the partial remainder reaches exactly 2^63 and never more.  All
-8192 cases that get there have the dividend exactly LLONG_MIN.  Run on the
-target, both byte orders answer all 8192 with either fix, while the unpatched
-routine hangs on big-endian and gets 8191 of them wrong on little-endian.
+Reaching the state needs both magnitudes within a hair of 2^63.  Sweeping that
+region exhaustively -- 67,108,864 cases -- the signed test never disagrees with
+a true unsigned compare, the invariant never breaks, no answer is wrong, and
+the partial remainder reaches exactly 2^63 and never more.  All 8192 cases that
+get there have the dividend exactly LLONG_MIN; on the target both fixes answer
+all 8192 on both byte orders, and so does the generic C.
 
-I have those 8192 vectors and can send a deterministic test for them
-separately if it would be useful.  I am not proposing to put them in
-arith-rand-ll.c: that test is built on random bitstrings, fixed corner values
-do not belong in it, and it is shared by every target, so changing it is a
-conversation about the testsuite rather than about MicroBlaze.  Flagging the
-gap seemed more useful than quietly widening a shared test.
+I have those vectors and can send a deterministic test for them separately if
+that is wanted.  I am not proposing to add them to arith-rand-ll.c: it is built
+on random bitstrings, so fixed corner values do not belong in it, and it is
+shared by every target, which makes widening it a testsuite conversation
+rather than a MicroBlaze one.
 
-Coverage of the routine 1/2 produces, traced with a QEMU TCG plugin over the
-4701 vectors: 55 of 55 instructions and 17 of 18 conditional branch outcomes,
-identically on both byte orders.  The single missing outcome is the branch to
-the divide-by-zero label, which the vectors deliberately exclude.
+The wider point: the coverage that exists does catch this, so the reason a
+routine this broken went unnoticed from 2010 to 2026 is that the execute
+testsuite does not appear to be run for MicroBlaze at all.  Fixing __moddi3
+does not fix that, and it is likely not the only thing hiding.
 
-The wider point stands either way: the coverage that exists does catch this,
-so the reason a routine this broken went unnoticed from 2010 to 2026 is that
-the execute testsuite does not appear to be run for MicroBlaze at all.  Fixing
-__moddi3 does not fix that, and it is likely not the only thing hiding.
+Provenance
+----------
 
-Provenance, and what I changed
-------------------------------
+The assembly fix in 1/2 is Ramin Moussavi's, from OpenADK, and 1/2 credits him
+in its first paragraph.  He has agreed to my submitting it; I sign it off
+because the additions are mine and he is not sending it himself.
 
-The assembly fix in 1/2 is Ramin Moussavi's, from OpenADK.  He has agreed to
-my submitting it, and 1/2 credits him in its first paragraph; I am signing it
-off because the additions below are mine and he is not sending it himself.
-
-I changed five things.  Two of them reach the instruction stream, so here is
-what they cost, measured the same way as above:
+My additions reach the instruction stream, so here is what they cost:
 
                         code size      executed insns
   his patch as sent          56      be 3607673  le 3607610
-  1/2 as sent here           55      be 3605340  le 3605277
+  1/2 as sent here           44      be 2777735  le 2777672
 
-That is one instruction less of code and 2333 fewer executed instructions
-over the 4701 calls, the same on both byte orders.  The two changes:
+Most of that is dropping the quotient.  His patch fixes the return value so
+that r3:r4 is returned instead of r29:r30, which leaves the quotient in
+r29:r30 computed and never read; taking it out removes four instructions from
+the loop body, two from the setup and two pairs from the frame.  The rest are
+an unreferenced label with the BRI that only jumped over it, and a delay slot
+on the first zero test his version left empty.
 
-  - Removed $LaResult_Is_Zero, and with it the BRI that existed only to jump
-    over the label.  His change redirects the only branch that reached
-    $LaResult_Is_Zero, so it was left unreferenced, and the sign fix-up can
-    now fall through into the empty divide-by-zero label instead of
-    branching past it.
-
-  - Restored the delay slot on the first zero test.  His version turns
-    BEQID into BEQI, leaving the following OR -- which computes the divisor
-    zero test and is dead at the branch target -- outside the slot.  Putting
-    it back in the slot is free.
-
-The other three do not:
-
-  - Added the divide-by-zero comment described above.
-
-  - Tidied the surrounding comments, and annotated the loop body,
-    normalization and sign fix-up against the reference algorithm.  The
-    header still said "modsi3.S ... modulo operation for 64 bit integers";
-    several comments transcribed the instruction instead of explaining it;
-    one described the dividend by register number after the halves were
-    renamed; and the epilogue claimed to restore CSRs and the operands when
-    it restores callee-saved registers.  Trailing whitespace on the touched
-    lines is gone.  Stripping every comment from the result leaves .text
-    byte-identical on both byte orders, so none of this reached the code.
-
-  - Corrected the commit message.  It said big-endian got 30079 of 40420
-    values wrong while little-endian hung, which reads as though big-endian
-    completes and little-endian is the only one that hangs.  Neither half of
-    that is reliably true: which failure mode you see first depends on the
-    order of the vectors, because the unpatched routine both hangs and
-    answers wrongly.  On my 4701-vector set both byte orders hang, at the
-    same point, after the same five wrong answers; on a set whose dividends
-    are all LLONG_MIN, big-endian hangs while little-endian completes and
-    gets 8191 of 8192 wrong.  His own text says as much further down
-    ("LLONG_MIN % 1 hangs on both endiannesses"), so the summary contradicted
-    the detail either way.
-
-Algorithm, for anyone comparing the two
----------------------------------------
-
-They are different algorithms, which is why the measurements differ by tens
-of percent rather than a constant factor.
-
-  1/2  restoring division, radix 2, one quotient bit per iteration.  Koren,
-       Computer Arithmetic Algorithms, section 3.2, eq. 3.11.  The restore
-       is implicit: the trial subtraction goes to scratch and is kept only
-       when non-negative, which is the variant Koren notes avoids the
-       restore penalty.  The file now says so in its header, and the loop,
-       the normalization step and the sign fix-up each name the part of that
-       section they implement.
-
-  2/2  Knuth's Algorithm D, TAOCP volume 2 section 4.3.1 -- digit
-       recurrence at radix 2^16 with quotient-digit estimation and
-       add-back.  __udiv_qrnnd_c in longlong.h is step D3 and its
-       correction; UDIV_NEEDS_NORMALIZATION is D1.
-
-Koren is also where the rule defect 3 broke is stated outright: the sign of
-the remainder is the sign of the dividend, not the exclusive or of the
-operand signs.  That exclusive or is the quotient's rule, and it is what the
-original code used.
+Beyond the code: comments rewritten, registers and labels named after the
+reference, the divide-by-zero note, the invariant above, and a correction to
+his commit message -- it said big-endian got 30079 of 40420 values wrong while
+little-endian hung, but which failure mode appears first depends on the order
+of the vectors, since the routine both hangs and answers wrongly.
 
 Sam Price (2):
   microblaze: fix the hand-written 64-bit signed modulo

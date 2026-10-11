@@ -38,10 +38,24 @@ Four defects:
 Name the halves with macros picked by __MICROBLAZEEL__ so one file serves
 both, clear the remainder before the early exits, take the sign from the
 dividend, negate the divisor's own high word, and skip normalization when
-the dividend is already normalized.  The dead comparison into r18 (whose
-result was never tested, and which compared against the dividend's low
-word rather than the divisor's) is dropped, along with the label that no
-longer has a reference and the branch that only existed to jump over it.
+the dividend is already normalized.
+
+Defect 3 is also why the quotient goes.  The original computed it in
+r29:r30 and then returned it by mistake; with the return value corrected,
+nothing reads it.  Dropping it removes four instructions from the loop
+body, two from the setup, and two register pairs from the frame -- sixteen
+instructions of code against the original, and 23% of the executed
+instructions against keeping it:
+
+                         code size     executed insns over 4701 calls
+  before                      60       does not terminate
+  keeping the quotient        55       be 3605340   le 3605277
+  as sent here                44       be 2777735   le 2777672
+
+The dead comparison into r18 -- whose result was never tested, and which
+compared against the dividend's low word rather than the divisor's -- is
+dropped too, along with the label that no longer has a reference and the
+branch that only existed to jump over it.
 
 Division by zero keeps returning zero, with the reasoning now written down
 next to the label: that is what divsi3.S, modsi3.S, udivsi3.S and
@@ -52,49 +66,6 @@ a zero quotient, a % 0 evaluates to a on a core with hardware divide.  The
 hardware also sets MSR[DZ] and raises a divide exception where the core
 implements one and MSR[EE] is set; a software helper can do neither.
 
-While here, the comments are tidied and the algorithm is named.  The file
-implements restoring division -- Koren, Computer Arithmetic Algorithms,
-section 3.2, eq. 3.11 -- with the restore done by keeping a copy of the
-previous remainder rather than adding the divisor back, the variant Koren
-describes as avoiding the restore penalty.  The loop body, the
-normalization step and the sign fix-up each carry an annotation naming the
-part of that section they correspond to, so the two can be read side by
-side.  That reference also states the property defect 3 above violated: a
-remainder takes the sign of the dividend.  The header notes that libgcc's
-generic path (__udivmoddi4 via longlong.h) is a different algorithm --
-Knuth's Algorithm D, TAOCP volume 2 section 4.3.1 -- so the two are not
-comparable step for step.
-
-Every register the routine uses is now listed with the value it holds, and
-the operand macros carry Koren's letter for the value they hold: OP1 and OP2
-become OPX and OPD, for his dividend X and divisor D.  RES keeps its name,
-since it is both his R and the return value.  The labels are renamed to
-match: $La1_Pos and $La2_Pos said nothing, and were not even accurate --
-negating LLONG_MIN leaves it negative -- so they become $LaX_Abs and
-$LaD_Abs, with a note that what the loop needs is the unsigned magnitude,
-which that bit pattern is.  $LaDIV1 and $LaDIV2 name
-neither a "div 1" nor a "div 2" and become $LaNormalize and $LaRecurrence,
-and $LaMOD_TOO_SMALL becomes $LaQ_Bit_Is_Zero, which is what too small
-means here.  Section 3.2 numbers equations rather than steps, so there were
-no labels in the reference to adopt; a comment says so, and warns off
-Knuth's D1..D8, which belong to the other algorithm.
-
-The rest of the tidy-up: the header said "modsi3.S ... modulo
-operation for 64 bit integers", several comments transcribed the
-instruction rather than explaining it, one still described the dividend by
-register number after the halves were renamed, one claimed to "shift a '1'
-into the quotient" where the instruction doubles the quotient to make room
-for the next bit, and the epilogue claimed to restore CSRs and the operands
-when it restores callee-saved registers.  Trailing whitespace on the
-touched lines is removed.  Stripping every comment from the result leaves
-.text byte-identical on both byte orders, so none of the comment work
-reached the instruction stream.
-
-The macros resolve at assembly time, so the endianness fix costs nothing at
-run time: over a 4701-value check the two byte orders execute 3605340 and
-3605277 instructions, 63 apart in 3.6 million.  The routine is five
-instructions smaller than before, 55 against 60.
-
 The keep-or-skip decision reads the sign bit of a 64-bit subtraction to
 settle an unsigned comparison.  That is sound, and the file now says why
 where the comparison is: D <= 2^63 because it is the magnitude of a signed
@@ -103,15 +74,37 @@ and is always in signed range, where the sign bit means what the test takes
 it to mean.  The same bound is why a 64-bit partial remainder suffices with
 no 65th bit.
 
+The comments are rewritten and the registers named.  The operand macros
+carry the reference's letter -- OPX and OPD for dividend X and divisor D,
+RES for the remainder R -- and the working registers get names too, so the
+body reads without a register map.  The labels follow: $La1_Pos and
+$La2_Pos said nothing and were not even accurate, since negating LLONG_MIN
+leaves it negative, so they become $LaX_Abs and $LaD_Abs with a note that
+what the loop needs is the unsigned magnitude, which that bit pattern is.
+$LaDIV1 and $LaDIV2 name neither a "div 1" nor a "div 2" and become
+$LaNormalize and $LaRecurrence, and $LaMOD_TOO_SMALL becomes
+$LaQ_Bit_Is_Zero.
+
+The header had said "modsi3.S ... modulo operation for 64 bit integers";
+several comments transcribed the instruction rather than explaining it; one
+described the dividend by register number after the halves were renamed;
+one claimed to "shift a '1' into the quotient" where the instruction
+doubled the quotient to make room for the next bit; and the epilogue
+claimed to restore CSRs and the operands when it restores callee-saved
+registers.  Trailing whitespace on the touched lines is removed.
+
+The macros resolve at assembly time, so the endianness fix costs nothing at
+run time: the two byte orders execute 2777735 and 2777672 instructions over
+the 4701-value check, 63 apart in 2.8 million.
+
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
 petalogix-s3adsp1800.  gcc.c-torture/execute/arith-rand-ll.c aborts on both
 byte orders before this patch and passes on both after it.  A separate
 4701-value check -- every sign combination, the 32-bit word boundaries,
 LLONG_MAX, LLONG_MIN and 4000 random pairs, with the expected values
-computed on the host -- gives the same result.  Traced under a QEMU TCG
-plugin, that check reaches 55 of 55 instructions and 17 of 18 conditional
-branch outcomes on both byte orders; the one outcome it misses is the
-branch to the divide-by-zero label, which the vectors deliberately exclude.
+computed on the host -- gives the same result, as does an 8192-value set
+built to drive the partial remainder to 2^63, which is the only place the
+signed comparison above could have gone wrong.
 
 The visible symptom that led here: uClibc-ng's gmtime() reduces a 64-bit
 time_t with a signed modulo, so on microblazeel every timestamp past 2^31
@@ -122,10 +115,11 @@ libgcc/
 	* config/microblaze/moddi3.S: Name the register-pair halves by
 	endianness.  Fix the divisor negation, the result sign and the
 	zero paths.  Do not normalize an already-normalized dividend.
-	Drop the dead comparison, the unreferenced label and the branch
-	over it.  Rename the operand macros and the labels after the
-	reference algorithm, document every register used, and state the
-	invariant the trial-subtraction test relies on.
+	Do not compute the quotient, which is not returned.  Drop the
+	dead comparison, the unreferenced label and the branch over it.
+	Name the working registers and the labels after the reference
+	algorithm, and state the invariant the trial subtraction relies
+	on.
 
 Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude (Anthropic)
