@@ -11,6 +11,11 @@ should exist at all.
 
 Drop it and stop excluding _moddi3.  __udivmoddi4, which the generic
 __moddi3 calls, is not in LIB2FUNCS_EXCLUDE, so nothing else is needed.
+
+This is the change Xilinx's own GCC already carries.  Both their 4.8.3 and
+13.3.0 trees have _moddi3 out of LIB2FUNCS_EXCLUDE and moddi3.S out of
+LIB2ADD, so the vendor toolchain has been using the generic C version rather
+than this file; 4.8.3 deletes it outright.
 This removes 121 lines of assembly no other port has an equivalent of, and
 removes the endianness hazard entirely: the C version reads the halves
 through a union rather than by register number.

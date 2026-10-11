@@ -202,6 +202,16 @@ $LaRecurrence:
 	# Compare 2*r[i-1] against D, which Koren calls the most complicated
 	# step: subtract into scratch and read the sign.  q[i] = 1 when the
 	# result is non-negative, 0 otherwise.
+	#
+	# BLTi reads a signed sign bit to settle what is an unsigned
+	# comparison, which is sound here but only because of a bound.  D is
+	# the magnitude of a signed 64-bit value so D <= 2^63, and the loop
+	# keeps 0 <= RES < D, so the shift above leaves RES <= 2D-1 and the
+	# true value of RES - D lies in [-D, D-1], inside the signed 64-bit
+	# range.  In range the stored sign bit is the sign of the true
+	# difference, so this and a borrow test cannot disagree.  The same
+	# bound is why RES needs no 65th bit: RES <= 2D-1 < 2^64, so the
+	# shift never carries out of RES_H.
 	RSUB	r26,OPD_L,RES_L
 	RSUBC	r25,OPD_H,RES_H
 	BLTi	r25,$LaQ_Bit_Is_Zero	# q[i] = 0.  Nothing to undo: the old

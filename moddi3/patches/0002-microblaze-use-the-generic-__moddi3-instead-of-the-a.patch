@@ -1,6 +1,6 @@
-From 90a42a05c522d81f1f322c227e1f4456499a31d7 Mon Sep 17 00:00:00 2001
+From 0fcdb568c29d14b7023810d345bd63ad6efeb347 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 13:50:50 -0400
+Date: Sat, 10 Oct 2026 21:59:33 -0400
 Subject: [PATCH 2/2] microblaze: use the generic __moddi3 instead of the
  assembly one
 
@@ -15,6 +15,11 @@ should exist at all.
 
 Drop it and stop excluding _moddi3.  __udivmoddi4, which the generic
 __moddi3 calls, is not in LIB2FUNCS_EXCLUDE, so nothing else is needed.
+
+This is the change Xilinx's own GCC already carries.  Both their 4.8.3 and
+13.3.0 trees have _moddi3 out of LIB2FUNCS_EXCLUDE and moddi3.S out of
+LIB2ADD, so the vendor toolchain has been using the generic C version rather
+than this file; 4.8.3 deletes it outright.
 This removes 121 lines of assembly no other port has an equivalent of, and
 removes the endianness hazard entirely: the C version reads the halves
 through a union rather than by register number.

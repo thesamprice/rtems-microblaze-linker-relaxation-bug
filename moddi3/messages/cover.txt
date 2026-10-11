@@ -40,6 +40,16 @@ everyone else uses the generic version.  A routine no other port felt the need
 to hand-write, and which turned out to be wrong for sixteen years, is a
 reasonable thing to delete.
 
+There is also a precedent I should put on the table, because it argues against
+my own recommendation: Xilinx's own GCC does not build this file.  Both the
+4.8.3 and 13.3.0 trees drop _moddi3 from LIB2FUNCS_EXCLUDE and drop moddi3.S
+from LIB2ADD -- which is exactly the diff in 2/2 -- so they have been shipping
+the generic C version.  In 4.8.3 the file is deleted outright; in 13.3.0 a
+different moddi3.S survives on disk for __arch64__ only, unbuilt, and its own
+header describes it as a 32-bit routine.  If the vendor toolchain has quietly
+been on the generic path for years, upstream matching it is the smaller
+change, whatever the instruction counts say.
+
 The measurements say otherwise.  qemu-system-microblaze and
 qemu-system-microblazeel, machine petalogix-s3adsp1800, 4701 vectors with
 expected values computed on the host, executed instructions counted exactly
@@ -87,22 +97,63 @@ implements one and MSR[EE] is set, which Linux reports as SIGFPE/FPE_INTDIV;
 a software helper can do none of that.  Aligning the two would touch all five
 helpers and belongs in its own discussion.
 
-No new test, and why
---------------------
+No new test, and what the existing one does not reach
+----------------------------------------------------
 
-As above, arith-rand-ll.c already covers this.  I checked, having first assumed
-otherwise -- its first division block is unsigned, and it was only on reading
-further that the signed long long block turned up.
+arith-rand-ll.c catches the bug, so no new test is needed to justify the fix.
+I checked, having first assumed otherwise -- its first division block is
+unsigned, and it was only on reading further that the signed long long block
+turned up.
 
-Which raises the more useful point.  The coverage exists and works, so the
-reason a routine this broken went unnoticed from 2010 to 2026 is that the
-execute testsuite does not appear to be run for MicroBlaze at all.  Fixing
-__moddi3 does not fix that, and it is likely not the only thing hiding.
+It does not follow that the routine is well covered, and I would rather say so
+than let "the existing test passes" carry more weight than it should.  I
+modelled the loop bit-exactly on the host and counted the states each stream
+reaches:
+
+                                   iterations   partial rem >= 2^63   |D| = 2^63
+  arith-rand-ll.c                    331,380             0                0
+  my own 4701-vector set             266,260             6               26
+
+So arith-rand-ll.c never drives the partial remainder across the sign boundary
+and never divides by LLONG_MIN.  It reaches |D| >= 2^62 411 times and stops
+there.  That matters because the keep-or-skip decision in the loop reads the
+sign bit of a 64-bit subtraction to settle an unsigned comparison, and the
+sign boundary is exactly where one would look for that to break.
+
+It does not break, and the reason is a bound rather than luck.  D is the
+magnitude of a signed 64-bit value, so D <= 2^63, and the loop maintains
+0 <= R < D; the shift therefore gives R' <= 2D-1, and the true integer R' - D
+lies in [-D, D-1], inside the 64-bit two's complement range.  A value in range
+is stored with its sign bit equal to the sign of the true difference, so the
+signed test and a borrow test cannot disagree.  The same bound puts R' below
+2^64, which is why no 65th remainder bit is needed.  1/2 states the invariant
+where the comparison is.
+
+Reaching the state at all needs both magnitudes within a hair of 2^63.
+Sweeping exactly that region exhaustively -- |X| and |D| each within 4096 of
+2^63, all four sign combinations, 67,108,864 cases -- the sign test never
+disagrees with a true unsigned compare, the invariant never breaks, no answer
+is wrong, and the partial remainder reaches exactly 2^63 and never more.  All
+8192 cases that get there have the dividend exactly LLONG_MIN.  Run on the
+target, both byte orders answer all 8192 with either fix, while the unpatched
+routine hangs on big-endian and gets 8191 of them wrong on little-endian.
+
+I have those 8192 vectors and can send a deterministic test for them
+separately if it would be useful.  I am not proposing to put them in
+arith-rand-ll.c: that test is built on random bitstrings, fixed corner values
+do not belong in it, and it is shared by every target, so changing it is a
+conversation about the testsuite rather than about MicroBlaze.  Flagging the
+gap seemed more useful than quietly widening a shared test.
 
 Coverage of the routine 1/2 produces, traced with a QEMU TCG plugin over the
 4701 vectors: 55 of 55 instructions and 17 of 18 conditional branch outcomes,
 identically on both byte orders.  The single missing outcome is the branch to
 the divide-by-zero label, which the vectors deliberately exclude.
+
+The wider point stands either way: the coverage that exists does catch this,
+so the reason a routine this broken went unnoticed from 2010 to 2026 is that
+the execute testsuite does not appear to be run for MicroBlaze at all.  Fixing
+__moddi3 does not fix that, and it is likely not the only thing hiding.
 
 Provenance, and what I changed
 ------------------------------
@@ -148,10 +199,15 @@ The other three do not:
 
   - Corrected the commit message.  It said big-endian got 30079 of 40420
     values wrong while little-endian hung, which reads as though big-endian
-    completes.  It does not: both byte orders hang, at the same point, after
-    the same five wrong answers.  His own text says as much further down
+    completes and little-endian is the only one that hangs.  Neither half of
+    that is reliably true: which failure mode you see first depends on the
+    order of the vectors, because the unpatched routine both hangs and
+    answers wrongly.  On my 4701-vector set both byte orders hang, at the
+    same point, after the same five wrong answers; on a set whose dividends
+    are all LLONG_MIN, big-endian hangs while little-endian completes and
+    gets 8191 of 8192 wrong.  His own text says as much further down
     ("LLONG_MIN % 1 hangs on both endiannesses"), so the summary contradicted
-    the detail.
+    the detail either way.
 
 Algorithm, for anyone comparing the two
 ---------------------------------------

@@ -1,6 +1,6 @@
-From a691e3d12db7190dd4230345fcd6ec9c48983e11 Mon Sep 17 00:00:00 2001
+From 5a6194bf2bda317a1925645f0b8874a42d5e5ec2 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 13:50:20 -0400
+Date: Sat, 10 Oct 2026 21:59:02 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 The fix below is Ramin Moussavi's, carried in OpenADK as
@@ -98,6 +98,14 @@ run time: over a 4701-value check the two byte orders execute 3605340 and
 3605277 instructions, 63 apart in 3.6 million.  The routine is five
 instructions smaller than before, 55 against 60.
 
+The keep-or-skip decision reads the sign bit of a 64-bit subtraction to
+settle an unsigned comparison.  That is sound, and the file now says why
+where the comparison is: D <= 2^63 because it is the magnitude of a signed
+64-bit value, and the loop keeps 0 <= RES < D, so RES - D lies in [-D, D-1]
+and is always in signed range, where the sign bit means what the test takes
+it to mean.  The same bound is why a 64-bit partial remainder suffices with
+no 65th bit.
+
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
 petalogix-s3adsp1800.  gcc.c-torture/execute/arith-rand-ll.c aborts on both
 byte orders before this patch and passes on both after it.  A separate
@@ -122,11 +130,11 @@ libgcc/
 Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude (Anthropic)
 ---
- libgcc/config/microblaze/moddi3.S | 250 +++++++++++++++++++++++-------
- 1 file changed, 191 insertions(+), 59 deletions(-)
+ libgcc/config/microblaze/moddi3.S | 260 +++++++++++++++++++++++-------
+ 1 file changed, 201 insertions(+), 59 deletions(-)
 
 diff --git a/libgcc/config/microblaze/moddi3.S b/libgcc/config/microblaze/moddi3.S
-index 71a67c11c..864d624a3 100644
+index 71a67c11c..e9bb30c9f 100644
 --- a/libgcc/config/microblaze/moddi3.S
 +++ b/libgcc/config/microblaze/moddi3.S
 @@ -23,9 +23,38 @@
@@ -171,7 +179,7 @@ index 71a67c11c..864d624a3 100644
  # 
  #######################################
  
-@@ -36,79 +65,182 @@
+@@ -36,79 +65,192 @@
  .previous
  #endif
  
@@ -356,6 +364,16 @@ index 71a67c11c..864d624a3 100644
 +	# Compare 2*r[i-1] against D, which Koren calls the most complicated
 +	# step: subtract into scratch and read the sign.  q[i] = 1 when the
 +	# result is non-negative, 0 otherwise.
++	#
++	# BLTi reads a signed sign bit to settle what is an unsigned
++	# comparison, which is sound here but only because of a bound.  D is
++	# the magnitude of a signed 64-bit value so D <= 2^63, and the loop
++	# keeps 0 <= RES < D, so the shift above leaves RES <= 2D-1 and the
++	# true value of RES - D lies in [-D, D-1], inside the signed 64-bit
++	# range.  In range the stored sign bit is the sign of the true
++	# difference, so this and a borrow test cannot disagree.  The same
++	# bound is why RES needs no 65th bit: RES <= 2D-1 < 2^64, so the
++	# shift never carries out of RES_H.
 +	RSUB	r26,OPD_L,RES_L
 +	RSUBC	r25,OPD_H,RES_H
 +	BLTi	r25,$LaQ_Bit_Is_Zero	# q[i] = 0.  Nothing to undo: the old

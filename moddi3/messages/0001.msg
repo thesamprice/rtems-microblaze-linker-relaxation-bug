@@ -95,6 +95,14 @@ run time: over a 4701-value check the two byte orders execute 3605340 and
 3605277 instructions, 63 apart in 3.6 million.  The routine is five
 instructions smaller than before, 55 against 60.
 
+The keep-or-skip decision reads the sign bit of a 64-bit subtraction to
+settle an unsigned comparison.  That is sound, and the file now says why
+where the comparison is: D <= 2^63 because it is the magnitude of a signed
+64-bit value, and the loop keeps 0 <= RES < D, so RES - D lies in [-D, D-1]
+and is always in signed range, where the sign bit means what the test takes
+it to mean.  The same bound is why a 64-bit partial remainder suffices with
+no 65th bit.
+
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
 petalogix-s3adsp1800.  gcc.c-torture/execute/arith-rand-ll.c aborts on both
 byte orders before this patch and passes on both after it.  A separate

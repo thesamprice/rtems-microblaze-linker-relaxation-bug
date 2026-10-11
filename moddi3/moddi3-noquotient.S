@@ -48,13 +48,6 @@
 #  Shifting the remainder needs one bit more than the register width.  Here
 #  that bit is the carry flag, which is why the shift is a chain of ADD
 #  followed by ADDC rather than a shift instruction.
-#
-#  modsi3.S is the 32-bit form of the same algorithm and udivsi3.S the
-#  unsigned one.  The generic C path in libgcc -- __udivmoddi4 through
-#  longlong.h -- is a different algorithm: Knuth's Algorithm D, The Art of
-#  Computer Programming volume 2, section 4.3.1, which is digit recurrence
-#  at radix 2^16 with quotient-digit estimation rather than radix 2 with
-#  none.
 # 
 #######################################
 
@@ -65,10 +58,9 @@
 .previous
 #endif
 
-/* A 64-bit value held in a register pair keeps its high word in the
-   lower-numbered register on big-endian and in the higher-numbered one on
-   little-endian.  Name the halves so that the implementation below is
-   independent of endianness.
+/* A 64-bit value held in a register pair will have a different order on 
+ big vs little endian.  Name the halves so that the implementation below is
+ independent of endianness.
 
    Koren section 3.2 calls the four values X the dividend, D the divisor,
    Q the quotient and R the remainder, and the names below carry his letter:
@@ -84,6 +76,7 @@
    Q has no register here -- that is the whole difference from moddi3.S.
    This function returns the remainder, so the quotient the recurrence would
    produce is never read; dropping it takes out eleven instructions.  */
+
 #ifdef __MICROBLAZEEL__
 # define OPX_L	r5
 # define OPX_H	r6
@@ -104,15 +97,10 @@
    SIGN, COUNT and TRIAL are callee-saved and so are spilled by the prologue
    below; ZERO_T is caller-saved and is used without saving.
 
-   These get no __MICROBLAZEEL__ treatment, and must not: a pair needs it only
-   when something outside this function decides which register holds which
-   half, which is true of the argument and return pairs above and of nothing
-   else.  An internal pair assigns its own roles -- r25 is the high half
-   because the code consistently writes and reads it as one -- so swapping the
-   two numbers would assemble to equally correct code.  What does carry a real
-   constraint is instruction order, not register numbering: the low half must
-   be done before the high one, because RSUB and ADD set the carry that RSUBC
-   and ADDC consume.
+   TRIAL does not get endian treatment: that is only needed when called by an
+   ABI compliant call, or return result.  What does carry a real constraint 
+   is instruction order: the low half must be done before the high one, 
+   because RSUB and ADD set the carry that RSUBC and ADDC consume.
    */
 #define SIGN	r27	/* Sign of X, as the whole high word rather than just
 			   its sign bit -- only BGEI reads it, and that tests
@@ -135,6 +123,7 @@ __moddi3:
 	swi	TRIAL_L,r1,4
 	swi	SIGN,r1,8
 	swi	COUNT,r1,12
+	/* TODO DOES r9 need pushed onto the stack? */
 
 	ADDIK	RES_L,r0,0	# Clear the remainder.
 	ADDIK	RES_H,r0,0
