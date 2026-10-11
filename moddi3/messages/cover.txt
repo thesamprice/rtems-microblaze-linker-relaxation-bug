@@ -32,8 +32,9 @@ Exactly two tests separate them:
                   le   1590 pass        1592 pass  1592 pass
 
 pr50865.c is the one to look at.  It is four lines of INT64_MIN % 1LL and
-INT64_MIN % l1 -- exactly defect 4 below, the LLONG_MIN non-termination --
-and it has been in the tree since PR middle-end/50865 in 2011.  So an
+INT64_MIN % l1 -- the LLONG_MIN non-termination, which is defect 4 of the
+four 1/2 lists -- and it has been in the tree since PR middle-end/50865 in
+2011.  So an
 in-tree execute test has been able to catch this for fifteen years.
 arith-rand-ll.c reaches it differently, through its signed long long block
 over 10000 random bitstrings checking r1 * yy + r2 == xx.
@@ -106,21 +107,24 @@ divide, where a % b is a - (a / b) * b and a zero quotient makes a % 0 give a;
 that divergence predates this series and aligning it would touch all five
 helpers.
 
-What the existing test does not reach
--------------------------------------
+What the existing tests do not reach
+------------------------------------
 
-arith-rand-ll.c catches the bug, but it would be misleading to let that stand
-as evidence the routine is well covered.  Modelling the loop bit-exactly on
-the host and counting the states each stream reaches:
+Those two tests catch the bug, but it would be misleading to let that stand as
+evidence the routine is well covered.  Modelling the loop bit-exactly on the
+host and counting the states each operand stream reaches:
 
                                    iterations   partial rem >= 2^63   |D| = 2^63
+  pr50865.c                              256             0                0
   arith-rand-ll.c                    331,380             0                0
   my own 4701-vector set             266,260             6               26
 
-arith-rand-ll.c never drives the partial remainder across the sign boundary
-and never divides by LLONG_MIN.  That matters because the loop's keep-or-skip
-decision reads the sign bit of a 64-bit subtraction to settle an unsigned
-comparison, and the sign boundary is where one would look for that to break.
+Neither in-tree test drives the partial remainder across the sign boundary or
+divides by LLONG_MIN.  pr50865.c cannot: every divisor in it is 1, so the
+partial remainder stays at zero.  arith-rand-ll.c gets to |D| >= 2^62 411
+times and no further.  That matters because the loop's keep-or-skip decision
+reads the sign bit of a 64-bit subtraction to settle an unsigned comparison,
+and the sign boundary is where one would look for that to break.
 
 It does not break, for a reason rather than by luck: D <= 2^63 since it is the
 magnitude of a signed 64-bit value, and the loop keeps 0 <= R < D, so R' - D

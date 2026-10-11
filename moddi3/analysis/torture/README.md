@@ -78,6 +78,11 @@ test's own `dg-options`. Ten tests failed purely for that — nine wanted
 honours them. Anyone repeating this should not trust a torture run that
 ignores `dg-options`.
 
+## Tracked as
+
+Issue #36 -- get this running properly under DejaGnu, triage the 19, and
+upstream the procedure.
+
 ## Reproducing
 
 Both scripts take `TOOLCHAIN` and `QEMU` from the environment, as
