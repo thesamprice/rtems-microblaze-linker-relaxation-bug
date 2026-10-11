@@ -1,6 +1,6 @@
-From 36366a879fcc8aa99e6504ac2ed62f552181c1b3 Mon Sep 17 00:00:00 2001
+From af54ef568081a5b5f14cfb064f4204051c6c91c1 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 01:20:22 -0400
+Date: Sun, 11 Oct 2026 01:56:19 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 libgcc/config/microblaze/moddi3.S has been in the tree unchanged since the
@@ -76,8 +76,9 @@ comments now use.
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
 petalogix-s3adsp1800:
 
-  - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders.
-    Two of them separate the unpatched routine from this one:
+  - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders,
+    1633 passing either way.  Two of them separate the unpatched routine
+    from this one:
     pr50865.c, which is INT64_MIN % 1LL and has been in the tree since PR
     middle-end/50865 in 2011, hangs on big-endian and aborts on
     little-endian before this patch; arith-rand-ll.c aborts on both.  Both

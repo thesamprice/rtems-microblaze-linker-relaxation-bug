@@ -73,8 +73,9 @@ comments now use.
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
 petalogix-s3adsp1800:
 
-  - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders.
-    Two of them separate the unpatched routine from this one:
+  - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders,
+    1633 passing either way.  Two of them separate the unpatched routine
+    from this one:
     pr50865.c, which is INT64_MIN % 1LL and has been in the tree since PR
     middle-end/50865 in 2011, hangs on big-endian and aborts on
     little-endian before this patch; arith-rand-ll.c aborts on both.  Both

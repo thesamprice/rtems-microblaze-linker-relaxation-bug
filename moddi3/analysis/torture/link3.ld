@@ -11,6 +11,6 @@ SECTIONS {
   . = ALIGN(4);
   __bss_end = .;
   . = ALIGN(16);
-  _stack_top = . + 0x40000;
+  _stack_top = . + 0x400000;
   _heap_start = _stack_top + 0x10;
 }
