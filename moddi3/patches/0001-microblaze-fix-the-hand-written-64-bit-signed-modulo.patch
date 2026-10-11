@@ -1,6 +1,6 @@
-From db1f2d69975469fe020310702afd30f2684f6067 Mon Sep 17 00:00:00 2001
+From 0d153a006694dc2a59d317ed0d849f726ccbb22d Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 23:19:48 -0400
+Date: Sat, 10 Oct 2026 23:46:08 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 The fix below is Ramin Moussavi's, carried in OpenADK as

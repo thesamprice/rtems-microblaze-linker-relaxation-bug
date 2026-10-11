@@ -38,9 +38,20 @@ everyone else uses the generic version.  A routine no other port felt the need
 to hand-write, and which was wrong for sixteen years, is a reasonable thing to
 delete.
 
-The measurements argue the other way.  4701 vectors with expected values
-computed on the host, executed instructions counted exactly with -icount 0,
-the generic version at -O2 since that is what libgcc builds LIB2FUNCS at:
+The measurements argue the other way, and the gap is a gap in algorithm rather
+than in how tightly each is written.  The assembly is binary restoring
+division, radix 2, one quotient bit an iteration -- Koren, Computer Arithmetic
+Algorithms, section 3.2, which 1/2 cites in its header and whose notation its
+comments use.  The generic path is Knuth's Algorithm D, TAOCP volume 2 section
+4.3.1: digit recurrence at radix 2^16 with quotient-digit estimation and
+add-back, reached through __udivmoddi4 and longlong.h's __udiv_qrnnd_c.  That
+is why the two differ by tens of percent rather than a constant factor, and
+why the figures below are not a like-for-like comparison of two codings of the
+same method.
+
+4701 vectors with expected values computed on the host, executed instructions
+counted exactly with -icount 0, the generic version at -O2 since that is what
+libgcc builds LIB2FUNCS at:
 
                        code size      executed insns
   assembly __moddi3        44      be 2777735  le 2777672

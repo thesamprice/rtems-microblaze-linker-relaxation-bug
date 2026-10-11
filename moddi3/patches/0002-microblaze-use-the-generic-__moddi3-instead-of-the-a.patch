@@ -1,6 +1,6 @@
-From 379e4bba57c064e4127cb0d638e544a645b44213 Mon Sep 17 00:00:00 2001
+From 0090168d84a22245e8d8d0199d9c345f1f79f312 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 23:20:19 -0400
+Date: Sat, 10 Oct 2026 23:46:38 -0400
 Subject: [PATCH 2/2] microblaze: use the generic __moddi3 instead of the
  assembly one
 
