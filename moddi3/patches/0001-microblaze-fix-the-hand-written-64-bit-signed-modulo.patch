@@ -1,17 +1,16 @@
-From 0d153a006694dc2a59d317ed0d849f726ccbb22d Mon Sep 17 00:00:00 2001
+From 9d0d165dcc1b72d4e43395a83558fe5801bf1075 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 23:46:08 -0400
+Date: Sat, 10 Oct 2026 23:51:39 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
-
-The fix below is Ramin Moussavi's, carried in OpenADK as
-toolchain/gcc/patches/16.2.0/0010; he has agreed to its being submitted
-here.  What I added to it is at the end of this message.
 
 libgcc/config/microblaze/moddi3.S has been in the tree unchanged since the
 port landed in 2010 (809201325afb); the only commits touching it since are
 copyright-year bumps and the two libgcc reorganizations.  It is wrong for
 almost every input, and for an LLONG_MIN dividend it either fails to
 terminate or returns nonsense, depending on the byte order.
+
+The fix is Ramin Moussavi's, carried in OpenADK as
+toolchain/gcc/patches/16.2.0/0010; he has agreed to its being submitted here.
 
 Four defects:
 
@@ -43,31 +42,16 @@ both, clear the remainder before the early exits, take the sign from the
 dividend, negate the divisor's own high word, and skip normalization when
 the dividend is already normalized.
 
-Defect 3 is also why the quotient goes.  The original computed it in
-r29:r30 and then returned it by mistake; with the return value corrected,
-nothing reads it.  Dropping it removes four instructions from the loop
-body, two from the setup, and two register pairs from the frame -- sixteen
-instructions of code against the original, and 23% of the executed
-instructions against keeping it:
-
-                         code size     executed insns over 4701 calls
-  before                      60       does not terminate
-  keeping the quotient        55       be 3605340   le 3605277
-  as sent here                44       be 2777735   le 2777672
-
-The dead comparison into r18 -- whose result was never tested, and which
-compared against the dividend's low word rather than the divisor's -- is
-dropped too, along with the label that no longer has a reference and the
-branch that only existed to jump over it.
-
-Division by zero keeps returning zero, with the reasoning now written down
-next to the label: that is what divsi3.S, modsi3.S, udivsi3.S and
-umodsi3.S return.  It does not match the hardware-divide path, and that
-divergence predates this patch -- MicroBlaze has no remainder instruction,
-so GCC implements a % b as a - (a / b) * b, and since idiv by zero yields
-a zero quotient, a % 0 evaluates to a on a core with hardware divide.  The
-hardware also sets MSR[DZ] and raises a divide exception where the core
-implements one and MSR[EE] is set; a software helper can do neither.
+Defect 3 is also why the quotient goes.  The original computed it in r29:r30
+and then returned it by mistake; with the return value corrected, nothing
+reads it.  Removing it takes four instructions out of the loop body, two out
+of the setup and two register pairs out of the frame.  That is 44 static
+instructions against the original's 60, and over a 4701-value check 2777735
+executed against 3605340 for the same fix keeping the quotient -- 23% fewer.
+The dead comparison into r18, whose result was never tested and which
+compared against the dividend's low word rather than the divisor's, goes too,
+along with the label that no longer has a reference and the branch that only
+existed to jump over it.
 
 The keep-or-skip decision reads the sign bit of a 64-bit subtraction to
 settle an unsigned comparison.  That is sound, and the file now says why
@@ -77,37 +61,30 @@ and is always in signed range, where the sign bit means what the test takes
 it to mean.  The same bound is why a 64-bit partial remainder suffices with
 no 65th bit.
 
-The comments are rewritten and the registers named.  The operand macros
-carry the reference's letter -- OPX and OPD for dividend X and divisor D,
-RES for the remainder R -- and the working registers get names too, so the
-body reads without a register map.  The labels follow: $La1_Pos and
-$La2_Pos said nothing and were not even accurate, since negating LLONG_MIN
-leaves it negative, so they become $LaX_Abs and $LaD_Abs with a note that
-what the loop needs is the unsigned magnitude, which that bit pattern is.
-$LaDIV1 and $LaDIV2 name neither a "div 1" nor a "div 2" and become
-$LaNormalize and $LaRecurrence, and $LaMOD_TOO_SMALL becomes
-$LaQ_Bit_Is_Zero.
+Division by zero keeps returning zero, matching divsi3.S, modsi3.S,
+udivsi3.S and umodsi3.S.  That differs from a core with hardware divide,
+where a % b is a - (a / b) * b and a zero quotient makes a % 0 give a, but
+the divergence predates this patch; the reasoning is now recorded next to
+the label.
 
-The header had said "modsi3.S ... modulo operation for 64 bit integers";
-several comments transcribed the instruction rather than explaining it; one
-described the dividend by register number after the halves were renamed;
-one claimed to "shift a '1' into the quotient" where the instruction
-doubled the quotient to make room for the next bit; and the epilogue
-claimed to restore CSRs and the operands when it restores callee-saved
-registers.  Trailing whitespace on the touched lines is removed.
-
-The macros resolve at assembly time, so the endianness fix costs nothing at
-run time: the two byte orders execute 2777735 and 2777672 instructions over
-the 4701-value check, 63 apart in 2.8 million.
+The comments are rewritten, and the registers and labels are renamed after
+the algorithm rather than their position in the file -- restoring division,
+Koren, Computer Arithmetic Algorithms, section 3.2, whose notation the
+comments now use.
 
 Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
-petalogix-s3adsp1800.  gcc.c-torture/execute/arith-rand-ll.c aborts on both
-byte orders before this patch and passes on both after it.  A separate
-4701-value check -- every sign combination, the 32-bit word boundaries,
-LLONG_MAX, LLONG_MIN and 4000 random pairs, with the expected values
-computed on the host -- gives the same result, as does an 8192-value set
-built to drive the partial remainder to 2^63, which is the only place the
-signed comparison above could have gone wrong.
+petalogix-s3adsp1800:
+
+  - gcc.c-torture/execute/arith-rand-ll.c aborts on both byte orders
+    before this patch and passes on both after it.
+
+  - A 4701-value check -- every sign combination, the 32-bit word
+    boundaries, LLONG_MAX, LLONG_MIN and 4000 random pairs, with expected
+    values computed on the host -- passes on both.
+
+  - An 8192-value set built to drive the partial remainder to 2^63, which
+    is the only place the signed comparison above could have gone wrong,
+    passes on both.  arith-rand-ll.c never reaches that state.
 
 The visible symptom that led here: uClibc-ng's gmtime() reduces a 64-bit
 time_t with a signed modulo, so on microblazeel every timestamp past 2^31
