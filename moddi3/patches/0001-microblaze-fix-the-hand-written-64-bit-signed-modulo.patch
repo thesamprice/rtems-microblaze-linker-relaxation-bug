@@ -1,6 +1,6 @@
-From ebfbb9f0236f8cc160a2ae318941515891c5fbed Mon Sep 17 00:00:00 2001
+From bdcd289a321a2810d1670df247429f3194272a89 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 00:36:56 -0400
+Date: Sun, 11 Oct 2026 01:02:05 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 libgcc/config/microblaze/moddi3.S has been in the tree unchanged since the

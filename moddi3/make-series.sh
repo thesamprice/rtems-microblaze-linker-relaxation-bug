@@ -19,8 +19,9 @@ here=$(cd "$(dirname "$0")" && pwd)
 BASE=${GCC_BASE:-8361264a1}
 OUT=$here/patches
 TMP=${TMPDIR:-/tmp}/mb-moddi3.$$
-trap 'git -C "$GCC_TREE" worktree remove --force "$TMP/a" 2>/dev/null || :
-      git -C "$GCC_TREE" worktree remove --force "$TMP/b" 2>/dev/null || :
+trap 'for w in a b t; do
+        git -C "$GCC_TREE" worktree remove --force "$TMP/$w" 2>/dev/null || :
+      done
       rm -rf "$TMP"' EXIT
 mkdir -p "$TMP" "$OUT"
 
@@ -56,6 +57,17 @@ commit "$TMP/b" 'Sam Price' 'thesamprice@gmail.com' "$here/messages/0002.msg"
 git -C "$TMP/b" format-patch -q --subject-prefix='PATCH 2/2' -o "$OUT" -1
 mv "$OUT"/0001-microblaze-use-the-generic-* \
    "$(echo "$OUT"/0001-microblaze-use-the-generic-* | sed "s|/0001-|/0002-|")"
+
+# A standalone testsuite patch, independent of both 1/2 and 2/2: it tests the
+# C semantics, so it applies whichever fix is taken, and it is not MicroBlaze
+# specific.  Kept out of the numbering for that reason.
+git -C "$GCC_TREE" worktree add -q --detach "$TMP/t" "$BASE"
+cp "$here/tests/divmod-2.c" \
+   "$TMP/t/gcc/testsuite/gcc.c-torture/execute/divmod-2.c"
+commit "$TMP/t" 'Sam Price' 'thesamprice@gmail.com' "$here/messages/0003-test.msg"
+rm -rf "$OUT-test"; mkdir -p "$OUT-test"
+git -C "$TMP/t" format-patch -q -o "$OUT-test" -1
+git -C "$GCC_TREE" worktree remove --force "$TMP/t"
 
 # 0/2 -- the cover letter, written from messages/cover.txt.
 python3 - "$OUT" "$here/messages/cover.txt" <<'PY'

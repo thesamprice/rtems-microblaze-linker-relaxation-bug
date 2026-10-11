@@ -8,6 +8,7 @@ modulo. Tracked as [issue #35](https://github.com/thesamprice/rtems-microblaze-l
 | [`patches/`](patches/) | the series, ready for `git send-email`. **Generated — do not hand-edit.** |
 | [`messages/`](messages/) | the commit messages and cover letter the series is built from |
 | [`make-series.sh`](make-series.sh) | regenerates `patches/` from `messages/` and `harness/moddi3-noquo.S` |
+| [`tests/`](tests/) | `divmod-2.c`, the testsuite patch's payload |
 | [`harness/`](harness/) | everything needed to reproduce the numbers |
 | [`results/`](results/) | what the runs actually printed, 2026-09-27 |
 
@@ -40,13 +41,22 @@ sending it himself — and `0001` credits him in its first paragraph. Revert to
 `From: Ramin Moussavi` by editing the `commit` call for `$TMP/a` in
 `make-series.sh` and the `Signed-off-by:` in `messages/0001.msg`.
 
-### No testsuite patch
+### The testsuite patch
 
-Deliberate. An earlier draft added one; it was dropped on finding that
-`gcc.c-torture/execute/arith-rand-ll.c` already catches this bug on both byte
-orders. Adding a second test for the same thing would be noise. The real
-problem that finding exposes is that the execute testsuite is not being run for
-MicroBlaze at all.
+[`patches-test/`](patches-test/) holds one, generated from
+[`tests/divmod-2.c`](tests/divmod-2.c) and deliberately **outside** the series
+numbering: it tests the C semantics rather than either fix, applies to an
+unpatched tree or on top of either patch, and is not MicroBlaze specific.
+
+It exists because the boundary scan showed nothing in the tree reaches the
+`2^63` partial remainder — the one state where the routine's signed
+trial-subtraction test could have been wrong. Three operand pairs reach it;
+see [`analysis/`](analysis/) and issue #37.
+
+An earlier draft added a different test and dropped it, on finding
+`arith-rand-ll.c` already catches the bug. That reasoning still holds for the
+bug itself — `pr50865.c` and `arith-rand-ll.c` both catch it — and is why
+`divmod-2.c` is pitched at the uncovered state instead.
 
 ## Regenerating the series
 

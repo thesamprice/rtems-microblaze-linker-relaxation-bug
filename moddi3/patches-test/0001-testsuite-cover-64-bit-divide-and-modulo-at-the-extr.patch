@@ -1,0 +1,115 @@
+From 81ddd759a33b49bb0b49cba5b6ea90e6022eda1a Mon Sep 17 00:00:00 2001
+From: Sam Price <thesamprice@gmail.com>
+Date: Sun, 11 Oct 2026 01:02:58 -0400
+Subject: [PATCH] testsuite: cover 64-bit divide and modulo at the extremes of
+ the type
+
+divmod-1.c checks division and modulo at the minimum of signed char and
+signed short, and stops there: for long long the same x / -1 and x % -1 at
+the minimum are undefined.  Nothing then covers long long at its extremes
+with well-defined operands, and that turns out to matter.
+
+A target whose 64-bit helpers do radix-2 restoring division keeps a partial
+remainder in one 64-bit register.  With a divisor close to 2^63 that
+remainder can reach 2^63, which is the one point where a keep-or-skip
+decision read from the sign bit of a subtraction could disagree with the
+unsigned comparison it stands in for.  Reaching it needs a dividend within a
+hair of 2^63 at the same time as such a divisor.
+
+No test in the tree pairs those.  Linking an instrumented __moddi3 into all
+1685 gcc.c-torture/execute tests and running them, five call it -- 920604-1,
+arith-rand-ll, pr33669, pr50865 and pr85582-1 -- and none reaches the state.
+Of the runnable tests elsewhere in the testsuite that do 64-bit modulo, three
+are arch-neutral and emit the call, and their divisors are 2, 5, -2 and
+n - 10000.  pr50865.c comes closest to this ground, being INT64_MIN % 1, and
+its divisors are all 1 so its partial remainder never leaves zero.
+
+divmod-2.c pairs them.  The operands are volatile so nothing is folded and
+the target's helpers are actually reached.
+
+This is not a MicroBlaze test, though MicroBlaze is where it came up: its
+hand-written __moddi3 was wrong for almost every input, and on an unpatched
+tree this test hangs on microblaze-elf and aborts on microblazeel-elf.  With
+that routine fixed, or with libgcc's generic __moddi3 in its place, it passes
+on both byte orders, as it does on the host.
+
+gcc/testsuite/
+	* gcc.c-torture/execute/divmod-2.c: New test.
+
+Signed-off-by: Sam Price <thesamprice@gmail.com>
+Assisted-by: Claude (Anthropic)
+---
+ .../gcc.c-torture/execute/divmod-2.c          | 61 +++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+ create mode 100644 gcc/testsuite/gcc.c-torture/execute/divmod-2.c
+
+diff --git a/gcc/testsuite/gcc.c-torture/execute/divmod-2.c b/gcc/testsuite/gcc.c-torture/execute/divmod-2.c
+new file mode 100644
+index 000000000..de9832a7e
+--- /dev/null
++++ b/gcc/testsuite/gcc.c-torture/execute/divmod-2.c
+@@ -0,0 +1,61 @@
++/* 64-bit signed division and modulo where both operands sit at the extremes
++   of the type.  divmod-1.c covers the same ground for narrower types and
++   stops short of long long, where x / -1 and x % -1 at the minimum are
++   undefined; the pairs below are all well defined.
++
++   These matter to any target whose 64-bit helpers do radix-2 restoring
++   division.  Such a helper holds a partial remainder in one 64-bit register,
++   and when the divisor is close to 2^63 that remainder can reach 2^63 -- the
++   one point where a keep-or-skip decision taken from the sign bit of a
++   subtraction could disagree with the unsigned comparison it stands in for.
++   No other test in the suite pairs a dividend near 2^63 with a divisor near
++   2^63, so nothing else reaches that state.  */
++
++#define LLONG_MIN (-__LONG_LONG_MAX__ - 1)
++#define LLONG_MAX __LONG_LONG_MAX__
++
++extern void abort (void);
++
++static long long __attribute__ ((noinline, noclone))
++mod (long long a, long long b)
++{
++  return a % b;
++}
++
++static long long __attribute__ ((noinline, noclone))
++divide (long long a, long long b)
++{
++  return a / b;
++}
++
++int
++main (void)
++{
++  /* volatile so the operands are not folded away: the point is to reach the
++     target's 64-bit helpers at run time.  */
++  volatile long long min = LLONG_MIN, max = LLONG_MAX;
++
++  if (mod (min, max) != -1)
++    abort ();
++  if (mod (min, -max) != -1)
++    abort ();
++  if (mod (min, min) != 0)
++    abort ();
++  if (mod (max, min) != max)
++    abort ();
++  if (mod (min, max - 1) != -2)
++    abort ();
++  if (mod (min, min + 1) != -1)
++    abort ();
++
++  if (divide (min, max) != -1)
++    abort ();
++  if (divide (min, -max) != 1)
++    abort ();
++  if (divide (min, min) != 1)
++    abort ();
++  if (divide (max, min) != 0)
++    abort ();
++
++  return 0;
++}
+-- 
+2.39.5 (Apple Git-154)
+

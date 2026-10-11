@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 00:36:56 -0400
+Date: Sun, 11 Oct 2026 01:02:05 -0400
 Subject: [PATCH 0/2] microblaze: __moddi3 is wrong for almost every input
 
 libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
@@ -142,11 +142,25 @@ the partial remainder reaches exactly 2^63 and never more.  All 8192 cases that
 get there have the dividend exactly LLONG_MIN; on the target both fixes answer
 all 8192 on both byte orders, and so does the generic C.
 
-I have those vectors and can send a deterministic test for them separately if
-that is wanted.  I am not proposing to add them to arith-rand-ll.c: it is built
+So I am sending a test for it, separately from this series and not numbered
+into it, because it tests the C semantics rather than either fix and is not
+MicroBlaze specific:
+
+  [PATCH] testsuite: cover 64-bit divide and modulo at the extremes of the type
+
+Three operand pairs reach the state -- LLONG_MIN against LLONG_MAX, -LLONG_MAX
+and LLONG_MIN -- so it is a dozen lines in the shape of divmod-1.c, which
+covers the same ground for signed char and signed short and stops below long
+long, where x % -1 at the minimum would be undefined.  It applies to an
+unpatched tree or on top of either fix.  Unpatched it hangs on microblaze-elf
+and aborts on microblazeel-elf; it passes with either fix on both byte orders,
+and on the host.  Take it or leave it independently of the choice above.
+
+What I am not proposing is putting these cases in arith-rand-ll.c: it is built
 on random bitstrings, so fixed corner values do not belong in it, and it is
-shared by every target, which makes widening it a testsuite conversation
-rather than a MicroBlaze one.
+shared by every target, which makes widening it a different conversation.  The
+4701- and 8192-vector sets stay out of the tree too -- they are development
+scaffolding, and the three pairs are what carries the coverage.
 
 The wider point is about the suite rather than this patch.  A test that
 catches this has been in the tree since 2011, so the coverage was never the
