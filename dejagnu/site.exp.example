@@ -1,0 +1,15 @@
+# Example site.exp for testing an INSTALLED microblaze cross compiler.
+# Copy to the directory you run runtest from and edit the paths.
+lappend boards_dir "/path/to/this/repo/dejagnu/mb-qemu-board"
+# Minimal site.exp for testing an installed cross compiler.
+set tool gcc
+set srcdir "/path/to/gcc/gcc/testsuite"
+set GCC_UNDER_TEST "microblaze-rtems7-gcc"
+set TEST_ALWAYS_FLAGS ""
+set target_triplet "microblaze-rtems7"
+set host_triplet "x86_64-pc-linux-gnu"
+set build_triplet "x86_64-pc-linux-gnu"
+set tmpdir "."
+
+# Uncomment for a quick single-level run; the default is the full torture set.
+#set TORTURE_OPTIONS [list { -O2 }]

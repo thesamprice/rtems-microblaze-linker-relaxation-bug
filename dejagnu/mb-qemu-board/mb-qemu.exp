@@ -1,0 +1,107 @@
+# DejaGnu board description: MicroBlaze bare metal under QEMU.
+#
+#   runtest --tool gcc --target_board=mb-qemu[/-mlittle-endian] ...
+#
+# Set MB_QEMU to the qemu-system-microblaze or -microblazeel binary before
+# running; everything else is found relative to this file.  Add
+# /-mlittle-endian as a multilib option for microblazeel and point MB_QEMU at
+# the matching QEMU.
+#
+# Why a board file rather than a shell loop: DejaGnu compiles hosted, sizes the
+# stack from here, and honours dg-options and dg-require-effective-target.
+# Hand-rolled runners get all four wrong -- see the repo's analysis/torture
+# notes for the false failures that produced.
+
+proc board_info_field_or_empty { dest field } {
+    if { [board_info $dest exists $field] } { return [board_info $dest $field] }
+    return ""
+}
+
+load_generic_config "sim"
+process_multilib_options ""
+# basic-sim supplies is_simulator, which DejaGnu needs to wait for the run
+# correctly.  setup_sim is deliberately not called: it would go looking for a
+# gdb simulator, and MicroBlaze has none -- QEMU system emulation is the point.
+load_base_board_description "basic-sim"
+
+set mb_dir [file dirname [file normalize [info script]]]
+
+if { [info exists env(MB_QEMU)] } {
+    set mb_qemu $env(MB_QEMU)
+} else {
+    set mb_qemu "qemu-system-microblaze"
+}
+
+# The program is run by a wrapper, not QEMU directly: QEMU cannot hand a guest
+# exit status back, so the runtime prints "*** EXIT n ***" and the wrapper
+# exits with it.  That is all generic sim_load needs -- it spawns "$sim $prog"
+# and maps a zero exit to PASS.
+# A bare path, not a command line: DejaGnu runs the sim string through its
+# "which" check, which a multi-word "env VAR=... prog" does not survive.  The
+# wrapper reads MB_QEMU and MB_TIMEOUT from the environment instead.
+set ::env(MB_QEMU) $mb_qemu
+if { ![info exists env(MB_TIMEOUT)] } { set ::env(MB_TIMEOUT) 90 }
+set_board_info sim "$mb_dir/mb-qemu-run"
+set_board_info sim_time_limit 120
+
+set_board_info compiler "[find_gcc]"
+
+# No -ffreestanding.  Under it GCC drops the C99 implicit "return 0" on
+# falling off the end of main, which most execute tests do, and they then
+# return their last computed value and look like failures.
+set_board_info cflags ""
+
+# Startup and runtime must be prebuilt objects, not sources: DejaGnu wraps
+# every ldflags entry in -Wl,, so a .c or .S here would be handed to the linker
+# rather than the compiler.  Run ./build-support.sh once.
+#
+# -lc is RTEMS's own newlib, which is the point -- the tests then exercise the
+# C library RTEMS actually ships.  obj/*/runtime.o supplies the three things
+# that newlib expects RTEMS to provide and bare metal does not: the reentrancy
+# pointer, the mutex primitives its stdio locks against, and malloc.
+set mb_endian "be"
+if { [string match "*-mlittle-endian*" [board_info_field_or_empty target multilib_flags]] } {
+    set mb_endian "le"
+}
+set mb_obj "$mb_dir/obj/$mb_endian"
+if { ![file exists "$mb_obj/crt0.o"] } {
+    error "mb-qemu: $mb_obj/crt0.o is missing -- run $mb_dir/build-support.sh first"
+}
+set_board_info ldflags \
+    "-nostartfiles -T$mb_dir/mb-qemu.ld $mb_obj/crt0.o $mb_obj/runtime.o \
+     -lc -lgcc"
+
+# Bare metal: no OS services.  Saying so gets tests marked UNSUPPORTED rather
+# than failed.
+set_board_info noargs 1
+set_board_info gdb,nosignals 1
+set_board_info gdb,noinferiorio 1
+set_board_info gdb,no_hardware_watchpoints 1
+set_board_info needs_status_wrapper 0
+
+# DejaGnu's generic sim_load spawns on "target" and then waits on "host", which
+# for this setup loses the exit status and reports 2 for every run.  Override it
+# with remote_exec, which hands back {status output} directly.  Defined after
+# load_generic_config so this definition is the one that survives.
+proc sim_load { dest prog args } {
+    if { ![file exists $prog] } {
+	verbose -log "mb-qemu: $prog does not exist"
+	return [list "untested" ""]
+    }
+    set sim [board_info $dest sim]
+    if { [board_info $dest exists sim_time_limit] } {
+	set limit [board_info $dest sim_time_limit]
+    } else {
+	set limit 120
+    }
+    set res [remote_exec host $sim $prog "" "" $limit]
+    set status [lindex $res 0]
+    set output [lindex $res 1]
+    verbose -log "mb-qemu: $prog exited $status"
+    # The wrapper exits 99 when the guest never printed its status marker,
+    # which means it hung; anything else is the guest's own exit code.
+    if { $status == 0 } {
+	return [list "pass" $output]
+    }
+    return [list "fail" $output]
+}
