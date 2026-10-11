@@ -90,6 +90,7 @@ machine `petalogix-s3adsp1800`:
 | upstream `moddi3.S` | hangs | 1 / 8192 correct |
 | the patched routine | 8192 / 8192 | 8192 / 8192 |
 | the no-quotient variant | 8192 / 8192 | 8192 / 8192 |
+| generic `libgcc2.c` C at `-O2` | 8192 / 8192 | 8192 / 8192 |
 
 The two failure modes differ, which is worth noting because it is not what the
 4701-vector run shows. There the unpatched routine hangs on *both* byte orders,

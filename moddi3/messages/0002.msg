@@ -16,6 +16,7 @@ This is the change Xilinx's own GCC already carries.  Both their 4.8.3 and
 13.3.0 trees have _moddi3 out of LIB2FUNCS_EXCLUDE and moddi3.S out of
 LIB2ADD, so the vendor toolchain has been using the generic C version rather
 than this file; 4.8.3 deletes it outright.
+
 This removes 121 lines of assembly no other port has an equivalent of, and
 removes the endianness hazard entirely: the C version reads the halves
 through a union rather than by register number.
@@ -46,9 +47,12 @@ for a zero divisor, so no trap occurs and the algorithm runs on with d0
 still zero.  For reference, neither matches the hardware-divide path: with
 idiv available GCC implements a % b as a - (a / b) * b, so a % 0 gives a.
 
-Correctness is otherwise equal -- both pass
+Correctness is otherwise equal.  Both pass
 gcc.c-torture/execute/arith-rand-ll.c on both byte orders, where the
-unpatched tree aborts.
+unpatched tree aborts, and both answer all 8192 of a corner-case set that
+drives the assembly's partial remainder to 2^63 -- every pair there has
+LLONG_MIN as the dividend, which is where the unpatched routine either hangs
+or returns nonsense.
 
 libgcc/
 	* config/microblaze/moddi3.S: Delete.
