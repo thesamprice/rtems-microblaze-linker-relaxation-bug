@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 23:51:39 -0400
+Date: Sun, 11 Oct 2026 00:04:44 -0400
 Subject: [PATCH 0/2] microblaze: __moddi3 is wrong for almost every input
 
 libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
@@ -35,11 +35,15 @@ and no new test is needed to justify the fix.
 Choosing between them
 ---------------------
 
-2/2 is tempting because MicroBlaze is the only target in the tree with a
-hand-written assembly moddi3 -- visium has a C one, bpf excludes the helper,
-everyone else uses the generic version.  A routine no other port felt the need
-to hand-write, and which was wrong for sixteen years, is a reasonable thing to
-delete.
+2/2 is tempting because hand-writing this helper is close to unique.  Across
+libgcc, ia64 is the only other target with a moddi3 in assembly, and its
+reason does not transfer: lib1funcs.S builds it out of the FP divide sequence
+from the Intel optimization guide, which is a hardware argument MicroBlaze
+cannot make.  visium supplies a C version, pa rebuilds the generic one for a
+32-bit word, and arm/symbian, avr, bpf and nds32-mculib exclude the helper
+outright.  No other port hand-writes radix-2 soft division.  A routine almost
+nobody felt the need to write by hand, and which was wrong for sixteen years,
+is a reasonable thing to delete.
 
 The measurements argue the other way, and the gap is a gap in algorithm rather
 than in how tightly each is written.  The assembly is binary restoring
@@ -66,12 +70,20 @@ libgcc builds LIB2FUNCS at:
 
 About 25 times smaller and about 30% fewer instructions, some 258 a call.  On
 an embedded target that is not close, so I recommend 1/2.  Two caveats in
-fairness to 2/2: __udivmoddi4 is shared, so a program already doing 64-bit
+fairness to 2/2.  __udivmoddi4 is shared, so a program already doing 64-bit
 unsigned division links it anyway and the generic __moddi3 then costs 62
-instructions rather than 1092; and Xilinx's own GCC does not build this file.
-Both their 4.8.3 and 13.3.0 trees drop _moddi3 from LIB2FUNCS_EXCLUDE and
-moddi3.S from LIB2ADD, which is exactly 2/2's diff, so the vendor toolchain
-has been on the generic path for years.
+instructions rather than 1092.
+
+And, more to the point, Xilinx already did 2/2.  In their GCC fork,
+7090a49d007 of 2014-04-18 -- Nagaraju Mekala, "Removed moddi3 routinue" --
+deletes the file with the message "Using the default moddi3 function as the
+existing implementation has many bugs".  Its t-microblaze hunk is identical
+to 2/2's.  It was never sent here, so upstream has carried for twelve more
+years a routine the vendor had already written off, and both their 4.8.3 and
+13.3.0 trees have been on the generic path since.  If you take 1/2, you are
+reinstating something its own maintainer gave up on; that is defensible now
+that it is correct and measured, but it should be a decision rather than an
+oversight.
 
 The two also disagree for x % 0, undefined either way.  The assembly returns
 zero, matching divsi3.S, modsi3.S, udivsi3.S and umodsi3.S.  The generic
@@ -139,7 +151,8 @@ My additions reach the instruction stream, so here is what they cost:
 Most of that is dropping the quotient.  His patch fixes the return value so
 that r3:r4 is returned instead of r29:r30, which leaves the quotient in
 r29:r30 computed and never read; taking it out removes four instructions from
-the loop body, two from the setup and two pairs from the frame.  The rest are
+the loop body, two from the setup and the four that spilled and reloaded it,
+and lets the loop tail collapse to a single BNEi for an eleventh.  The rest are
 an unreferenced label with the BRI that only jumped over it, and a delay slot
 on the first zero test his version left empty.
 

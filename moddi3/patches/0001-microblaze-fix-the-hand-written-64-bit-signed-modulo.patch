@@ -1,6 +1,6 @@
-From 9d0d165dcc1b72d4e43395a83558fe5801bf1075 Mon Sep 17 00:00:00 2001
+From 78b3bc91a377d5112566c5ef681673374dcdd34a Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sat, 10 Oct 2026 23:51:39 -0400
+Date: Sun, 11 Oct 2026 00:04:44 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 libgcc/config/microblaze/moddi3.S has been in the tree unchanged since the
@@ -45,9 +45,10 @@ the dividend is already normalized.
 Defect 3 is also why the quotient goes.  The original computed it in r29:r30
 and then returned it by mistake; with the return value corrected, nothing
 reads it.  Removing it takes four instructions out of the loop body, two out
-of the setup and two register pairs out of the frame.  That is 44 static
+of the setup and the four that spilled and reloaded it, and lets the loop tail
+collapse to a single BNEi for one more -- eleven in all.  That is 44 static
 instructions against the original's 60, and over a 4701-value check 2777735
-executed against 3605340 for the same fix keeping the quotient -- 23% fewer.
+executed against 3605340 for the same fix keeping the quotient, 23% fewer.
 The dead comparison into r18, whose result was never tested and which
 compared against the dividend's low word rather than the divisor's, goes too,
 along with the label that no longer has a reference and the branch that only

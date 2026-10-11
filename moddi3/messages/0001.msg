@@ -42,9 +42,10 @@ the dividend is already normalized.
 Defect 3 is also why the quotient goes.  The original computed it in r29:r30
 and then returned it by mistake; with the return value corrected, nothing
 reads it.  Removing it takes four instructions out of the loop body, two out
-of the setup and two register pairs out of the frame.  That is 44 static
+of the setup and the four that spilled and reloaded it, and lets the loop tail
+collapse to a single BNEi for one more -- eleven in all.  That is 44 static
 instructions against the original's 60, and over a 4701-value check 2777735
-executed against 3605340 for the same fix keeping the quotient -- 23% fewer.
+executed against 3605340 for the same fix keeping the quotient, 23% fewer.
 The dead comparison into r18, whose result was never tested and which
 compared against the dividend's low word rather than the divisor's, goes too,
 along with the label that no longer has a reference and the branch that only
