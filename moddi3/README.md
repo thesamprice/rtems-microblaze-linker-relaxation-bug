@@ -131,6 +131,7 @@ trial-subtraction test, which is the part `arith-rand-ll.c` does not reach.
 | `test.c` | 4701-vector checker, prints each failure |
 | `bench.c` | instruction-count benchmark via the counter device |
 | `hwdiv.c`, `dbz.c` | hardware-divide and divide-by-zero behaviour probes |
+| `modsi3-extremes.c` | checks the 32-bit `divsi3.S`/`modsi3.S` at the same extremes; they are correct |
 | `rt.c` | freestanding `abort`/`exit` so a gcc execute test can run bare-metal |
 | `start.S`, `start2.S`, `link.ld` | bare-metal startup and memory map |
 

@@ -1,9 +1,16 @@
 testsuite: cover 64-bit divide and modulo at the extremes of the type
 
 divmod-1.c checks division and modulo at the minimum of signed char and
-signed short, and stops there: for long long the same x / -1 and x % -1 at
-the minimum are undefined.  Nothing then covers long long at its extremes
-with well-defined operands, and that turns out to matter.
+signed short, using -1 as the divisor.  It cannot be extended to int or long
+long, which is worth saying because that is the obvious first thought: char
+and short promote to int, so -128 / -1 and -32768 / -1 are evaluated in int
+and are representable, while INT_MIN / -1 and LLONG_MIN / -1 are not and so
+are undefined -- as is % -1 at the minimum, since C ties the one to the other.
+Widening that test means changing the divisor, not just the type, and at that
+point it is a different hazard rather than the same one at a larger size.
+
+So nothing covers long long at its extremes with well-defined operands, and
+that turns out to matter.
 
 A target whose 64-bit helpers do radix-2 restoring division keeps a partial
 remainder in one 64-bit register.  With a divisor close to 2^63 that

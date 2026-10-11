@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 01:02:05 -0400
+Date: Sun, 11 Oct 2026 01:16:33 -0400
 Subject: [PATCH 0/2] microblaze: __moddi3 is wrong for almost every input
 
 libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
@@ -109,6 +109,14 @@ algorithm runs on with d0 still zero.  Neither matches a core with hardware
 divide, where a % b is a - (a / b) * b and a zero quotient makes a % 0 give a;
 that divergence predates this series and aligning it would touch all five
 helpers.
+
+While on the subject of those four: it would be fair to wonder whether the
+whole family is suspect.  It is not.  I checked the 32-bit pair at the same
+extremes this series is about -- INT_MIN against INT_MAX, -INT_MAX, INT_MIN,
+INT_MAX-1, INT_MIN+1, 1 and 3, divide and modulo -- and divsi3.S and modsi3.S
+answer all of them correctly on both byte orders, against host-computed
+expectations.  They work on single registers, so they have neither the
+register-pair hazard of defect 1 nor the 64-bit normalization of defect 4.
 
 What the existing tests do not reach
 ------------------------------------

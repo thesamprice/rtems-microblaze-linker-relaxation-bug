@@ -1,7 +1,13 @@
 /* 64-bit signed division and modulo where both operands sit at the extremes
-   of the type.  divmod-1.c covers the same ground for narrower types and
-   stops short of long long, where x / -1 and x % -1 at the minimum are
-   undefined; the pairs below are all well defined.
+   of the type.
+
+   divmod-1.c does this for signed char and signed short using -1 as the
+   divisor, and cannot go wider: char and short promote to int, so
+   (signed char) -128 / -1 and (signed short) -32768 / -1 are evaluated in
+   int and are representable, whereas INT_MIN / -1 and LLONG_MIN / -1 are
+   not, and are therefore undefined -- as is % -1 at the minimum, since C
+   ties the one to the other.  So the divisor has to change rather than just
+   the type, and the pairs below are chosen for a different hazard.
 
    These matter to any target whose 64-bit helpers do radix-2 restoring
    division.  Such a helper holds a partial remainder in one 64-bit register,
