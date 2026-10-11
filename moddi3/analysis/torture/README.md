@@ -38,6 +38,24 @@ execute test has therefore been able to catch this for fifteen years.
 This corrects two earlier claims of mine: that only `arith-rand-ll.c` detects
 the bug, and that no torture test reaches the `LLONG_MIN` hang. Both wrong.
 
+## Does any test reach the sign boundary?
+
+No -- measured, not assumed. `moddi3-instr.c` is a `__moddi3` that computes the
+same answer by the same recurrence but shouts on the UART the first time the
+partial remainder reaches `2^63`. `scan.sh` links it into a test and runs it.
+Across all 1685: 1667 never reference `__moddi3`, 5 call it (`920604-1`,
+`arith-rand-ll`, `pr33669`, `pr50865`, `pr85582-1`), **none reaches the state**,
+and the 13 that would not compile contain no `%` at all.
+
+Outside this directory, 327 runnable tests do 64-bit modulo, 289 of them for
+other architectures; of the 38 arch-neutral ones only 3 emit a `__moddi3` call,
+and their divisors are 2, 5, -2 and `n - 10000`. Reaching the boundary needs
+`|D| > 2^62`, so none can.
+
+That is structural: `R' >= 2^63` needs `R >= 2^62`, and `R < D`, so it needs
+`|D| > 2^62` *and* `|X|` within a hair of `2^63`. Nothing in the tree pairs
+those. See #37.
+
 ## Was the suite being run?
 
 Running it myself cannot prove nobody else does. Two things are checkable:
