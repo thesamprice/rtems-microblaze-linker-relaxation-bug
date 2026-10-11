@@ -1,6 +1,6 @@
-From 9e5c3a23c27653ec58d8a8668e6d0c2ac08877f9 Mon Sep 17 00:00:00 2001
+From ff32ca0f96bb3781aed5fb7cac4c63d2bc1dbcb3 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 01:17:25 -0400
+Date: Sun, 11 Oct 2026 01:21:13 -0400
 Subject: [PATCH] testsuite: cover 64-bit divide and modulo at the extremes of
  the type
 
@@ -15,6 +15,13 @@ point it is a different hazard rather than the same one at a larger size.
 
 So nothing covers long long at its extremes with well-defined operands, and
 that turns out to matter.
+
+To be explicit, since poking at the extremes is where undefined behaviour
+lives: nothing here is undefined.  A signed division or modulo is undefined
+exactly when the quotient is not representable, and for 64 bits the only such
+pair is LLONG_MIN / -1.  Every quotient in the test is -1, 0 or 1, and -1 is
+never used as a divisor.  It is silent under -fsanitize=undefined at -O0 and
+-O2.
 
 A target whose 64-bit helpers do radix-2 restoring division keeps a partial
 remainder in one 64-bit register.  With a divisor close to 2^63 that
@@ -46,16 +53,16 @@ gcc/testsuite/
 Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude (Anthropic)
 ---
- .../gcc.c-torture/execute/divmod-2.c          | 67 +++++++++++++++++++
- 1 file changed, 67 insertions(+)
+ .../gcc.c-torture/execute/divmod-2.c          | 73 +++++++++++++++++++
+ 1 file changed, 73 insertions(+)
  create mode 100644 gcc/testsuite/gcc.c-torture/execute/divmod-2.c
 
 diff --git a/gcc/testsuite/gcc.c-torture/execute/divmod-2.c b/gcc/testsuite/gcc.c-torture/execute/divmod-2.c
 new file mode 100644
-index 000000000..adf6fc648
+index 000000000..86010bb96
 --- /dev/null
 +++ b/gcc/testsuite/gcc.c-torture/execute/divmod-2.c
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,73 @@
 +/* 64-bit signed division and modulo where both operands sit at the extremes
 +   of the type.
 +
@@ -66,6 +73,12 @@ index 000000000..adf6fc648
 +   not, and are therefore undefined -- as is % -1 at the minimum, since C
 +   ties the one to the other.  So the divisor has to change rather than just
 +   the type, and the pairs below are chosen for a different hazard.
++
++   None of them is undefined.  A signed division or modulo is undefined
++   exactly when the quotient is not representable, and for 64 bits the only
++   such pair is LLONG_MIN / -1, which would be 2^63.  Every quotient below is
++   -1, 0 or 1; -1 is deliberately never used as a divisor.  Checked under
++   -fsanitize=undefined at -O0 and -O2, which is silent.
 +
 +   These matter to any target whose 64-bit helpers do radix-2 restoring
 +   division.  Such a helper holds a partial remainder in one 64-bit register,

@@ -12,6 +12,13 @@ point it is a different hazard rather than the same one at a larger size.
 So nothing covers long long at its extremes with well-defined operands, and
 that turns out to matter.
 
+To be explicit, since poking at the extremes is where undefined behaviour
+lives: nothing here is undefined.  A signed division or modulo is undefined
+exactly when the quotient is not representable, and for 64 bits the only such
+pair is LLONG_MIN / -1.  Every quotient in the test is -1, 0 or 1, and -1 is
+never used as a divisor.  It is silent under -fsanitize=undefined at -O0 and
+-O2.
+
 A target whose 64-bit helpers do radix-2 restoring division keeps a partial
 remainder in one 64-bit register.  With a divisor close to 2^63 that
 remainder can reach 2^63, which is the one point where a keep-or-skip

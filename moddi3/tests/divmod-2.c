@@ -9,6 +9,12 @@
    ties the one to the other.  So the divisor has to change rather than just
    the type, and the pairs below are chosen for a different hazard.
 
+   None of them is undefined.  A signed division or modulo is undefined
+   exactly when the quotient is not representable, and for 64 bits the only
+   such pair is LLONG_MIN / -1, which would be 2^63.  Every quotient below is
+   -1, 0 or 1; -1 is deliberately never used as a divisor.  Checked under
+   -fsanitize=undefined at -O0 and -O2, which is silent.
+
    These matter to any target whose 64-bit helpers do radix-2 restoring
    division.  Such a helper holds a partial remainder in one 64-bit register,
    and when the divisor is close to 2^63 that remainder can reach 2^63 -- the
