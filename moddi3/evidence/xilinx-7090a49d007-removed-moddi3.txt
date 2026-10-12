@@ -1,6 +1,6 @@
 Xilinx removed libgcc/config/microblaze/moddi3.S in 2014, citing bugs.
 Cited in the cover letter and in 2/2 of the series sent to gcc-patches.
-Source: https://github.com/Xilinx/gcc.git (tree deleted locally after capture)
+Source: https://github.com/Xilinx/gcc.git (local tree deleted after capture)
 
 commit 7090a49d0070790ad4094ac7f68062809d70b868
 Author: nagaraju
@@ -12,4 +12,42 @@ Using the default moddi3 function as the existing implementation has many bugs
 
 Signed-off-by:Nagaraju <nmekala@xilix.com>
 
---- its t-microblaze hunk, which is identical to 2/2's ---
+--- full diff: identical t-microblaze hunk to 2/2, plus the file deletion ---
+commit 7090a49d0070790ad4094ac7f68062809d70b868
+Author: nagaraju <nmekala@xilix.com>
+Date:   Fri Apr 18 17:34:20 2014 +0530
+
+    [PATCH] [Patch, microblaze] Removed moddi3 routinue
+    
+    Using the default moddi3 function as the existing implementation has many bugs
+    
+    Signed-off-by:Nagaraju <nmekala@xilix.com>
+
+ libgcc/config/microblaze/moddi3.S     | 115 ----------------------------------
+ libgcc/config/microblaze/t-microblaze |   3 +-
+ 2 files changed, 1 insertion(+), 117 deletions(-)
+
+commit 7090a49d0070790ad4094ac7f68062809d70b868
+Author: nagaraju <nmekala@xilix.com>
+Date:   Fri Apr 18 17:34:20 2014 +0530
+
+    [PATCH] [Patch, microblaze] Removed moddi3 routinue
+    
+    Using the default moddi3 function as the existing implementation has many bugs
+    
+    Signed-off-by:Nagaraju <nmekala@xilix.com>
+
+diff --git a/libgcc/config/microblaze/t-microblaze b/libgcc/config/microblaze/t-microblaze
+index 96959f0292b..8d954a49575 100644
+--- a/libgcc/config/microblaze/t-microblaze
++++ b/libgcc/config/microblaze/t-microblaze
+@@ -1,8 +1,7 @@
+-LIB2FUNCS_EXCLUDE += _divsi3 _modsi3 _moddi3 _mulsi3 _udivsi3 _umodsi3
++LIB2FUNCS_EXCLUDE += _divsi3 _modsi3 _mulsi3 _udivsi3 _umodsi3
+ 
+ LIB2ADD += \
+         $(srcdir)/config/microblaze/divsi3.S \
+-        $(srcdir)/config/microblaze/moddi3.S \
+         $(srcdir)/config/microblaze/modsi3.S \
+         $(srcdir)/config/microblaze/muldi3_hard.S \
+         $(srcdir)/config/microblaze/mulsi3.S \
