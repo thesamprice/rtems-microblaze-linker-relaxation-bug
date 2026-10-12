@@ -1,0 +1,208 @@
+From 428be72d03c783c4158c6703b1a4c7299f3224d1 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 12 Oct 2026 13:21:54 -0400
+Subject: [PATCH 2/2] microblaze: measure st_size from the symbol's old value
+ when relaxing
+
+microblaze_elf_relax_section() adjusted a symbol's value and then passed the
+*adjusted* value to calc_fixup() as the start of the size range:
+
+	isym->st_value -= calc_fixup (isym->st_value, 0, sec);
+	if (isym->st_size)
+	  isym->st_size -= calc_fixup (isym->st_value, isym->st_size, sec);
+
+calc_fixup() with a non-zero size sums the deletions in [start, start + size).
+The span to correct is the one the symbol occupied before relaxation, so start
+has to be the old value; measuring from the lowered one slides the window down
+by the accumulated shift and counts the deletions of a span the symbol never
+covered.  The global symbol loop below had the same mistake.
+
+elfnn-riscv.c:4148-4160 documents exactly this trap -- "This test needs to
+use the original value of st_value, otherwise we might accidentally decrease
+size when deleting bytes right before the symbol" -- and avoids it with an
+else, on the grounds that "deleted relocs can't span across symbols, we
+can't have both a st_value and a st_size decrease".  That reasoning holds
+for a backend which deletes one site at a time, and does not hold here:
+calc_fixup() accumulates every deletion in the section, so one pass can both
+shift a symbol and shrink it.  Hence saving the old value rather than
+restructuring into an else.
+
+calc_fixup() is unique to this backend -- no other bfd file has it -- so
+unlike the --wrap guard in the previous patch this is not an inherited
+defect, and there is no other backend to copy a fix from.
+
+It shows when there are deletions ahead of the symbol, which is what shifts
+the window, and a deletion inside the symbol within that shift of its end,
+which then falls outside it.  A function ending in a relaxable IMM + BRI pair
+is enough.  In the new test f is four instructions and loses its IMM, so it
+must come out 12 bytes; before this change it stayed 16 and claimed the first
+instruction of the next function, which is enough to make
+objdump --disassemble=f and a debugger's function bounds disagree with the
+code.
+
+	* bfd/elf32-microblaze.c (microblaze_elf_relax_section): Compute the
+	st_size fixup from the symbol's pre-relaxation value, for both local
+	and global symbols.
+	* ld/testsuite/ld-microblaze/relax-size.s: New test.
+	* ld/testsuite/ld-microblaze/relax-size.ld: Likewise.
+	* ld/testsuite/ld-microblaze/relax-size.d: Likewise.
+Assisted-by: Claude Opus 5 (1M context) <noreply@anthropic.com>
+---
+ bfd/elf32-microblaze.c                   | 19 ++++---
+ ld/testsuite/ld-microblaze/relax-size.d  | 16 ++++++
+ ld/testsuite/ld-microblaze/relax-size.ld |  9 ++++
+ ld/testsuite/ld-microblaze/relax-size.s  | 64 ++++++++++++++++++++++++
+ 4 files changed, 102 insertions(+), 6 deletions(-)
+ create mode 100644 ld/testsuite/ld-microblaze/relax-size.d
+ create mode 100644 ld/testsuite/ld-microblaze/relax-size.ld
+ create mode 100644 ld/testsuite/ld-microblaze/relax-size.s
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index a8fde32c7fc..f0fd8e770cf 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -2331,9 +2331,15 @@ microblaze_elf_relax_section (bfd *abfd,
+ 	{
+ 	  if (isym->st_shndx == shndx)
+ 	    {
+-	      isym->st_value -= calc_fixup (isym->st_value, 0, sec);
++	      bfd_vma oldval = isym->st_value;
++
++	      isym->st_value -= calc_fixup (oldval, 0, sec);
++	      /* The size covers [oldval, oldval + st_size), which is where the
++		 deletions to subtract are.  Measuring from the new, already
++		 lowered st_value shifts that window down and counts the wrong
++		 ones.  */
+ 	      if (isym->st_size)
+-		isym->st_size -= calc_fixup (isym->st_value, isym->st_size, sec);
++		isym->st_size -= calc_fixup (oldval, isym->st_size, sec);
+ 	    }
+ 	}
+ 
+@@ -2370,11 +2376,12 @@ microblaze_elf_relax_section (bfd *abfd,
+ 		  || sym_hash->root.type == bfd_link_hash_defweak)
+ 	      && sym_hash->root.u.def.section == sec)
+ 	    {
+-	      sym_hash->root.u.def.value -= calc_fixup (sym_hash->root.u.def.value,
+-							0, sec);
++	      bfd_vma oldval = sym_hash->root.u.def.value;
++
++	      sym_hash->root.u.def.value -= calc_fixup (oldval, 0, sec);
++	      /* As above: the size window starts at the old value.  */
+ 	      if (sym_hash->size)
+-		sym_hash->size -= calc_fixup (sym_hash->root.u.def.value,
+-					      sym_hash->size, sec);
++		sym_hash->size -= calc_fixup (oldval, sym_hash->size, sec);
+ 	    }
+ 	}
+ 
+diff --git a/ld/testsuite/ld-microblaze/relax-size.d b/ld/testsuite/ld-microblaze/relax-size.d
+new file mode 100644
+index 00000000000..b1680860501
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-size.d
+@@ -0,0 +1,16 @@
++#source: relax-size.s
++#as: -EL
++#ld: -EL -relax -T $srcdir/$subdir/relax-size.ld
++#readelf: -s
++#name: MicroBlaze relaxation measures st_size from the old symbol value
++
++# f is four instructions, 16 bytes, and loses its trailing IMM, so it must
++# come out 12.  Measured from the already-lowered st_value the deletion falls
++# outside the window and f stays 16, claiming t1's first instruction.
++#
++# a1 and a2 are the control: their deletions sit at their own first
++# instruction, inside the window either way, so they are 16 regardless.
++
++#...
++[ 	]*[0-9]+:[ 	]+90000020[ 	]+12[ 	]+FUNC[ 	]+GLOBAL[ 	]+DEFAULT[ 	]+1[ 	]+f
++#pass
+diff --git a/ld/testsuite/ld-microblaze/relax-size.ld b/ld/testsuite/ld-microblaze/relax-size.ld
+new file mode 100644
+index 00000000000..83f4c724451
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-size.ld
+@@ -0,0 +1,9 @@
++/* Fixed layout so the symbol values in the expected output are deterministic,
++   with the relaxed section first and the branch targets after it.  */
++ENTRY(a1)
++SECTIONS
++{
++  . = 0x90000000;
++  .text : { *(.text.aaa) *(.text.zz) }
++  /DISCARD/ : { *(.comment) *(.note*) }
++}
+diff --git a/ld/testsuite/ld-microblaze/relax-size.s b/ld/testsuite/ld-microblaze/relax-size.s
+new file mode 100644
+index 00000000000..7e42e23599d
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-size.s
+@@ -0,0 +1,64 @@
++# Linker relaxation must subtract the deletions that fall inside a symbol
++# from its st_size, and it has to measure that span from the symbol's
++# *original* value.
++#
++# microblaze_elf_relax_section() lowered st_value first and then passed the
++# lowered value to calc_fixup() as the start of the size range:
++#
++#	isym->st_value -= calc_fixup (isym->st_value, 0, sec);
++#	if (isym->st_size)
++#	  isym->st_size -= calc_fixup (isym->st_value, isym->st_size, sec);
++#
++# so the window became [st_value - shift, st_value - shift + st_size) and
++# counted the deletions of a span the symbol never occupied.  The same
++# mistake was in the global symbol loop below it.
++#
++# It needs two things to show: deletions ahead of the symbol, which is what
++# shifts the window, and a deletion inside the symbol near its end, which is
++# what then falls outside it.  a1 and a2 supply the first; f ends with a
++# relaxable IMM + BRI pair, which supplies the second.
++#
++# f is 16 bytes with four instructions and loses its IMM, so it must come out
++# 12.  Measured from the shifted window the deletion is missed and f stays 16,
++# claiming t1's first instruction -- enough to make objdump
++# --disassemble=f and a debugger's function bounds both wrong.
++#
++# a1 and a2 are the control: their deletions are at their own first
++# instruction, inside both windows, so they are 16 either way.
++
++	.section .text.aaa,"ax",@progbits
++	.globl	a1
++	.type	a1,@function
++a1:
++	brlid	r15, t1		/* deletion 1 */
++	nop
++	rtsd	r15, 8
++	nop
++	.size	a1, .-a1
++	.globl	a2
++	.type	a2,@function
++a2:
++	brlid	r15, t2		/* deletion 2 */
++	nop
++	rtsd	r15, 8
++	nop
++	.size	a2, .-a2
++/* f ends with a relaxable IMM+BRI pair, and has two deletions ahead of it. */
++	.globl	f
++	.type	f,@function
++f:
++	addik	r3, r0, 1
++	addik	r3, r3, 1
++	bri	t3		/* deletion 3, in f's last pair */
++	.size	f, .-f
++
++	.section .text.zz,"ax",@progbits
++	.globl	t1
++t1:	rtsd	r15, 8
++	nop
++	.globl	t2
++t2:	rtsd	r15, 8
++	nop
++	.globl	t3
++t3:	rtsd	r15, 8
++	nop
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,4 +1,4 @@
-From fe28955acaa61e2a959d2b51a5f2f83ccd49794f Mon Sep 17 00:00:00 2001
+From 51d33a2647aa6b9cb42e29722232e56e4b2db48a Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 21:49:30 -0400
 Subject: [PATCH 1/5] bfd: microblaze: keep the PLT address of address-taken

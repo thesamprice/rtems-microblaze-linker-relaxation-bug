@@ -64,6 +64,51 @@ way. `f`'s code really is twelve bytes after relaxation —
 — so a size of 16 overlaps `t1`. `objdump --disassemble=f` duly prints `t1`'s
 first instruction as part of `f`.
 
+## What other backends do
+
+Unlike [0013](binutils-0013-relax-wrap-double-adjust.md), this one is **not**
+inherited. `calc_fixup()` exists in no other `bfd/*.c` file, so the range-query
+form of the mistake is only possible here.
+
+`elfnn-riscv.c:4148-4160` is the closest thing to a precedent, and it names the
+trap outright:
+
+> If the symbol *spans* the bytes we just deleted (i.e. its *end* is in the
+> moved bytes but its *start* isn't), then we must adjust its size.
+>
+> This test needs to use the original value of `st_value`, otherwise we might
+> accidentally decrease size when deleting bytes right before the symbol. But
+> since deleted relocs can't span across symbols, we can't have both a
+> `st_value` and a `st_size` decrease, so it is simpler to just use an else.
+
+RISC-V's `else` is sound *for RISC-V*: it deletes one site of `count` bytes at
+`addr`, and a single deletion cannot both move a symbol and shrink it. That
+reasoning does not carry over. `calc_fixup()` accumulates every deletion in the
+section, so one relaxation pass can shift a symbol (deletions ahead of it) and
+shrink it (deletions inside it) at the same time — `f` in the test does exactly
+that. So the fix saves the old value rather than restructuring into an `else`;
+an `else` here would silently stop correcting sizes whenever a symbol had moved.
+
+Twelve backends adjust a *symbol's* size while relaxing: m10300, avr, m32c,
+microblaze, msp430, nds32, pru, rl78, rx, v850, xtensa and riscv. cr16, crx,
+ft32, sh and loongarch decrement only `sec->size`, never a symbol's — an
+earlier draft of this note had that backwards, from counting `->size -=`
+matches without checking what was on the left.
+
+Of the ones that do, the three spot-checked besides riscv all avoid the
+ordering trap structurally, the same way:
+
+- `elf32-msp430.c:1874-1878` — `else if`, so the size test only runs when the
+  value test did not.
+- `elf32-pru.c:1291-1298` — likewise, in the `else` arm.
+- `elf32-avr.c:2158-2165` — captures `symval` and `symend` *before* adjusting,
+  then tests those.
+
+So MicroBlaze is the outlier: it is the only one of the four examined that
+performs both adjustments unconditionally and in sequence, which is what lets
+the second read a value the first has already changed. The remaining eight
+were not examined.
+
 ## Severity
 
 Lower than 0013. Nothing executes differently: `st_size` on a function symbol

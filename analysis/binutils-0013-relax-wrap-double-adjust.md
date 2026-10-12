@@ -77,16 +77,51 @@ entry per symbol, with no aliasing.
 ## The fix
 
 `bfd/elf32-ft32.c:923-945` already carries exactly this guard, with a comment
-naming `--wrap` as the cause; `elf32-cr16.c:1307`, `elf32-crx.c:687` and
-`elf32-m32c.c:458` have it too. The patch copies it: before adjusting, scan
-the slots already visited and skip the entry if it appears among them. The
-scan runs only when `link_info->wrap_hash != NULL`, so non-`--wrap` links are
+naming `--wrap` as the cause. The patch copies it: before adjusting, scan the
+slots already visited and skip the entry if it appears among them. The scan
+runs only when `link_info->wrap_hash != NULL`, so non-`--wrap` links are
 untouched.
 
-MicroBlaze's version of this code came from `bfd/elf32-sh.c` in 2009
-(`7ba29e2a41`). `elf32-sh.c:1282-1291` has the same shape and no guard, so sh
-looks exposed as well — not verified here, and its narrower
-`value > addr && value < toaddr` window may mask it.
+### This is a known defect elsewhere, with a named fix
+
+Not a new bug — a bug other backends have already had and fixed. Traced by
+`git log -S "we don't want to adjust" -- bfd/`:
+
+| commit | date | backend | what |
+|---|---|---|---|
+| `e3f9830cf4a` | 2004-12-14 | crx | guard present from the port |
+| `3d3d428f048` | 2007-06-29 | cr16 | guard present from the port |
+| `81b42bcab16` | 2017-11-01 | ft32 | guard arrives with FT32B relaxation |
+| **`7f02625eb48`** | **2018-02-02** | **riscv** | **"RISC-V: Fix --wrap and relaxation conflict", PR ld/22756** |
+| `1b6fccd28db` | 2022-12-01 | loongarch | guard present when relaxation was added |
+
+`7f02625eb48` is the direct precedent: same bug, same cause, and the comment
+block is textually identical to the one this patch adds. `elf32-m32c.c:458`
+solves the same problem differently, via `unwrap_hash_lookup()`.
+
+### Why MicroBlaze missed it
+
+Provenance, not reasoning. MicroBlaze relaxation arrived with the port
+(`7ba29e2a41a`, 2009-08-06, "Add support for Xilinx MicroBlaze processor"),
+and its symbol-adjustment loops follow `bfd/elf32-sh.c`, which has no guard to
+this day. The guard already existed in crx and cr16 in 2009, but there was no
+reason to go looking for it.
+
+Of the backends that adjust global symbols while deleting bytes, cr16, crx,
+ft32, loongarch and riscv have the guard; sh, m10200, m10300, avr, h8300,
+ip2k, m68hc11, msp430, pru, rl78, rx, v850, mips and microblaze do not. **Only
+microblaze was tested.** Most of the others adjust against a per-deletion
+window (`value > addr && value < toaddr`) rather than an accumulated fixup,
+which may or may not mask the problem, so no claim is made about them.
+
+### Why it is worse here than it was on RISC-V
+
+`calc_fixup()` is unique to this backend (`grep` across `bfd/*.c` finds it
+nowhere else). Other backends delete one site at a time and subtract a fixed
+`count`, so a double adjustment costs that one count — 4 bytes. MicroBlaze
+builds a relax table for the whole section and subtracts the *total* of every
+deletion ahead of the symbol, so the second subtraction is as large as the
+first: 8 bytes for `__wrap_exit`, 32 for `__wrap_abort`.
 
 ## Why it matters beyond this repo
 

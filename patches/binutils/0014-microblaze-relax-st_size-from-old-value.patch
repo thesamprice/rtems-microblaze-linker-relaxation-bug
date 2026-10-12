@@ -17,6 +17,26 @@ has to be the old value; measuring from the lowered one slides the window down
 by the accumulated shift and counts the deletions of a span the symbol never
 covered.  The global symbol loop below had the same mistake.
 
+elfnn-riscv.c:4148-4160 documents exactly this trap -- "This test needs to
+use the original value of st_value, otherwise we might accidentally decrease
+size when deleting bytes right before the symbol" -- and avoids it with an
+else, on the grounds that "deleted relocs can't span across symbols, we
+can't have both a st_value and a st_size decrease".  That reasoning holds
+for a backend which deletes one site at a time, and does not hold here:
+calc_fixup() accumulates every deletion in the section, so one pass can both
+shift a symbol and shrink it.  Hence saving the old value rather than
+restructuring into an else.
+
+calc_fixup() is unique to this backend -- no other bfd file has it -- so
+unlike the --wrap guard in the previous patch this is not an inherited
+defect, and there is no other backend to copy a fix from.
+
+The other backends that adjust symbol sizes while relaxing do avoid the trap,
+and all in the same structural way: elf32-msp430.c:1874 and elf32-pru.c:1291
+reach the size adjustment only through an else, and elf32-avr.c:2158 captures
+the value before changing it.  MicroBlaze is the one that does both
+unconditionally and in sequence.
+
 It shows when there are deletions ahead of the symbol, which is what shifts
 the window, and a deletion inside the symbol within that shift of its end,
 which then falls outside it.  A function ending in a relaxable IMM + BRI pair

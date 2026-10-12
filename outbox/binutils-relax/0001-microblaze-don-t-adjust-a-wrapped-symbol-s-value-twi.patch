@@ -1,0 +1,289 @@
+From fbf13414f8e747b81a4f3eb8f8125a20c8f17ed2 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 12 Oct 2026 11:48:36 -0400
+Subject: [PATCH 1/2] microblaze: don't adjust a wrapped symbol's value twice
+ when relaxing
+
+microblaze_elf_relax_section() adjusts the global symbols defined in the
+section being relaxed by walking elf_sym_hashes (abfd) by index:
+
+	sym_hash = elf_sym_hashes (abfd)[sym_index];
+	...
+	  sym_hash->root.u.def.value -= calc_fixup (sym_hash->root.u.def.value,
+						    0, sec);
+
+With --wrap SYMBOL, a reference to SYMBOL resolves to __wrap_SYMBOL.  When
+one object both defines __wrap_SYMBOL and refers to SYMBOL, its symbol table
+holds two entries whose slots in elf_sym_hashes point at the same
+__wrap_SYMBOL hash entry, so the loop reaches that entry twice and subtracts
+the fixup twice.  __wrap_SYMBOL then points before its own first instruction,
+into the tail of whatever precedes it.
+
+This is a known defect of this shape of loop, not a new one.  RISC-V hit it
+and fixed it as PR ld/22756 (7f02625eb48, "RISC-V: Fix --wrap and relaxation
+conflict", 2018-02-02), and the guard also sits in elf32-cr16.c,
+elf32-crx.c, elf32-ft32.c and elfnn-loongarch.c.  The comment below is
+copied verbatim from that lineage -- it originates in elf32-crx.c
+(e3f9830cf4a, 2004-12-14) and elf32-cr16.c (3d3d428f048, 2007-06-29), which
+is where RISC-V took it from.  elf32-m32c.c solves the same problem
+differently, with unwrap_hash_lookup().
+
+MicroBlaze missed it by provenance rather than by argument.  Its relaxation
+arrived with the port (7ba29e2a41a, 2009-08-06) and the symbol-adjustment
+loops follow elf32-sh.c, which has no guard to this day -- so the guard was
+available in crx and cr16 at the time but there was no reason to look for
+it.  Of the backends that adjust global symbols while deleting bytes, those
+five have it and sh, m10200, m10300, avr, h8300, ip2k, m68hc11, msp430, pru,
+rl78, rx, v850, mips and microblaze do not.  I have only tested microblaze;
+most of the others use a per-deletion window ("value > addr && value <
+toaddr") which may or may not mask it, and I am not claiming they are
+affected.
+
+The cost is a scan of the preceding hashes, taken only when wrap_hash is
+non-NULL, i.e. only on links that use --wrap.
+
+One MicroBlaze-specific aggravation worth noting for review.  Other backends
+delete one site at a time and subtract a fixed count, so a double adjustment
+costs that one count.  MicroBlaze accumulates a relax table for the whole
+section and subtracts calc_fixup(), the total of every deletion before the
+symbol, so the second subtraction is as large as the first -- 8 bytes for
+__wrap_exit and 32 for __wrap_abort in the case below, not 4.
+
+The symptom that led here: DejaGnu's testglue.c defines __wrap_exit and
+calls exit, and defines __wrap_abort and calls abort.  It is what GCC links
+into every execution test on a board setting needs_status_wrapper, and it
+prints the "*** EXIT code N" line that DejaGnu parses to get the test's exit
+status.  Built for MicroBlaze with the default -relax, __wrap_exit landed
+eight bytes early, on the closing ADDIK r1, r1, 28 of write_int, so the
+wrapper released someone else's stack frame and fell through; no marker was
+ever printed and every execution test came back as status 2.  __wrap_abort
+was off by 32 the same way.
+
+ld/testsuite/ld-microblaze/relax-wrap.d is a reduced form: one deleted IMM,
+__wrap_foo defined after it, and a call to foo from the same object.
+Without this change __wrap_foo links at 0x90000018 instead of 0x9000001c.
+
+	* bfd/elf32-microblaze.c (microblaze_elf_relax_section): Skip a
+	global symbol already reached through another elf_sym_hashes slot
+	when wrapping is in effect.
+	* ld/testsuite/ld-microblaze/relax-wrap.s: New test.
+	* ld/testsuite/ld-microblaze/relax-wrap-support.s: Likewise.
+	* ld/testsuite/ld-microblaze/relax-wrap.ld: Likewise.
+	* ld/testsuite/ld-microblaze/relax-wrap.d: Likewise.
+Assisted-by: Claude Opus 5 (1M context) <noreply@anthropic.com>
+---
+ bfd/elf32-microblaze.c                        | 24 +++++++
+ .../ld-microblaze/relax-wrap-support.s        | 29 +++++++++
+ ld/testsuite/ld-microblaze/relax-wrap.d       | 37 +++++++++++
+ ld/testsuite/ld-microblaze/relax-wrap.ld      | 14 +++++
+ ld/testsuite/ld-microblaze/relax-wrap.s       | 62 +++++++++++++++++++
+ 5 files changed, 166 insertions(+)
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap-support.s
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap.d
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap.ld
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap.s
+
+diff --git a/bfd/elf32-microblaze.c b/bfd/elf32-microblaze.c
+index 027b1886e9a..a8fde32c7fc 100644
+--- a/bfd/elf32-microblaze.c
++++ b/bfd/elf32-microblaze.c
+@@ -2342,6 +2342,30 @@ microblaze_elf_relax_section (bfd *abfd,
+       for (sym_index = 0; sym_index < symcount; sym_index++)
+ 	{
+ 	  sym_hash = elf_sym_hashes (abfd)[sym_index];
++
++	  /* The '--wrap SYMBOL' option is causing a pain when the object file,
++	     containing the definition of __wrap_SYMBOL, includes a direct
++	     call to SYMBOL as well.  Since both __wrap_SYMBOL and SYMBOL
++	     reference the same symbol (which is __wrap_SYMBOL), but still
++	     exist as two different symbols in 'sym_hashes', we don't want to
++	     adjust the global symbol __wrap_SYMBOL twice.
++	     This check is only relevant when symbols are being wrapped.  */
++	  if (link_info->wrap_hash != NULL)
++	    {
++	      size_t cur_sym_index;
++
++	      /* Loop only over the symbols which have already been checked.  */
++	      for (cur_sym_index = 0; cur_sym_index < sym_index; cur_sym_index++)
++		/* If the current symbol is identical to 'sym_hash', that means
++		   the symbol was already adjusted (or at least checked).  */
++		if (elf_sym_hashes (abfd)[cur_sym_index] == sym_hash)
++		  break;
++
++	      /* Don't adjust the symbol again.  */
++	      if (cur_sym_index < sym_index)
++		continue;
++	    }
++
+ 	  if ((sym_hash->root.type == bfd_link_hash_defined
+ 		  || sym_hash->root.type == bfd_link_hash_defweak)
+ 	      && sym_hash->root.u.def.section == sec)
+diff --git a/ld/testsuite/ld-microblaze/relax-wrap-support.s b/ld/testsuite/ld-microblaze/relax-wrap-support.s
+new file mode 100644
+index 00000000000..2a8929eb58e
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-wrap-support.s
+@@ -0,0 +1,29 @@
++# Placed in .text.zz_support so that it is laid out after the sections of
++# relax-wrap.s and the call from relaxed_caller is a forward reference.  A
++# backward reference is not relaxed and the test would not exercise anything.
++
++	.section .text.zz_support,"ax",@progbits
++	.globl	near_callee
++	.type	near_callee,@function
++near_callee:
++	rtsd	r15, 8
++	nop
++	.size	near_callee, .-near_callee
++
++# The wrapped function itself.  Defined, as in a real link, though --wrap
++# means nothing here refers to it directly.
++	.globl	foo
++	.type	foo,@function
++foo:
++	addik	r3, r0, 1
++	rtsd	r15, 8
++	nop
++	.size	foo, .-foo
++
++	.globl	_start
++_start:
++	brlid	r15, relaxed_caller
++	nop
++	brlid	r15, calls_foo
++	nop
++	bri	0
+diff --git a/ld/testsuite/ld-microblaze/relax-wrap.d b/ld/testsuite/ld-microblaze/relax-wrap.d
+new file mode 100644
+index 00000000000..a943fb09a8c
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-wrap.d
+@@ -0,0 +1,37 @@
++#source: relax-wrap.s
++#source: relax-wrap-support.s
++#as: -EL
++#ld: -EL -relax --wrap foo -T $srcdir/$subdir/relax-wrap.ld
++#objdump: -d
++#name: MicroBlaze relaxation adjusts a wrapped symbol only once
++
++# relaxed_caller contains an IMM that relaxation deletes, so __wrap_foo, which
++# follows it in the same section, moves down by four.  The same object also
++# calls foo, which --wrap resolves to __wrap_foo, so __wrap_foo occupies two
++# slots in elf_sym_hashes and a linker that walks that array by index subtracts
++# the fixup twice.
++#
++# __wrap_foo must therefore be 0x9000001c, on its own ADDIK r3, r0, 42, and
++# the call in calls_foo must reach it.  A linker which adjusts it twice puts
++# the symbol at 0x90000018 instead, on relaxed_caller's closing
++# ADDIK r1, r1, 28 -- so calling __wrap_foo releases 28 bytes of someone
++# else's stack frame and falls through.
++
++.*: +file format .*
++#...
++90000000 <relaxed_caller>:
++[ 	]*90000000:[ 	]+3021ffe4[ 	]+addik[ 	]+r1, r1, -28
++[ 	]*90000004:[ 	]+f9e10000[ 	]+swi[ 	]+r15, r1, 0
++[ 	]*90000008:[ 	]+b9f4003c[ 	]+brlid[ 	]+r15, 60
++[ 	]*9000000c:[ 	]+80000000[ 	]+or[ 	]+r0, r0, r0
++[ 	]*90000010:[ 	]+e9e10000[ 	]+lwi[ 	]+r15, r1, 0
++[ 	]*90000014:[ 	]+b60f0008[ 	]+rtsd[ 	]+r15, 8
++[ 	]*90000018:[ 	]+3021001c[ 	]+addik[ 	]+r1, r1, 28
++
++9000001c <__wrap_foo>:
++[ 	]*9000001c:[ 	]+3060002a[ 	]+addik[ 	]+r3, r0, 42
++#...
++90000028 <calls_foo>:
++#...
++[ 	]*90000030:[ 	]+b9f4ffec[ 	]+brlid[ 	]+r15, -20
++#pass
+diff --git a/ld/testsuite/ld-microblaze/relax-wrap.ld b/ld/testsuite/ld-microblaze/relax-wrap.ld
+new file mode 100644
+index 00000000000..e5bc35fddb3
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-wrap.ld
+@@ -0,0 +1,14 @@
++/* Fixed layout so that the expected dump is deterministic, with the relaxed
++   section first and the support section after it.  */
++ENTRY(_start)
++SECTIONS
++{
++  . = 0x90000000;
++  .text : {
++    *(.text.aaa_relaxed)
++    *(.text.zz_support)
++    *(.text)
++    *(.text.*)
++  }
++  /DISCARD/ : { *(.comment) *(.note*) }
++}
+diff --git a/ld/testsuite/ld-microblaze/relax-wrap.s b/ld/testsuite/ld-microblaze/relax-wrap.s
+new file mode 100644
+index 00000000000..2e817b6c54e
+--- /dev/null
++++ b/ld/testsuite/ld-microblaze/relax-wrap.s
+@@ -0,0 +1,62 @@
++# Linker relaxation must not adjust a global symbol's value twice.
++#
++# With --wrap foo, a reference to foo resolves to __wrap_foo.  When the same
++# object file both defines __wrap_foo and refers to foo, the object's symbol
++# table holds two entries -- __wrap_foo and foo -- whose slots in
++# elf_sym_hashes both point at the one __wrap_foo hash entry.
++#
++# microblaze_elf_relax_section() adjusts global symbols by walking
++# elf_sym_hashes by index and doing
++#
++#	sym_hash->root.u.def.value -= calc_fixup (sym_hash->root.u.def.value, 0, sec)
++#
++# so a hash entry reached twice has its fixup subtracted twice.  __wrap_foo
++# then points four bytes before its own first instruction, into the tail of
++# the function in front of it, and calling it does whatever that lands on.
++#
++# DejaGnu's own testglue.c has exactly this shape -- it defines __wrap_exit
++# and calls exit, defines __wrap_abort and calls abort -- so every GCC
++# execution test on a board that sets needs_status_wrapper silently loses its
++# status marker.
++#
++# The guard copied here from bfd/elf32-ft32.c:923-945 is also present in
++# elf32-cr16.c, elf32-crx.c and elf32-m32c.c.
++
++	.section .text.aaa_relaxed,"ax",@progbits
++
++# A relaxable IMM, which the linker deletes.  Everything after it in this
++# section moves down by four bytes, so __wrap_foo below needs adjusting.
++	.globl	relaxed_caller
++	.type	relaxed_caller,@function
++relaxed_caller:
++	addik	r1, r1, -28
++	swi	r15, r1, 0
++	brlid	r15, near_callee	# IMM + BRLID; the IMM is deleted
++	nop
++	lwi	r15, r1, 0
++	rtsd	r15, 8
++	addik	r1, r1, 28
++	.size	relaxed_caller, .-relaxed_caller
++
++# The definition of __wrap_foo, in the same section and after the deletion.
++	.globl	__wrap_foo
++	.type	__wrap_foo,@function
++__wrap_foo:
++	addik	r3, r0, 42
++	rtsd	r15, 8
++	nop
++	.size	__wrap_foo, .-__wrap_foo
++
++# ...and a direct call to foo from the very same object, which is what makes
++# __wrap_foo occupy two slots in elf_sym_hashes.
++	.globl	calls_foo
++	.type	calls_foo,@function
++calls_foo:
++	addik	r1, r1, -28
++	swi	r15, r1, 0
++	brlid	r15, foo
++	nop
++	lwi	r15, r1, 0
++	rtsd	r15, 8
++	addik	r1, r1, 28
++	.size	calls_foo, .-calls_foo
+-- 
+2.39.5 (Apple Git-154)
+

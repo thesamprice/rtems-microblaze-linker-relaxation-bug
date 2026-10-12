@@ -1,0 +1,105 @@
+From 428be72d03c783c4158c6703b1a4c7299f3224d1 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 12 Oct 2026 13:38:51 -0400
+Subject: [PATCH 0/2] MicroBlaze: two more linker relaxation defects, both in the symbol table
+
+microblaze_elf_relax_section() has two further defects, independent of the
+relocation addend corruption fixed by a639e0adaf2 and f55053f1dc9.  Both
+corrupt the symbol table rather than addends, and both still reproduce on
+current master.
+
+1/2 is the substantive one.  Under --wrap, an object file that both defines
+__wrap_SYMBOL and refers to SYMBOL has two elf_sym_hashes slots pointing at
+the one hash entry, so the relaxation fixup is subtracted from its value
+twice and __wrap_SYMBOL links before its own first instruction.
+This is a known defect of this shape of loop rather than a new one.  RISC-V
+hit it and fixed it as PR ld/22756 (7f02625eb48, 2018-02-02); the guard also
+sits in elf32-cr16.c, elf32-crx.c, elf32-ft32.c and elfnn-loongarch.c, and
+elf32-m32c.c solves the same problem with unwrap_hash_lookup().  The comment
+the patch carries is copied verbatim from that lineage, which starts in
+elf32-crx.c (2004) and elf32-cr16.c (2007).
+
+MicroBlaze missed it by provenance, not by argument: relaxation arrived with
+the port (7ba29e2a41a, 2009-08-06) and these loops follow elf32-sh.c, which
+still has no guard.  Of the backends that adjust global symbols while
+deleting bytes, five have it and fourteen do not; I have tested only
+microblaze, and since most of the others use a per-deletion window rather
+than an accumulated fixup I am not claiming any of them is affected.
+
+That accumulation is why it bites harder here than it did on RISC-V.  Other
+backends subtract a fixed count per deletion, so adjusting twice costs that
+one count; microblaze subtracts calc_fixup(), the total of every deletion
+ahead of the symbol, so the second subtraction is as large as the first -- 8
+bytes for __wrap_exit and 32 for __wrap_abort, not 4.
+
+The practical consequence is worth stating, because it is not visible in the
+diff.  DejaGnu's testglue.c defines __wrap_exit and calls exit, and defines
+__wrap_abort and calls abort.  It is what GCC links into every execution test
+on a board that sets needs_status_wrapper, and it prints the "*** EXIT code N"
+line that check_for_board_status() in DejaGnu's remote.exp parses to get a
+test's exit status.  GCC's MicroBlaze LINK_SPEC passes -relax unconditionally,
+so on this target __wrap_exit has always come out pointing at the tail of the
+function in front of it -- in one measured case the closing ADDIK r1, r1, 28
+of its neighbour, so the wrapper released someone else's stack frame and fell
+through.  No marker is printed and every execution test reports status 2.
+That is a plausible part of why MicroBlaze gets compile-only testing, and it
+presents as the board's fault rather than the linker's.
+
+2/2 was found while reading the same hunk for 1/2.  Both symbol-adjustment
+loops pass the already-lowered st_value to calc_fixup() as the start of the
+size range, so the window slides down by the accumulated shift and corrects a
+span the symbol never occupied.  It needs deletions ahead of the symbol, which
+shift the window, and a deletion inside the symbol within that shift of its
+end, which then falls outside it; a function ending in a relaxable IMM + BRI
+pair is enough, and comes out with a size overlapping the next function.
+Nothing executes differently -- st_size feeds debuggers, nm -S and anything
+deriving function bounds from the symbol table -- so this is wrong attribution
+rather than wrong code.  It is sent with 1/2 because it is three lines in the
+hunk a reviewer is already reading.
+
+elfnn-riscv.c:4148-4160 names this trap in a comment and sidesteps it with an
+else, reasoning that a single deletion cannot both move a symbol and shrink
+it.  That is true where bytes are deleted one site at a time; calc_fixup()
+accumulates the whole section, so one pass here can do both, and the fix
+saves the old value instead.  calc_fixup() is unique to this backend, so
+unlike 1/2 this is not an inherited defect and there is no other backend to
+copy from.
+
+Each patch adds one test under ld/testsuite/ld-microblaze.  Reverting either
+fix alone fails exactly its own test and leaves the other's passing.  Full ld
+suite with both applied: 482 expected passes, 15 expected failures, 0
+unexpected failures.  Both defects are also present in the Xilinx binutils
+2.36.1 snapshot that the RTEMS MicroBlaze toolchain ships, with the same error
+magnitudes; that was checked by behaviour, against the installed binaries, not
+against its sources.
+
+One thing I could not settle: elf32-sh.c:1282-1291, which
+microblaze_elf_relax_section() was copied from in 2009 (7ba29e2a41), has the
+same shape as 1/2 and no guard.  Its narrower "value > addr && value < toaddr"
+window may well mask the problem.  I have not tested sh and am not claiming it
+is affected.
+
+Samuel Price (2):
+  microblaze: don't adjust a wrapped symbol's value twice when relaxing
+  microblaze: measure st_size from the symbol's old value when relaxing
+
+ bfd/elf32-microblaze.c                        | 43 +++++++++++--
+ ld/testsuite/ld-microblaze/relax-size.d       | 16 +++++
+ ld/testsuite/ld-microblaze/relax-size.ld      |  9 +++
+ ld/testsuite/ld-microblaze/relax-size.s       | 64 +++++++++++++++++++
+ .../ld-microblaze/relax-wrap-support.s        | 29 +++++++++
+ ld/testsuite/ld-microblaze/relax-wrap.d       | 37 +++++++++++
+ ld/testsuite/ld-microblaze/relax-wrap.ld      | 14 ++++
+ ld/testsuite/ld-microblaze/relax-wrap.s       | 62 ++++++++++++++++++
+ 8 files changed, 268 insertions(+), 6 deletions(-)
+ create mode 100644 ld/testsuite/ld-microblaze/relax-size.d
+ create mode 100644 ld/testsuite/ld-microblaze/relax-size.ld
+ create mode 100644 ld/testsuite/ld-microblaze/relax-size.s
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap-support.s
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap.d
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap.ld
+ create mode 100644 ld/testsuite/ld-microblaze/relax-wrap.s
+
+-- 
+2.39.5 (Apple Git-154)
+

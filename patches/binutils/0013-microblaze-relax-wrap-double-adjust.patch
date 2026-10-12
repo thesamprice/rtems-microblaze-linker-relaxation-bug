@@ -19,10 +19,35 @@ __wrap_SYMBOL hash entry, so the loop reaches that entry twice and subtracts
 the fixup twice.  __wrap_SYMBOL then points before its own first instruction,
 into the tail of whatever precedes it.
 
-bfd/elf32-ft32.c:923-945 already carries the guard for this, as do
-elf32-cr16.c, elf32-crx.c and elf32-m32c.c; this copies it.  The cost is a
-scan of the preceding hashes, taken only when wrap_hash is non-NULL, i.e.
-only on links that use --wrap.
+This is a known defect of this shape of loop, not a new one.  RISC-V hit it
+and fixed it as PR ld/22756 (7f02625eb48, "RISC-V: Fix --wrap and relaxation
+conflict", 2018-02-02), and the guard also sits in elf32-cr16.c,
+elf32-crx.c, elf32-ft32.c and elfnn-loongarch.c.  The comment below is
+copied verbatim from that lineage -- it originates in elf32-crx.c
+(e3f9830cf4a, 2004-12-14) and elf32-cr16.c (3d3d428f048, 2007-06-29), which
+is where RISC-V took it from.  elf32-m32c.c solves the same problem
+differently, with unwrap_hash_lookup().
+
+MicroBlaze missed it by provenance rather than by argument.  Its relaxation
+arrived with the port (7ba29e2a41a, 2009-08-06) and the symbol-adjustment
+loops follow elf32-sh.c, which has no guard to this day -- so the guard was
+available in crx and cr16 at the time but there was no reason to look for
+it.  Of the backends that adjust global symbols while deleting bytes, those
+five have it and sh, m10200, m10300, avr, h8300, ip2k, m68hc11, msp430, pru,
+rl78, rx, v850, mips and microblaze do not.  I have only tested microblaze;
+most of the others use a per-deletion window ("value > addr && value <
+toaddr") which may or may not mask it, and I am not claiming they are
+affected.
+
+The cost is a scan of the preceding hashes, taken only when wrap_hash is
+non-NULL, i.e. only on links that use --wrap.
+
+One MicroBlaze-specific aggravation worth noting for review.  Other backends
+delete one site at a time and subtract a fixed count, so a double adjustment
+costs that one count.  MicroBlaze accumulates a relax table for the whole
+section and subtracts calc_fixup(), the total of every deletion before the
+symbol, so the second subtraction is as large as the first -- 8 bytes for
+__wrap_exit and 32 for __wrap_abort in the case below, not 4.
 
 The symptom that led here: DejaGnu's testglue.c defines __wrap_exit and
 calls exit, and defines __wrap_abort and calls abort.  It is what GCC links
