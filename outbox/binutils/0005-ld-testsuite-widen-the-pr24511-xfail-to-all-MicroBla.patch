@@ -1,4 +1,4 @@
-From 7cdab5ed238464bac2901aa9c6e931e7d40cecfc Mon Sep 17 00:00:00 2001
+From d88f972668ad4321f58462a585db267b121b0ecc Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Thu, 6 Aug 2026 12:08:58 -0400
 Subject: [PATCH 5/5] ld/testsuite: widen the pr24511 xfail to all MicroBlaze

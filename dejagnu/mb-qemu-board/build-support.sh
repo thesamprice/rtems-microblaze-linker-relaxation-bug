@@ -90,7 +90,7 @@ PROBE
   # relaxation walks that array by index and subtracts the fixup once per
   # slot, so __wrap_exit ends up pointing before its own first instruction
   # and the status marker is never printed -- every execution test then
-  # reports 2.  See ../../patches/binutils/0013-microblaze-relax-wrap-double-adjust.patch;
+  # reports 2.  See ../../patches/binutils-relax/0001-microblaze-relax-wrap-double-adjust.patch;
   # GCC's LINK_SPEC passes -relax unconditionally, so this is the default.
   #
   # The shape below reproduces it in eight instructions: a deleted IMM, then

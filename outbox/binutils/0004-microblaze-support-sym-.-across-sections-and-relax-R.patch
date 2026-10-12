@@ -1,4 +1,4 @@
-From aeadd700a7b3ad22183503e1523f4fff20c1c91b Mon Sep 17 00:00:00 2001
+From 90d0a838c9533dfd3593997132de540604518741 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 23:05:43 -0400
 Subject: [PATCH 4/5] microblaze: support "sym - ." across sections, and relax

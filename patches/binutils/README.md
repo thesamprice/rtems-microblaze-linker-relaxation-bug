@@ -12,7 +12,10 @@
 > neither — they still reproduce on `2.47.50.20260908`. Patch **0013** (symbol
 > values under `--wrap`; why `needs_status_wrapper` has never worked on
 > MicroBlaze) and **0014** (`st_size` measured from the already-lowered value).
-> Analysis in [`../../analysis/binutils-0013-relax-wrap-double-adjust.md`](../../analysis/binutils-0013-relax-wrap-double-adjust.md)
+> They are **not part of this series**: they live in
+> [`../binutils-relax/`](../binutils-relax/) and go out on their own, because
+> this directory is unrelated gas/eh_frame/PLT work. Analysis in
+> [`../../analysis/binutils-0013-relax-wrap-double-adjust.md`](../../analysis/binutils-0013-relax-wrap-double-adjust.md)
 > and [`../../analysis/binutils-0014-relax-st_size-from-old-value.md`](../../analysis/binutils-0014-relax-st_size-from-old-value.md).
 
 > **Update 2026-09-20:** the arch-neutral `bfd/dwarf2.c` addr2line tie-break — this
@@ -28,10 +31,10 @@
 `git am`-able patches against binutils master. **0001 and 0002 landed upstream
 on 2026-08-13** and are in the current base commit `6f24afa`; they are kept for
 the record under [`landed/`](landed/) and are no longer applied. The still-open
-series is **0003-0009, 0013 and 0014**, of which 0003-0009 applies cleanly to
-current master `193340ad3` (see [`../../analysis/REWORK.md`](../../analysis/REWORK.md));
-0013 and 0014 are newer and were written against `6d71cb48957`, 0014 on top of
-0013:
+series in **this directory** is **0003-0009**, which applies cleanly to
+current master `193340ad3` (see [`../../analysis/REWORK.md`](../../analysis/REWORK.md)).
+The two relaxation patches are in [`../binutils-relax/`](../binutils-relax/)
+and are sent separately:
 
 ```sh
 cd binutils-gdb
@@ -70,8 +73,6 @@ failures. 0003 and 0004 have not been re-tested since 0001 changed.
 | 0008 | bfd: keep the PLT address of address-taken functions in non-PIC executables (canonical PLT) | `&strlen` in an executable differed from `dlsym` / libc's own pointer; fixes glibc `misc/tst-ldbl-errorfptr`, `elf/tst-addr1` | independent; not sent upstream |
 | 0009 | gas + bfd: accept `sym - .` across sections and emit `R_MICROBLAZE_32_PCREL` (RELA howto, adjusted by relaxation) | lets gcc and the gas CFI directives use `DW_EH_PE_pcrel`: read-only `.eh_frame`, no dynamic relocations, `.eh_frame_hdr` search table; pairs with `patches/gcc/0002` | independent; needs the gcc patch to matter; not sent upstream |
 | 0010 | gas testsuite: exclude `microblazeel-*` from the `diff1` test (the glob only covered `microblaze-*`, so the little-endian triplet ran it and failed) | the last MicroBlaze-attributable `gas/all` failure | independent; testsuite only |
-| 0013 | bfd: don't adjust a wrapped symbol's value twice when relaxing (copy the `--wrap` guard from `elf32-ft32.c`) | a second relaxation miscompile, independent of 0001: `__wrap_SYMBOL` links before its own first instruction, so DejaGnu's `testglue.c` never prints its status marker and every MicroBlaze execution test reports 2; adds 1 new test | independent; not sent upstream |
-| 0014 | bfd: measure the `st_size` fixup from the symbol's pre-relaxation value | a third relaxation defect in the same two loops, needing no `--wrap`: a function's size can overlap the next function, so `objdump --disassemble=` and debugger function bounds disagree with the code; wrong attribution, not wrong code; adds 1 new test | sits on top of 0013; not sent upstream |
 
 They are no longer sent as one series. 0001 went to the list on its own, as recommended
 below, and 0002 is now numbered as a standalone `[PATCH]` rather than `2/4`.

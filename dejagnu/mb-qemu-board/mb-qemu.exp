@@ -97,7 +97,7 @@ if { [file exists "$mb_obj/config.sh"] } {
     if { [regexp {MB_CFLAGS="([^"]*)"} $cfg -> m] } { set_board_info cflags $m }
     # Set when the toolchain's linker mis-adjusts wrapped symbols while
     # relaxing, which breaks DejaGnu's status wrapper.  See the probe in
-    # build-support.sh and ../../patches/binutils/0013-*.patch.
+    # build-support.sh and ../../patches/binutils-relax/0001-*.patch.
     if { [regexp {MB_LDEXTRA_BOARD="([^"]*)"} $cfg -> m] } { set mb_ldboard $m }
 }
 if { ![info exists mb_ldboard] } { set mb_ldboard "" }

@@ -2,7 +2,7 @@
 
 # bfd 0013: relaxation adjusts a wrapped symbol's value twice
 
-**Patch:** `patches/binutils/0013-microblaze-relax-wrap-double-adjust.patch`
+**Patch:** `patches/binutils-relax/0001-microblaze-relax-wrap-double-adjust.patch`
 **Target:** `binutils-gdb` at `6d71cb48957` (`2026-09-08`), which already carries
 `a639e0adaf2` (the `sh_info` bounds fix) — this is a **second, independent**
 relaxation defect, not a variant of that one

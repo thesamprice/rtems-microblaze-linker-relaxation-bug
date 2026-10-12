@@ -80,13 +80,13 @@ B=${BINUTILS_TREE:-}; G=${GCC_TREE:-}; L=${GLIBC_TREE:-}
 series binutils        "$B" "${BINUTILS_BASE:-master}" "$P/binutils/0000-cover-letter.txt" \
   "$P"/binutils/0008-*.patch "$P"/binutils/0007-*.patch \
   "$P"/binutils/0006-*.patch "$P"/binutils/0009-*.patch "$P"/binutils/0003-*.patch
-# 0013 and 0014 go as their own series: same file, same function, same two
-# loops, and 0014 was found reading the hunk for 0013.  Keeping them out of the
+# The two relaxation patches live in their own directory and go as their own
+# series: same file, same function, same two loops.  Keeping them out of the
 # series above is deliberate -- that one is unrelated gas/eh_frame/PLT work,
 # and bundling would split reviewer attention the way sending 0001 alone
 # avoided.
-series binutils-relax  "$B" "${BINUTILS_BASE:-master}" "$P/binutils/0000-relax-cover-letter.txt" \
-  "$P"/binutils/0013-*.patch "$P"/binutils/0014-*.patch
+series binutils-relax  "$B" "${BINUTILS_BASE:-master}" "$P/binutils-relax/0000-cover-letter.txt" \
+  "$P"/binutils-relax/0001-*.patch "$P"/binutils-relax/0002-*.patch
 series gcc-0001        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0001-*.patch
 series gcc-0002        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0002-*.patch
 series glibc           "$L" "${GLIBC_BASE:-master}"    "$P/glibc/0000-cover-letter.txt" \

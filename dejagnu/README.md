@@ -99,7 +99,7 @@ has no shutdown device.
 This is the standard protocol rather than a marker of our own, but it needs a
 linker that does not mis-place `__wrap_*` symbols while relaxing.
 `build-support.sh` probes for that and adds `--no-relax` when it finds it; the
-fix is `../patches/binutils/0013-*.patch`.
+fix is `../patches/binutils-relax/0001-*.patch`.
 
 DejaGnu gets `dg-options` and `dg-require-effective-target` right for free,
 which an ad-hoc runner does not; that was another ten false failures and a

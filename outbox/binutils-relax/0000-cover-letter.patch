@@ -1,87 +1,116 @@
-From 428be72d03c783c4158c6703b1a4c7299f3224d1 Mon Sep 17 00:00:00 2001
+From f6542c3befce5e68677ed5641e5a5fb609f060d0 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Mon, 12 Oct 2026 13:38:51 -0400
-Subject: [PATCH 0/2] MicroBlaze: two more linker relaxation defects, both in the symbol table
+Date: Mon, 12 Oct 2026 16:22:33 -0400
+Subject: [PATCH 0/2] MicroBlaze: two relaxation defects in the symbol table
 
-microblaze_elf_relax_section() has two further defects, independent of the
-relocation addend corruption fixed by a639e0adaf2 and f55053f1dc9.  Both
-corrupt the symbol table rather than addends, and both still reproduce on
-current master.
+microblaze_elf_relax_section() has two defects in the code that adjusts
+symbols after deleting bytes.  Both are independent of the relocation
+addend corruption fixed by a639e0adaf2 and f55053f1dc9, and both still
+reproduce on current master.  They apply to master with git am in this
+order; 2/2 touches lines adjacent to 1/2.
 
-1/2 is the substantive one.  Under --wrap, an object file that both defines
-__wrap_SYMBOL and refers to SYMBOL has two elf_sym_hashes slots pointing at
-the one hash entry, so the relaxation fixup is subtracted from its value
-twice and __wrap_SYMBOL links before its own first instruction.
-This is a known defect of this shape of loop rather than a new one.  RISC-V
-hit it and fixed it as PR ld/22756 (7f02625eb48, 2018-02-02); the guard also
-sits in elf32-cr16.c, elf32-crx.c, elf32-ft32.c and elfnn-loongarch.c, and
-elf32-m32c.c solves the same problem with unwrap_hash_lookup().  The comment
-the patch carries is copied verbatim from that lineage, which starts in
-elf32-crx.c (2004) and elf32-cr16.c (2007).
+  1/2  microblaze: fix --wrap and relaxation conflict
+       Under --wrap, an object that both defines __wrap_SYMBOL and
+       refers to SYMBOL has two elf_sym_hashes slots pointing at one
+       hash entry, so the relaxation fixup is subtracted from its value
+       twice and __wrap_SYMBOL resolves before its own first
+       instruction.  RISC-V fixed the same defect as PR ld/22756; this
+       copies the guard.
+  2/2  microblaze: fix st_size adjustment when relaxing
+       The size fixup is measured from the already-lowered st_value,
+       so it corrects a span the symbol never occupied and a
+       function's size can overlap the next function.
 
-MicroBlaze missed it by provenance, not by argument: relaxation arrived with
-the port (7ba29e2a41a, 2009-08-06) and these loops follow elf32-sh.c, which
-still has no guard.  Of the backends that adjust global symbols while
-deleting bytes, five have it and fourteen do not; I have tested only
-microblaze, and since most of the others use a per-deletion window rather
-than an accumulated fixup I am not claiming any of them is affected.
+1/2 is the one with a runtime consequence.  DejaGnu's testglue.c defines
+__wrap_exit and calls exit; GCC links it into every execution test on a
+board that sets needs_status_wrapper, and it writes the "*** EXIT code
+N" line that DejaGnu parses to obtain a test's exit status.  GCC's
+MicroBlaze LINK_SPEC passes -relax unconditionally, so on this target
+__wrap_exit has been resolving into the tail of the preceding function
+and no status line is written.  Every execution test is then reported as
+status 2, against the board rather than the linker.  Fixing this is what
+allowed a DejaGnu board to run gcc.c-torture/execute on MicroBlaze at
+all.
 
-That accumulation is why it bites harder here than it did on RISC-V.  Other
-backends subtract a fixed count per deletion, so adjusting twice costs that
-one count; microblaze subtracts calc_fixup(), the total of every deletion
-ahead of the symbol, so the second subtraction is as large as the first -- 8
-bytes for __wrap_exit and 32 for __wrap_abort, not 4.
+2/2 affects st_size only, which is read by debuggers, nm -S and anything
+deriving function bounds from the symbol table.  No generated code
+changes.  It is sent with 1/2 because it is three lines in the same
+hunk.
 
-The practical consequence is worth stating, because it is not visible in the
-diff.  DejaGnu's testglue.c defines __wrap_exit and calls exit, and defines
-__wrap_abort and calls abort.  It is what GCC links into every execution test
-on a board that sets needs_status_wrapper, and it prints the "*** EXIT code N"
-line that check_for_board_status() in DejaGnu's remote.exp parses to get a
-test's exit status.  GCC's MicroBlaze LINK_SPEC passes -relax unconditionally,
-so on this target __wrap_exit has always come out pointing at the tail of the
-function in front of it -- in one measured case the closing ADDIK r1, r1, 28
-of its neighbour, so the wrapper released someone else's stack frame and fell
-through.  No marker is printed and every execution test reports status 2.
-That is a plausible part of why MicroBlaze gets compile-only testing, and it
-presents as the board's fault rather than the linker's.
+How to review this ------------------
 
-2/2 was found while reading the same hunk for 1/2.  Both symbol-adjustment
-loops pass the already-lowered st_value to calc_fixup() as the start of the
-size range, so the window slides down by the accumulated shift and corrects a
-span the symbol never occupied.  It needs deletions ahead of the symbol, which
-shift the window, and a deletion inside the symbol within that shift of its
-end, which then falls outside it; a function ending in a relaxable IMM + BRI
-pair is enough, and comes out with a size overlapping the next function.
-Nothing executes differently -- st_size feeds debuggers, nm -S and anything
-deriving function bounds from the symbol table -- so this is wrong attribution
-rather than wrong code.  It is sent with 1/2 because it is three lines in the
-hunk a reviewer is already reading.
+The bfd change in 1/2 adds 24 lines: 11 of comment taken from another
+backend, 10 of code and 3 blank.  The quickest check is to diff it
+against the original, ignoring whitespace, since it sits one nesting
+level deeper:
 
-elfnn-riscv.c:4148-4160 names this trap in a comment and sidesteps it with an
-else, reasoning that a single deletion cannot both move a symbol and shrink
-it.  That is true where bytes are deleted one site at a time; calc_fixup()
-accumulates the whole section, so one pass here can do both, and the fix
-saves the old value instead.  calc_fixup() is unique to this backend, so
-unlike 1/2 this is not an inherited defect and there is no other backend to
-copy from.
+    diff -w <(sed -n '923,945p' bfd/elf32-ft32.c) \
+            <(sed -n '/wrap SYMBOL. option is causing/,/^	    }$/p' \
+                  bfd/elf32-microblaze.c)
 
-Each patch adds one test under ld/testsuite/ld-microblaze.  Reverting either
-fix alone fails exactly its own test and leaves the other's passing.  Full ld
-suite with both applied: 482 expected passes, 15 expected failures, 0
-unexpected failures.  Both defects are also present in the Xilinx binutils
-2.36.1 snapshot that the RTEMS MicroBlaze toolchain ships, with the same error
-magnitudes; that was checked by behaviour, against the installed binaries, not
-against its sources.
+Three kinds of difference remain, and nothing else:
 
-One thing I could not settle: elf32-sh.c:1282-1291, which
-microblaze_elf_relax_section() was copied from in 2009 (7ba29e2a41), has the
-same shape as 1/2 and no guard.  Its narrower "value > addr && value < toaddr"
-window may well mask the problem.  I have not tested sh and am not claiming it
-is affected.
+  - the loop form.  ft32 walks a sym_hashes pointer; this walks an
+    index into elf_sym_hashes, because that is how the surrounding
+    MicroBlaze loop is written.  cur_sym_index is a size_t rather than
+    a hash pointer for the same reason.
+  - the comment is rewrapped to fit the deeper indentation.
+  - "the symbols whom been already checked" is corrected to "which have
+    already been checked".  Say so if you would rather it were copied
+    verbatim.
+
+git log -S "we don't want to adjust" -- bfd/ shows the other four
+backends carrying this guard, PR ld/22756 among them.
+
+For 2/2, the question to ask is whether calc_fixup()'s size range should
+start at the old or the new value.  bfd/elf32-microblaze.c around line
+1805 has calc_fixup(); the second argument is a length, and the loop
+sums the deletions between start and start + size.  Reading it that way,
+the start has to be where the symbol was.
+
+To reproduce either without a MicroBlaze toolchain, both tests are
+self-contained assembly and run from the ld testsuite:
+
+    make check-ld RUNTESTFLAGS=microblaze.exp
+
+That gives 5 passes with the series applied.  Reverting only the
+bfd/elf32-microblaze.c hunk of either patch and rebuilding ld fails
+exactly that patch's test and leaves the other's passing, which is the
+clearest way to see what each one does:
+
+    relax-wrap.d  __wrap_foo links at 0x90000018 instead of 0x9000001c,
+                  so its first instruction is the previous function's
+                  closing ADDIK r1, r1, 28
+    relax-size.d  f's st_size stays 16 where its code is 12 bytes, so it
+                  overlaps the next function
+
+Both tests use an explicit linker script so the addresses in the
+expected output are fixed.  relax-wrap-support.s and the second section
+of relax-size.s hold the branch targets, which have to be in another
+section: within one section the assembler resolves the branch itself and
+emits no IMM, so there is nothing for relaxation to delete and the test
+would check nothing.
+
+Testing -------
+
+ld testsuite on microblaze-elf, master versus the series: 482 expected
+passes, 15 expected failures, 0 unexpected failures.  Before the series
+the same configuration gives 480 and the two new tests fail.
+microblaze.exp alone is 5 passes with the series and 3 with neither
+patch.  The three existing relax-addend tests are unchanged throughout.
+
+Both defects are also present in the Xilinx binutils 2.36.1 snapshot
+shipped by the RTEMS MicroBlaze toolchain, with the same error
+magnitudes.  That was checked by running the two reduced cases through
+the installed binaries; I did not build its sources.
+
+I have tested only microblaze.  elf32-sh.c, which these loops were
+copied from, has the same shape as 1/2 and no guard, but its narrower
+per-deletion window may mask the problem and I have not tested it.
 
 Samuel Price (2):
-  microblaze: don't adjust a wrapped symbol's value twice when relaxing
-  microblaze: measure st_size from the symbol's old value when relaxing
+  microblaze: fix --wrap and relaxation conflict
+  microblaze: fix st_size adjustment when relaxing
 
  bfd/elf32-microblaze.c                        | 43 +++++++++++--
  ld/testsuite/ld-microblaze/relax-size.d       | 16 +++++

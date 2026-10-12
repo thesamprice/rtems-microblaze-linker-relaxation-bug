@@ -1,58 +1,64 @@
 From 6b058851905b14fb737f0c1eaae42c4d7fbb18a5 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Mon, 12 Oct 2026 13:21:54 -0400
-Subject: [PATCH] microblaze: measure st_size from the symbol's old value when
- relaxing
+Subject: [PATCH] microblaze: fix st_size adjustment when relaxing
 
-microblaze_elf_relax_section() adjusted a symbol's value and then passed the
-*adjusted* value to calc_fixup() as the start of the size range:
+microblaze_elf_relax_section() lowers a symbol's value and then passes
+the lowered value to calc_fixup() as the start of the size range:
 
 	isym->st_value -= calc_fixup (isym->st_value, 0, sec);
 	if (isym->st_size)
 	  isym->st_size -= calc_fixup (isym->st_value, isym->st_size, sec);
 
-calc_fixup() with a non-zero size sums the deletions in [start, start + size).
-The span to correct is the one the symbol occupied before relaxation, so start
-has to be the old value; measuring from the lowered one slides the window down
-by the accumulated shift and counts the deletions of a span the symbol never
-covered.  The global symbol loop below had the same mistake.
+calc_fixup() with a non-zero size sums the deletions in [start, start +
+size).  The span to correct is the one the symbol occupied before
+relaxation, so start must be the symbol's old value.  Measuring from the
+lowered value moves the window down by the accumulated shift, so the
+deletions counted are those of a span the symbol never occupied.  The
+global symbol loop below has the same mistake.
 
-elfnn-riscv.c:4148-4160 documents exactly this trap -- "This test needs to
-use the original value of st_value, otherwise we might accidentally decrease
-size when deleting bytes right before the symbol" -- and avoids it with an
+Two conditions are needed for this to change a size: deletions ahead of
+the symbol, which move the window, and a deletion inside the symbol
+within that shift of its end, which then lies outside the window.  A
+function ending in a relaxable IMM + BRI pair supplies the second.
+
+In the new test f is four instructions, 16 bytes, and loses its IMM, so
+its size must come out 12.  Before this change it stayed 16, which
+overlaps the first instruction of the next function; objdump
+--disassemble=f prints that instruction as part of f.  Nothing executes
+differently, since st_size is read by debuggers, nm -S and anything
+deriving function bounds from the symbol table rather than by the
+generated code.
+
+elfnn-riscv.c:4148-4160 documents this trap, "This test needs to use the
+original value of st_value, otherwise we might accidentally decrease
+size when deleting bytes right before the symbol", and avoids it with an
 else, on the grounds that "deleted relocs can't span across symbols, we
-can't have both a st_value and a st_size decrease".  That reasoning holds
-for a backend which deletes one site at a time, and does not hold here:
-calc_fixup() accumulates every deletion in the section, so one pass can both
-shift a symbol and shrink it.  Hence saving the old value rather than
-restructuring into an else.
+can't have both a st_value and a st_size decrease".  That holds for a
+backend which deletes one site at a time.  It does not hold here,
+because calc_fixup() accumulates every deletion in the section and one
+pass can both move a symbol and shrink it, so this patch saves the old
+value instead of restructuring into an else.
 
-calc_fixup() is unique to this backend -- no other bfd file has it -- so
-unlike the --wrap guard in the previous patch this is not an inherited
-defect, and there is no other backend to copy a fix from.
+elf32-msp430.c:1874 and elf32-pru.c:1291 likewise reach the size
+adjustment only through an else, and elf32-avr.c:2158 captures the value
+before changing it.  MicroBlaze is the only one of the four I examined
+that performs both adjustments unconditionally and in sequence.
+calc_fixup() exists in no other bfd file, so the range-query form of the
+mistake is specific to this backend and there is no other backend to
+copy a fix from.
 
-The other backends that adjust symbol sizes while relaxing do avoid the trap,
-and all in the same structural way: elf32-msp430.c:1874 and elf32-pru.c:1291
-reach the size adjustment only through an else, and elf32-avr.c:2158 captures
-the value before changing it.  MicroBlaze is the one that does both
-unconditionally and in sequence.
+bfd/
+	* elf32-microblaze.c (microblaze_elf_relax_section): Compute the
+	st_size fixup from the symbol's pre-relaxation value, for both
+	local and global symbols.
 
-It shows when there are deletions ahead of the symbol, which is what shifts
-the window, and a deletion inside the symbol within that shift of its end,
-which then falls outside it.  A function ending in a relaxable IMM + BRI pair
-is enough.  In the new test f is four instructions and loses its IMM, so it
-must come out 12 bytes; before this change it stayed 16 and claimed the first
-instruction of the next function, which is enough to make
-objdump --disassemble=f and a debugger's function bounds disagree with the
-code.
+ld/
+	* testsuite/ld-microblaze/relax-size.s: New file.
+	* testsuite/ld-microblaze/relax-size.ld: New file.
+	* testsuite/ld-microblaze/relax-size.d: New test.
 
-	* bfd/elf32-microblaze.c (microblaze_elf_relax_section): Compute the
-	st_size fixup from the symbol's pre-relaxation value, for both local
-	and global symbols.
-	* ld/testsuite/ld-microblaze/relax-size.s: New test.
-	* ld/testsuite/ld-microblaze/relax-size.ld: Likewise.
-	* ld/testsuite/ld-microblaze/relax-size.d: Likewise.
-Assisted-by: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Assisted-by: Claude <noreply@anthropic.com>
 
 ---
  bfd/elf32-microblaze.c                   | 19 ++++---

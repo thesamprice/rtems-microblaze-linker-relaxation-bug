@@ -2,7 +2,7 @@
 
 # bfd 0014: relaxation measures `st_size` from the new symbol value
 
-**Patch:** `patches/binutils/0014-microblaze-relax-st_size-from-old-value.patch`
+**Patch:** `patches/binutils-relax/0002-microblaze-relax-st_size-from-old-value.patch`
 **Target:** `binutils-gdb` at `6d71cb48957` (`2026-09-08`), on top of 0013
 **Files touched:** `bfd/elf32-microblaze.c`, `ld/testsuite/ld-microblaze/relax-size.{s,ld,d}`
 **Status:** fix written, test A/B'd, `ld` suite clean; not yet sent upstream

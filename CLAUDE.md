@@ -41,6 +41,21 @@ written, reviewed here, style-checked, A/B tested against the testsuite, and
 queued to send before anyone noticed. Automated checks do not catch stale prose —
 only reading does.
 
+## How to write the message and the comments
+
+[`patches/STYLE.md`](patches/STYLE.md) is the house style for commit
+messages, cover letters and the comments inside a patch, derived from what
+has actually been accepted upstream from here. Read it before writing a
+patch and audit against it before sending:
+
+```sh
+python3 tools/check-patch-style.py patches/<series>
+```
+
+The checker covers subject length, prose width, the ChangeLog block, the
+trailer and a list of phrasings flagged in review. It cannot tell you whether
+the message is any good; the one that got away below was caught by reading.
+
 ## Other standing rules for this repo
 
 - **Verify claims before writing them down.** Commit messages and analysis docs
