@@ -28,14 +28,24 @@ static void putc_ (char c) { while (UART[2] & 0x8) ; UART[1] = (unsigned) c; }
 static void puts_ (const char *s) { while (*s) putc_ (*s++); }
 
 /* --- reentrancy: one thread, so one struct ------------------------------ */
+/* A vanilla newlib supplies __getreent itself; only an RTEMS one expects the
+   kernel to.  build-support.sh probes for it.  */
+#ifdef MB_PROVIDE_REENT
 static struct _reent the_reent = _REENT_INIT (the_reent);
 struct _reent *__getreent (void) { return &the_reent; }
+# define MB_REENT (&the_reent)
+#else
+# define MB_REENT _REENT
+#endif
 
 /* --- locking: one thread, so nothing to contend for -------------------- */
+/* Only an RTEMS newlib locks stdio against these.  */
+#ifdef MB_PROVIDE_LOCKS
 void _Mutex_Acquire (struct _Mutex_Control *m) { (void) m; }
 void _Mutex_Release (struct _Mutex_Control *m) { (void) m; }
 void _Mutex_recursive_Acquire (struct _Mutex_recursive_Control *m) { (void) m; }
 void _Mutex_recursive_Release (struct _Mutex_recursive_Control *m) { (void) m; }
+#endif
 
 void _init (void) { }
 void _fini (void) { }
@@ -71,8 +81,12 @@ void *_sbrk_r (struct _reent *r, ptrdiff_t incr) {
   if (brk_ptr + incr > __heap_end) { r->_errno = ENOMEM; return (void *) -1; }
   prev = brk_ptr; brk_ptr += incr; return prev;
 }
-void *_sbrk (ptrdiff_t incr) { return _sbrk_r (&the_reent, incr); }
+void *_sbrk (ptrdiff_t incr) { return _sbrk_r (MB_REENT, incr); }
 
+/* A vanilla newlib brings its own malloc over _sbrk; an RTEMS one does not,
+   expecting the kernel heap.  Defining ours unconditionally would collide on
+   the former, so build-support.sh probes.  */
+#ifdef MB_PROVIDE_MALLOC
 static void *bump (size_t n) {
   void *p;
   if (!brk_ptr) brk_ptr = __heap_start;
@@ -93,10 +107,11 @@ void *_realloc_r (struct _reent *r, void *p, size_t n) {
   if (q && p) memcpy (q, p, n);
   return q;
 }
-void *malloc (size_t n) { return _malloc_r (&the_reent, n); }
+void *malloc (size_t n) { return _malloc_r (MB_REENT, n); }
 void  free (void *p) { (void) p; }
-void *calloc (size_t a, size_t b) { return _calloc_r (&the_reent, a, b); }
-void *realloc (void *p, size_t n) { return _realloc_r (&the_reent, p, n); }
+void *calloc (size_t a, size_t b) { return _calloc_r (MB_REENT, a, b); }
+void *realloc (void *p, size_t n) { return _realloc_r (MB_REENT, p, n); }
+#endif /* MB_PROVIDE_MALLOC */
 
 /* --- syscalls ---------------------------------------------------------- */
 _ssize_t _write_r (struct _reent *r, int fd, const void *buf, size_t len) {

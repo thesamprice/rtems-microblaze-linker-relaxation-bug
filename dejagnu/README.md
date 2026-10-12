@@ -17,9 +17,9 @@ the whole dependency.
 
 - `qemu-system-microblaze` and/or `qemu-system-microblazeel`, **stock
   upstream** — no fork, no patches. Verified against upstream QEMU.
-- A MicroBlaze cross compiler with newlib. Developed against an RTEMS 7
-  toolchain (`microblaze-rtems7-gcc` 12.4.1); nothing here is RTEMS specific
-  beyond that being the newlib it was tested with.
+- A MicroBlaze cross compiler with newlib. `microblaze-elf` is the natural
+  one; `build-support.sh` probes the C library rather than assuming, so an
+  RTEMS toolchain works too (see below).
 - DejaGnu (tested with 1.6.3).
 
 No GDB simulator, no RTEMS kernel, no board bring-up.
@@ -87,16 +87,45 @@ One further trap, not of the board's making: run a testsuite that matches your
 compiler. GCC master's testsuite against a GCC 12 compiler fails by
 construction on tests added for post-12 fixes.
 
-## Why newlib rather than a minimal libc
+## Which newlib, and what the glue is for
 
-`mb-qemu-newlib.c` supplies the three things RTEMS's newlib expects RTEMS to
-provide and bare metal does not: the reentrancy pointer (`__getreent`), the
-mutex primitives its stdio locks against, and `malloc`. Everything else comes
-from `-lc`.
+Everything comes from `-lc`. `mb-qemu-newlib.c` adds only what a given newlib
+leaves to the board, and `build-support.sh` **probes** for that by test-linking
+and reading the undefined symbols, rather than assuming:
 
-The alternative was a hand-rolled libc, which costs about 35 tests to link
-failures and gets `printf-1` wrong. Using the real newlib means the suite
-exercises the C library that actually ships.
+| | vanilla newlib (`microblaze-elf`) | RTEMS newlib |
+|---|---|---|
+| syscalls (`_write_r`, `_sbrk`, …) | board | board |
+| `malloc` family | libc | board — RTEMS expects the kernel heap |
+| `__getreent` | libc | board |
+| `_Mutex_*` | not used | board — RTEMS stdio locks against them |
+
+So on `microblaze-elf` the glue is just the syscall layer, which is the normal
+amount for a bare-metal board.
+
+Honest status: it is **developed and tested against an RTEMS 7 toolchain**
+(`microblaze-rtems7-gcc` 12.4.1), because that is the MicroBlaze toolchain to
+hand. The probe is written so a vanilla newlib needs less of the glue, not
+more, but that path has not been exercised. If you are standing this up on
+`microblaze-elf` and the probe guesses wrong, `build-support.sh` prints what it
+decided.
+
+The alternative considered and rejected was a hand-rolled libc: it costs about
+35 tests to link failures and gets `printf-1` wrong. Using a real newlib means
+the suite exercises a C library that actually ships.
+
+### What other GCC testers use
+
+The convention for `*-sim` boards is newlib plus **libgloss**, which supplies
+the crt0 and syscall layer per board — `aarch64-sim.exp`, for instance, is
+little more than `libgloss_link_flags`, `newlib_link_flags` and
+`-specs=rdimon.specs`.
+
+Whether libgloss has a MicroBlaze BSP is worth checking before adopting this
+crt0: if it does, the board should use it and `mb-qemu-crt0.S` plus most of
+`mb-qemu-newlib.c` can go. I could not confirm it either way from here —
+sourceware's web git is behind Anubis and there is no newlib source on this
+machine.
 
 ## Status
 
