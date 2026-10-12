@@ -136,6 +136,9 @@ Measured:
 - Full `ld` suite with the patch: 481 expected passes, 15 expected failures,
   **0 unexpected failures**. A without-patch run of the *full* suite was not
   done; only `microblaze.exp` was run both ways.
+- Reading these two loops for this bug turned up a third, independent defect
+  in the `st_size` line beside it — see
+  [0014](binutils-0014-relax-st_size-from-old-value.md).
 - End to end: a guest calling `exit (7)` prints `*** EXIT code 7` with the
   patched linker and nothing at all without it.
 - `dejagnu/mb-qemu-board` on the standard protocol gives the same verdicts as

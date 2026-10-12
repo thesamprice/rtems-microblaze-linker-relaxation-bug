@@ -14,16 +14,23 @@ linker and a self-contained reproducer — see [Upstream status](#upstream-statu
 
 This repository holds the root-cause analysis, the evidence, and the patches.
 
-> **A second relaxation defect, found 2026-10-12.** The addend corruption above
-> is fixed upstream (`a639e0adaf2`). Relaxation also corrupts global **symbol
-> values**, by a different mechanism, and that one is still live on master: with
-> `--wrap`, a symbol reached through two `elf_sym_hashes` slots has its fixup
-> subtracted twice and links before its own first instruction. It is why
-> DejaGnu's standard status wrapper has never worked on MicroBlaze, and so why
-> the target gets compile-only testing upstream. See
-> [`analysis/binutils-0013-relax-wrap-double-adjust.md`](analysis/binutils-0013-relax-wrap-double-adjust.md)
-> and `patches/binutils/0013-*.patch`. The rest of this README is about the
-> addend bug.
+> **Two more relaxation defects, found 2026-10-12.** The addend corruption
+> above is fixed upstream (`a639e0adaf2`). Relaxation also corrupts the
+> symbol table, by two further mechanisms, and both are still live on master:
+>
+> - **Symbol values**, under `--wrap`: a symbol reached through two
+>   `elf_sym_hashes` slots has its fixup subtracted twice and links before its
+>   own first instruction. This is why DejaGnu's standard status wrapper has
+>   never worked on MicroBlaze, and so a likely part of why the target gets
+>   compile-only testing upstream.
+>   [`analysis/binutils-0013-relax-wrap-double-adjust.md`](analysis/binutils-0013-relax-wrap-double-adjust.md)
+> - **Symbol sizes**, with or without `--wrap`: the size fixup is measured from
+>   the already-lowered value, so it corrects the wrong span and a function can
+>   claim the next function's first instruction.
+>   [`analysis/binutils-0014-relax-st_size-from-old-value.md`](analysis/binutils-0014-relax-st_size-from-old-value.md)
+>
+> All three live in the same function, `microblaze_elf_relax_section`. The rest
+> of this README is about the addend bug.
 
 ## The one-line version
 
