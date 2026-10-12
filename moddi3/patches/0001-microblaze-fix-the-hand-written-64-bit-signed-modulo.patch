@@ -1,6 +1,6 @@
-From ec1a77267ea85d425bbbd5277b8e2b710d76505d Mon Sep 17 00:00:00 2001
+From ce9259f67c28a6c6aad30135bc64cf5d2b2ef185 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 02:09:25 -0400
+Date: Sun, 11 Oct 2026 21:20:23 -0400
 Subject: [PATCH 1/2] microblaze: fix the hand-written 64-bit signed modulo
 
 libgcc/config/microblaze/moddi3.S has been in the tree unchanged since the
@@ -73,8 +73,9 @@ the algorithm rather than their position in the file -- restoring division,
 Koren, Computer Arithmetic Algorithms, section 3.2, whose notation the
 comments now use.
 
-Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
-petalogix-s3adsp1800:
+Verified with microblaze-rtems7-gcc 12.4.1 on qemu-system-microblaze and
+qemu-system-microblazeel, machine petalogix-s3adsp1800.  The file assembles to
+the same 44 instructions with current trunk's gas:
 
   - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders,
     1633 passing either way.  Two of them separate the unpatched routine

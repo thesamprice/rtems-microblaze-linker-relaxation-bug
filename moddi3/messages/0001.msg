@@ -70,8 +70,9 @@ the algorithm rather than their position in the file -- restoring division,
 Koren, Computer Arithmetic Algorithms, section 3.2, whose notation the
 comments now use.
 
-Verified on qemu-system-microblaze and qemu-system-microblazeel, machine
-petalogix-s3adsp1800:
+Verified with microblaze-rtems7-gcc 12.4.1 on qemu-system-microblaze and
+qemu-system-microblazeel, machine petalogix-s3adsp1800.  The file assembles to
+the same 44 instructions with current trunk's gas:
 
   - All 1685 tests in gcc.c-torture/execute at -O2, on both byte orders,
     1633 passing either way.  Two of them separate the unpatched routine

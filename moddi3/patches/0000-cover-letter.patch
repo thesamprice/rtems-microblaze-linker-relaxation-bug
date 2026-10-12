@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam Price <thesamprice@gmail.com>
-Date: Sun, 11 Oct 2026 02:09:25 -0400
+Date: Sun, 11 Oct 2026 21:20:23 -0400
 Subject: [PATCH 0/2] microblaze: __moddi3 is wrong for almost every input
 
 libgcc's MicroBlaze __moddi3 has been wrong since the port landed in 2010.
@@ -82,6 +82,12 @@ libgcc builds LIB2FUNCS at:
                        le 1028
     total              be 1092       +43.8%      +43.6%
                        le 1090
+
+Measured with microblaze-rtems7-gcc 12.4.1, which is the MicroBlaze toolchain
+I have.  The 44 instructions is the assembly file itself and is what current
+trunk's gas produces too, so that figure carries; the generic C column is that
+compiler's libgcc and may move on trunk, so treat the ratio rather than the
+absolute numbers as the claim.
 
 About 25 times smaller and about 30% fewer instructions, some 258 a call.  On
 an embedded target that is not close, so I recommend 1/2.  Two caveats in

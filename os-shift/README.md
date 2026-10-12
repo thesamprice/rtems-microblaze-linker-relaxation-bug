@@ -86,11 +86,32 @@ with `-mxl-barrel-shift`.
 `repro-Os.s` and `repro-O2.s` are the generated assembly for comparison; the
 dead code is in `$L11` onward in the `-Os` one.
 
-## Status
+## Status: already fixed on trunk — do not report upstream
 
 Reproduced on `microblaze-rtems7-gcc` 12.4.1 (RTEMS 7 toolchain), both byte
-orders, under QEMU `petalogix-s3adsp1800`. **Not yet confirmed against current
-GCC trunk** — worth doing before reporting upstream, since this toolchain is
-GCC 12 and the bug may already be fixed.
+orders. **It does not reproduce on current trunk (17.0.0).**
+
+Checked by compiling `repro.c` at `-Os` with a trunk `microblaze-linux-gnu`
+`xgcc` and reading the output: trunk emits the high-word shift **unrolled
+inline, straight-line**, with no `brid` to a shared epilogue. There is no
+branch for the loop to be stranded behind, so the fault cannot occur:
+
+```
+	addk	r4,r5,r6        ; low word
+	addk	r5,r3,r0
+	addk	r3,r0,r5
+	sra	r3,r5           ; high word, unrolled -- no loop, no branch
+	sra	r3,r3
+	...
+```
+
+So this is a GCC 12 bug, fixed or incidentally avoided somewhere in 13–17.
+Kept here as a record of what the DejaGnu board found on its first run, and
+because it is a useful worked example of the diagnosis, but there is nothing to
+send upstream.
+
+The general worry it raised is still worth checking on trunk, and is the open
+item in #38: if the fault was a multi-instruction pattern being treated as
+single-insn and put in a delay slot, shifts need not be the only victim.
 
 Tracked as issue #38.

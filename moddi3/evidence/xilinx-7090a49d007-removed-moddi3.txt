@@ -1,0 +1,15 @@
+Xilinx removed libgcc/config/microblaze/moddi3.S in 2014, citing bugs.
+Cited in the cover letter and in 2/2 of the series sent to gcc-patches.
+Source: https://github.com/Xilinx/gcc.git (tree deleted locally after capture)
+
+commit 7090a49d0070790ad4094ac7f68062809d70b868
+Author: nagaraju
+Date:   Fri Apr 18 17:34:20 2014 +0530
+
+[PATCH] [Patch, microblaze] Removed moddi3 routinue
+
+Using the default moddi3 function as the existing implementation has many bugs
+
+Signed-off-by:Nagaraju <nmekala@xilix.com>
+
+--- its t-microblaze hunk, which is identical to 2/2's ---

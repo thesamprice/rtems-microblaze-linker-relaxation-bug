@@ -80,6 +80,12 @@ libgcc builds LIB2FUNCS at:
     total              be 1092       +43.8%      +43.6%
                        le 1090
 
+Measured with microblaze-rtems7-gcc 12.4.1, which is the MicroBlaze toolchain
+I have.  The 44 instructions is the assembly file itself and is what current
+trunk's gas produces too, so that figure carries; the generic C column is that
+compiler's libgcc and may move on trunk, so treat the ratio rather than the
+absolute numbers as the claim.
+
 About 25 times smaller and about 30% fewer instructions, some 258 a call.  On
 an embedded target that is not close, so I recommend 1/2.  Two caveats in
 fairness to 2/2.  __udivmoddi4 is shared, so a program already doing 64-bit
