@@ -1,0 +1,13 @@
+Minimal headers for the MB_NO_LIBC mode only.
+
+A toolchain with libgcc but no C library -- an uninstalled cross build, for
+instance -- has no libc headers, so the ~5% of gcc.c-torture/execute tests that
+include one will not even compile.  These declare just enough for those tests
+to build against the freestanding runtime in mb-qemu-newlib.c.
+
+This is a stopgap, not a C library.  A test that actually calls printf will
+compile and then fail to link, which is the honest outcome.  The real fix is a
+toolchain with newlib; then this directory is unused.
+
+stdarg.h, limits.h, stdint.h, stddef.h and stdbool.h deliberately are not here:
+GCC supplies those itself.

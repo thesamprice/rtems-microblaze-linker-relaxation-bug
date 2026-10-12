@@ -14,7 +14,86 @@
    The only device touched is the UART-lite at 0x84000000 -- TX at +4, status
    at +8, TX-full is bit 3 -- which stock upstream QEMU's
    petalogix-s3adsp1800 provides.  Nothing else is needed: exit() prints a
-   status marker and mb-qemu-run stops QEMU from outside.  */
+   status marker and mb-qemu-run stops QEMU from outside.
+
+   With MB_NO_LIBC this instead provides a tiny freestanding runtime and
+   includes no headers at all, for a toolchain that has libgcc but no C
+   library -- an uninstalled trunk cross build, for instance.  Tests wanting
+   real stdio will not link in that mode; everything that needs only abort()
+   and exit(), which is most of gcc.c-torture/execute, will.
+   build-support.sh picks the mode by probing.  */
+
+#ifdef MB_NO_LIBC
+
+#define UART ((volatile unsigned int *) 0x84000000)
+typedef unsigned long mb_size_t;
+static void putc_ (char c) { while (UART[2] & 0x8) ; UART[1] = (unsigned) c; }
+static void puts_ (const char *s) { while (*s) putc_ (*s++); }
+
+void exit (int code) {
+  puts_ ("\r\n*** EXIT ");
+  { char b[12]; int i = 0; unsigned u = (unsigned) code;
+    if (!u) putc_ ('0');
+    while (u) { b[i++] = (char) ('0' + u % 10); u /= 10; }
+    while (i--) putc_ (b[i]); }
+  puts_ (" ***\r\n");
+  for (;;) ;
+}
+void abort (void) { puts_ ("abort\r\n"); exit (134); }
+void _exit (int c) { exit (c); }
+void __assert_func (const char *a, int b, const char *c, const char *d)
+{ (void) a; (void) b; (void) c; (void) d; abort (); }
+
+void *memcpy (void *d, const void *s, mb_size_t n)
+{ char *p = d; const char *q = s; while (n--) *p++ = *q++; return d; }
+void *memmove (void *d, const void *s, mb_size_t n) {
+  char *p = d; const char *q = s;
+  if (p < q) while (n--) *p++ = *q++;
+  else { p += n; q += n; while (n--) *--p = *--q; }
+  return d;
+}
+void *memset (void *d, int c, mb_size_t n)
+{ unsigned char *p = d; while (n--) *p++ = (unsigned char) c; return d; }
+int memcmp (const void *a, const void *b, mb_size_t n) {
+  const unsigned char *p = a, *q = b;
+  while (n--) { if (*p != *q) return *p - *q; p++; q++; }
+  return 0;
+}
+void *memchr (const void *s, int c, mb_size_t n) {
+  const unsigned char *p = s;
+  while (n--) { if (*p == (unsigned char) c) return (void *) p; p++; }
+  return 0;
+}
+mb_size_t strlen (const char *s) { const char *p = s; while (*p) p++; return p - s; }
+char *strcpy (char *d, const char *s) { char *p = d; while ((*p++ = *s++)) ; return d; }
+char *strcat (char *d, const char *s) { strcpy (d + strlen (d), s); return d; }
+int strcmp (const char *a, const char *b)
+{ while (*a && *a == *b) { a++; b++; } return (unsigned char) *a - (unsigned char) *b; }
+int strncmp (const char *a, const char *b, mb_size_t n) {
+  while (n && *a && *a == *b) { a++; b++; n--; }
+  return n ? (unsigned char) *a - (unsigned char) *b : 0;
+}
+char *strchr (const char *s, int c) {
+  for (; *s; s++) if (*s == (char) c) return (char *) s;
+  return c ? 0 : (char *) s;
+}
+
+extern char __heap_start[], __heap_end[];
+static char *mb_brk;
+void *malloc (mb_size_t n) {
+  char *p;
+  if (!mb_brk) mb_brk = __heap_start;
+  n = (n + 15) & ~(mb_size_t) 15;
+  if (mb_brk + n > __heap_end) return 0;
+  p = mb_brk; mb_brk += n; return p;
+}
+void free (void *p) { (void) p; }
+void *calloc (mb_size_t a, mb_size_t b) { return memset (malloc (a * b), 0, a * b); }
+void *realloc (void *p, mb_size_t n)
+{ void *q = malloc (n); if (q && p) memcpy (q, p, n); return q; }
+
+#else /* !MB_NO_LIBC -- the newlib glue */
+
 #include <reent.h>
 #include <sys/lock.h>
 #include <sys/stat.h>
@@ -136,3 +215,5 @@ int _getpid_r (struct _reent *r) { (void) r; return 1; }
 clock_t _times_r (struct _reent *r, struct tms *b) { (void) r; (void) b; return (clock_t) -1; }
 int _gettimeofday_r (struct _reent *r, struct timeval *tv, void *tz)
 { (void) tv; (void) tz; r->_errno = ENOSYS; return -1; }
+
+#endif /* MB_NO_LIBC */

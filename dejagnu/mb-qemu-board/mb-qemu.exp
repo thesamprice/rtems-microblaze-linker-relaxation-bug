@@ -67,9 +67,32 @@ set mb_obj "$mb_dir/obj/$mb_endian"
 if { ![file exists "$mb_obj/crt0.o"] } {
     error "mb-qemu: $mb_obj/crt0.o is missing -- run $mb_dir/build-support.sh first"
 }
+# Which libraries to link is decided by build-support.sh, because it depends
+# on whether the toolchain has a C library at all.
+set mb_libs "-lc -lgcc"
+if { [file exists "$mb_obj/config.sh"] } {
+    set fh [open "$mb_obj/config.sh" r]
+    set cfg [read $fh]
+    close $fh
+    if { [regexp {MB_LIBS="([^"]*)"} $cfg -> m] } { set mb_libs $m }
+    if { [regexp {MB_CFLAGS="([^"]*)"} $cfg -> m] } { set_board_info cflags $m }
+}
+
+# MB_LDEXTRA carries anything the toolchain needs to find its own libraries --
+# -L into an uninstalled build tree, typically.
+set mb_ldextra ""
+if { [info exists env(MB_LDEXTRA)] } { set mb_ldextra $env(MB_LDEXTRA) }
+
+# MB_MODDI3 links a replacement __moddi3 ahead of libgcc so it wins, which is
+# how a candidate fix is tested against the suite.
+set mb_moddi3 ""
+if { [info exists env(MB_MODDI3)] } { set mb_moddi3 $env(MB_MODDI3) }
+
+# -L$mb_obj is where build-support.sh puts the empty libc.a/libm.a it creates
+# for a toolchain with no C library; harmless otherwise.
 set_board_info ldflags \
-    "-nostartfiles -T$mb_dir/mb-qemu.ld $mb_obj/crt0.o $mb_obj/runtime.o \
-     -lc -lgcc"
+    "-nostartfiles -T$mb_dir/mb-qemu.ld $mb_obj/crt0.o $mb_moddi3 \
+     $mb_obj/runtime.o -L$mb_obj $mb_ldextra $mb_libs"
 
 # Bare metal: no OS services.  Saying so gets tests marked UNSUPPORTED rather
 # than failed.
