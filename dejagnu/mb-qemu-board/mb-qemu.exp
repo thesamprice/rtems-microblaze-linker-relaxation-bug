@@ -20,8 +20,11 @@ proc board_info_field_or_empty { dest field } {
 load_generic_config "sim"
 process_multilib_options ""
 # basic-sim supplies is_simulator, which DejaGnu needs to wait for the run
-# correctly.  setup_sim is deliberately not called: it would go looking for a
-# gdb simulator, and MicroBlaze has none -- QEMU system emulation is the point.
+# correctly.  setup_sim is deliberately not called: it looks for a gdb
+# simulator in a build tree, and this board is about QEMU system emulation.
+# MicroBlaze does have a gdb simulator -- see ../sim-evidence/ -- but it
+# implements 107 instructions, so it cannot cover hard float, mulh*, pcmp* or
+# the other opt-in extensions.  That coverage is this board's whole purpose.
 load_base_board_description "basic-sim"
 
 set mb_dir [file dirname [file normalize [info script]]]
@@ -33,9 +36,10 @@ if { [info exists env(MB_QEMU)] } {
 }
 
 # The program is run by a wrapper, not QEMU directly: QEMU cannot hand a guest
-# exit status back, so the runtime prints "*** EXIT n ***" and the wrapper
-# exits with it.  That is all generic sim_load needs -- it spawns "$sim $prog"
-# and maps a zero exit to PASS.
+# exit status back.  The status comes out through DejaGnu's own mechanism --
+# needs_status_wrapper below makes GCC link testglue.c, which wraps exit/_exit/
+# abort/main and writes "*** EXIT code N"; check_for_board_status in remote.exp
+# parses it.  The wrapper's job is just to stop QEMU once that line appears.
 # A bare path, not a command line: DejaGnu runs the sim string through its
 # "which" check, which a multi-word "env VAR=... prog" does not survive.  The
 # wrapper reads MB_QEMU and MB_TIMEOUT from the environment instead.
@@ -44,7 +48,22 @@ if { ![info exists env(MB_TIMEOUT)] } { set ::env(MB_TIMEOUT) 90 }
 set_board_info sim "$mb_dir/mb-qemu-run"
 set_board_info sim_time_limit 120
 
-set_board_info compiler "[find_gcc]"
+# The compiler DejaGnu uses to build for this board.  For the tests themselves
+# this is irrelevant -- gcc_target_compile substitutes GCC_UNDER_TEST -- but it
+# is what build_wrapper compiles DejaGnu's testglue.c with, so it has to work.
+#
+# find_gcc alone does not.  It looks for an xgcc under tool_root_dir and, when
+# there is no gcc build tree because an *installed* cross compiler is under
+# test, falls back to [transform gcc].  With no target_alias set that yields a
+# bare "-gcc", build_wrapper's target_compile fails, and build_wrapper returns
+# an empty string without saying anything -- so no glue is linked, no status
+# marker is printed, and every execution test reports 2.  Prefer the compiler
+# actually under test, which is the normal case for this board.
+if { [info exists ::GCC_UNDER_TEST] } {
+    set_board_info compiler "$::GCC_UNDER_TEST"
+} else {
+    set_board_info compiler "[find_gcc]"
+}
 
 # No -ffreestanding.  Under it GCC drops the C99 implicit "return 0" on
 # falling off the end of main, which most execute tests do, and they then
@@ -76,7 +95,12 @@ if { [file exists "$mb_obj/config.sh"] } {
     close $fh
     if { [regexp {MB_LIBS="([^"]*)"} $cfg -> m] } { set mb_libs $m }
     if { [regexp {MB_CFLAGS="([^"]*)"} $cfg -> m] } { set_board_info cflags $m }
+    # Set when the toolchain's linker mis-adjusts wrapped symbols while
+    # relaxing, which breaks DejaGnu's status wrapper.  See the probe in
+    # build-support.sh and ../../patches/binutils/0013-*.patch.
+    if { [regexp {MB_LDEXTRA_BOARD="([^"]*)"} $cfg -> m] } { set mb_ldboard $m }
 }
+if { ![info exists mb_ldboard] } { set mb_ldboard "" }
 
 # MB_LDEXTRA carries anything the toolchain needs to find its own libraries --
 # -L into an uninstalled build tree, typically.
@@ -92,7 +116,7 @@ if { [info exists env(MB_MODDI3)] } { set mb_moddi3 $env(MB_MODDI3) }
 # for a toolchain with no C library; harmless otherwise.
 set_board_info ldflags \
     "-nostartfiles -T$mb_dir/mb-qemu.ld $mb_obj/crt0.o $mb_moddi3 \
-     $mb_obj/runtime.o -L$mb_obj $mb_ldextra $mb_libs"
+     $mb_obj/runtime.o -L$mb_obj $mb_ldextra $mb_libs $mb_ldboard"
 
 # Bare metal: no OS services.  Saying so gets tests marked UNSUPPORTED rather
 # than failed.
@@ -100,31 +124,16 @@ set_board_info noargs 1
 set_board_info gdb,nosignals 1
 set_board_info gdb,noinferiorio 1
 set_board_info gdb,no_hardware_watchpoints 1
-set_board_info needs_status_wrapper 0
+# 1, not 0.  remote.exp's check_for_board_status tests this with `ne ""`, and
+# targetdb.exp hands back the stored string, so a literal 0 reads as "set" and
+# makes a missing marker mean status 2 -- which is how this board used to
+# report 2 for every run.  gcc.exp guards against "0" (gcc.exp:164-166),
+# remote.exp does not.  mn10300-sim.exp uses "" when it wants this off.
+set_board_info needs_status_wrapper 1
 
-# DejaGnu's generic sim_load spawns on "target" and then waits on "host", which
-# for this setup loses the exit status and reports 2 for every run.  Override it
-# with remote_exec, which hands back {status output} directly.  Defined after
-# load_generic_config so this definition is the one that survives.
-proc sim_load { dest prog args } {
-    if { ![file exists $prog] } {
-	verbose -log "mb-qemu: $prog does not exist"
-	return [list "untested" ""]
-    }
-    set sim [board_info $dest sim]
-    if { [board_info $dest exists sim_time_limit] } {
-	set limit [board_info $dest sim_time_limit]
-    } else {
-	set limit 120
-    }
-    set res [remote_exec host $sim $prog "" "" $limit]
-    set status [lindex $res 0]
-    set output [lindex $res 1]
-    verbose -log "mb-qemu: $prog exited $status"
-    # The wrapper exits 99 when the guest never printed its status marker,
-    # which means it hung; anything else is the guest's own exit code.
-    if { $status == 0 } {
-	return [list "pass" $output]
-    }
-    return [list "fail" $output]
-}
+# No sim_load override.  There used to be one here, blaming generic sim_load
+# for "spawning on target and waiting on host" and so losing the exit status.
+# That diagnosis was wrong: config/sim.exp spawns and waits on the same leg and
+# recovers the status correctly, then overwrites it with check_for_board_status
+# -- which returned 2 because needs_status_wrapper was set to a literal 0.
+# With that fixed the generic code works, so the override is gone.

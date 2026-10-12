@@ -13,8 +13,10 @@
 
    The only device touched is the UART-lite at 0x84000000 -- TX at +4, status
    at +8, TX-full is bit 3 -- which stock upstream QEMU's
-   petalogix-s3adsp1800 provides.  Nothing else is needed: exit() prints a
-   status marker and mb-qemu-run stops QEMU from outside.
+   petalogix-s3adsp1800 provides.  Nothing else is needed: DejaGnu's own
+   testglue.c prints "*** EXIT code N" through write(), and mb-qemu-run stops
+   QEMU from outside once it appears.  All this file owes the protocol is a
+   working write(1, ...) and an exit() that does not return.
 
    With MB_NO_LIBC this instead provides a tiny freestanding runtime and
    includes no headers at all, for a toolchain that has libgcc but no C
@@ -30,13 +32,23 @@ typedef unsigned long mb_size_t;
 static void putc_ (char c) { while (UART[2] & 0x8) ; UART[1] = (unsigned) c; }
 static void puts_ (const char *s) { while (*s) putc_ (*s++); }
 
+/* write(1, ...) is the whole of what DejaGnu's testglue.c needs from us; it
+   formats and prints the status marker itself.  No CR translation, matching
+   _write_r in the hosted half of this file -- mb-qemu-run strips CRs and
+   DejaGnu's own regexp accepts a bare LF.  */
+int write (int fd, const void *buf, mb_size_t n) {
+  const char *p = buf; mb_size_t i;
+  (void) fd;
+  for (i = 0; i < n; i++) putc_ (p[i]);
+  return (int) n;
+}
+
+/* Nothing is printed here: testglue.c's __wrap_exit has already written the
+   status marker by the time this runs.  Spinning is all that is left, and all
+   that is wanted -- mb-qemu-run stops QEMU from outside once it sees the
+   marker, so this board needs no shutdown device and works on stock QEMU.  */
 void exit (int code) {
-  puts_ ("\r\n*** EXIT ");
-  { char b[12]; int i = 0; unsigned u = (unsigned) code;
-    if (!u) putc_ ('0');
-    while (u) { b[i++] = (char) ('0' + u % 10); u /= 10; }
-    while (i--) putc_ (b[i]); }
-  puts_ (" ***\r\n");
+  (void) code;
   for (;;) ;
 }
 void abort (void) { puts_ ("abort\r\n"); exit (134); }
@@ -129,14 +141,10 @@ void _Mutex_recursive_Release (struct _Mutex_recursive_Control *m) { (void) m; }
 void _init (void) { }
 void _fini (void) { }
 
-/* --- exit: state the status, because QEMU cannot return one ------------- */
+/* --- exit: just stop.  DejaGnu's testglue.c has already written the status
+   marker through write(), which is why nothing is printed here. ----------- */
 void _exit (int code) {
-  puts_ ("\r\n*** EXIT ");
-  { char b[12]; int i = 0; unsigned u = (unsigned) code;
-    if (!u) putc_ ('0');
-    while (u) { b[i++] = (char) ('0' + u % 10); u /= 10; }
-    while (i--) putc_ (b[i]); }
-  puts_ (" ***\r\n");
+  (void) code;
   /* Spin: mb-qemu-run stops QEMU once it sees the marker.  Deliberately not
      writing to a shutdown device -- petalogix-s3adsp1800 has none upstream,
      and relying on a downstream addition would make this board unusable by
@@ -198,6 +206,13 @@ _ssize_t _write_r (struct _reent *r, int fd, const void *buf, size_t len) {
   (void) r; (void) fd;
   for (size_t i = 0; i < len; i++) putc_ (p[i]);
   return (_ssize_t) len;
+}
+/* Plain write(), not just the reentrant form: this newlib expects the OS to
+   provide the POSIX entry points, and DejaGnu's testglue.c calls write(1, ...)
+   directly to print the status marker.  Without this the glue links with three
+   undefined references to write and no test can run.  */
+_ssize_t write (int fd, const void *buf, size_t len) {
+  return _write_r (MB_REENT, fd, buf, len);
 }
 _ssize_t _read_r (struct _reent *r, int fd, void *buf, size_t len)
 { (void) r; (void) fd; (void) buf; (void) len; return 0; }

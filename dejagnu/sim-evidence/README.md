@@ -77,13 +77,40 @@ The sim implements 107 instructions. Compared with the ~400 opcodes in
 `mulh/mulhu/mulhsu`, `pcmp*`, `clz`, `swapb/swaph`, `bsefi/bsifi`, `mbar`,
 `lwx/swx` and more.
 
-That is survivable because GCC's MicroBlaze defaults are all soft —
-`microblaze.opt` marks `msoft-float`, `mxl-soft-mul` and `mxl-soft-div` as the
-defaults, and barrel-shift / pattern-compare / multiply-high are opt-in. So a
-default-flags run only uses instructions the sim has. Tests built with
+GCC's MicroBlaze defaults are all soft — `microblaze.opt` marks
+`msoft-float`, `mxl-soft-mul` and `mxl-soft-div` as the defaults, and
+pattern-compare and multiply-high are opt-in. Tests built with
 `-mhard-float`, `-mxl-multiply-high`, `-mxl-pattern-compare`, or RTEMS-style
 multilibs will fail *at the simulator*, not in the compiler — which is where
 the QEMU board remains necessary.
+
+Two corrections to the obvious reading of that, both checked against the
+source rather than assumed:
+
+- The sim is **not** missing the opt-in arithmetic it would be natural to
+  expect. Extracting every `INSTRUCTION(...)` from `microblaze.isa` gives 107
+  mnemonics, and `bsll`, `bslli`, `bsra`, `bsrai`, `bsrl`, `bsrli`, `mul`,
+  `muli`, `idiv` and `idivu` are all there. So `-mxl-barrel-shift`,
+  `-mno-xl-soft-mul` and hardware divide run under the sim, and three of the
+  four multilib axes are reachable.
+- **`-mxl-pattern-compare` is not the only gap that bites at default flags.**
+  `gcc/config/microblaze/sync.md` gives all three of its atomic patterns the
+  condition `""` — unconditional — so `lwx`/`swx` are emitted at the default
+  `-mcpu`, and the sim implements neither. `target-supports.exp:10620` claims
+  `sync_int_long` for `microblaze*-*-*` with no guard, so the atomics tests
+  will be attempted and will hit "Unknown opcode". An earlier version of this
+  file claimed a default-flags run only uses instructions the sim has; that is
+  false, and atomics are the counterexample.
+
+One more thing a sim board has to work around: `interp.c:463` runs
+`sim_do_commandf (sd, "memory-size 0x800000")` as the last statement of
+`sim_open`, *after* `sim_parse_args` at line 420, so a user `--memory-size` is
+silently discarded and the guest always gets 8 MB. `sim/riscv/interp.c:132-135`
+guards the same default with a `sim_core_read_buffer` probe; copying that idiom
+is a three-line fix. Until it lands, text plus heap plus stack must fit in
+8 MB — which rules out the 4 MB stack the torture suite wanted on the QEMU
+board, so the sim board has to size it down and accept the two tests that
+needs.
 
 ## The blocker: libgloss hands the sim the wrong register
 

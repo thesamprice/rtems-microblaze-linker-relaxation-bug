@@ -1,21 +1,27 @@
 #!/bin/sh
 # mb-qemu-run <program.elf> -- run a bare-metal test under QEMU system
-# emulation and exit with the guest's own status, so DejaGnu can treat it like
-# any other simulator.
+# emulation and stop QEMU once the program has reported its exit status, so
+# DejaGnu can treat it like any other simulator.
 #
 #   MB_QEMU    path to qemu-system-microblaze or -microblazeel   (required)
 #   MB_TIMEOUT seconds before declaring a hang                   (default 60)
 #
-# QEMU cannot hand a guest exit status back to the shell, so the runtime prints
-# "*** EXIT n ***" and this reads it.  Nothing is required of the machine model
-# beyond a working UART: QEMU is stopped from out here once the marker appears,
-# rather than the guest writing to some shutdown device.  That keeps this
-# working on stock upstream QEMU -- the petalogix-s3adsp1800 machine has no
-# shutdown device, and depending on a downstream one would make this useless to
-# anybody else.
+# The status itself is not this script's business.  The board sets
+# needs_status_wrapper, so GCC links DejaGnu's testglue.c, which wraps
+# exit/_exit/abort/main and writes "*** EXIT code N" through write(1, ...);
+# check_for_board_status in DejaGnu's remote.exp parses that out of the
+# output.  So the marker is passed through untouched -- DejaGnu strips it
+# itself -- and this script's exit code is not what decides pass or fail.
 #
-# A guest that never prints a marker has hung: that exits 99, which DejaGnu
-# reports as a failure.
+# What is still needed from out here is stopping QEMU.  testglue's wrapper
+# returns into the real exit(), which on bare metal spins forever, and
+# petalogix-s3adsp1800 has no shutdown device upstream.  Writing to a
+# downstream one would make this board useless to anybody else, so instead
+# QEMU is killed from the outside once the marker shows up.  Nothing is
+# required of the machine model beyond a working UART.
+#
+# A guest that never prints a marker has hung.  That needs no special value
+# here: DejaGnu maps a missing marker to status 2, which is a failure.
 : "${MB_QEMU:?set MB_QEMU to the qemu-system-microblaze[el] binary}"
 prog=$1
 [ -n "$prog" ] || { echo "usage: mb-qemu-run <program.elf>" >&2; exit 2; }
@@ -31,7 +37,7 @@ qpid=$!
 limit=$(( ${MB_TIMEOUT:-60} * 10 ))
 i=0
 while [ "$i" -lt "$limit" ]; do
-    grep -q '^\*\*\* EXIT ' "$log" 2>/dev/null && break
+    grep -q '\*\*\* EXIT code ' "$log" 2>/dev/null && break
     kill -0 "$qpid" 2>/dev/null || break
     sleep 0.1
     i=$((i + 1))
@@ -39,7 +45,4 @@ done
 kill "$qpid" 2>/dev/null
 wait "$qpid" 2>/dev/null
 
-tr -d '\r' < "$log" | sed '/^\*\*\* EXIT /d'
-code=$(tr -d '\r' < "$log" | sed -n 's/^\*\*\* EXIT \([0-9]*\) \*\*\*$/\1/p' | tail -1)
-[ -n "$code" ] || exit 99
-exit "$code"
+tr -d '\r' < "$log"

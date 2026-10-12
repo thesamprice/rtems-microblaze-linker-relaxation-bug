@@ -3,10 +3,23 @@
 A DejaGnu board that gives MicroBlaze **execution** testing, not just
 compilation testing.
 
-This exists because of a remark on gcc-patches: MicroBlaze has no GDB
-simulator, which is what GCC testing normally uses, and an attempt at QEMU
-**user-mode** testing "failed miserably" — so MicroBlaze gets compile-only
-coverage and no validation that the binaries actually work.
+This exists because of a remark on gcc-patches: that MicroBlaze has no GDB
+simulator, which is what GCC testing normally uses, and that an attempt at
+QEMU **user-mode** testing "failed miserably" — so MicroBlaze gets
+compile-only coverage and no validation that the binaries actually work.
+
+The premise turned out to be wrong in one respect and right in another.
+**MicroBlaze does have a GDB simulator**, in `binutils-gdb/sim/microblaze/`,
+maintained by the MicroBlaze maintainer — see [`sim-evidence/`](sim-evidence/),
+which builds it and measures exit-status propagation. But it implements 107
+instructions, so it cannot cover hard float, `mulh*`, `pcmp*` or `lwx/swx`,
+and the last of those is emitted at *default* flags. System emulation is
+still what covers the full ISA.
+
+What actually blocks the standard mechanism is a linker bug: relaxation
+mis-places `__wrap_*` symbols, so DejaGnu's own status wrapper never prints
+its marker. See [`LIBGLOSS-BSP.md`](LIBGLOSS-BSP.md) and
+[`../analysis/binutils-0013-relax-wrap-double-adjust.md`](../analysis/binutils-0013-relax-wrap-double-adjust.md).
 
 The distinction that makes this work is **system** emulation rather than user
 mode. User mode has to emulate the Linux syscall ABI; system mode needs a CPU
@@ -22,7 +35,7 @@ the whole dependency.
   RTEMS toolchain works too (see below).
 - DejaGnu (tested with 1.6.3).
 
-No GDB simulator, no RTEMS kernel, no board bring-up.
+No GDB simulator needed, no RTEMS kernel, no board bring-up.
 
 ## Using it
 
@@ -74,10 +87,19 @@ hosted; only the runtime objects are built `-ffreestanding`.
 **Give it a real stack.** At 256 KB, `pr28982b` and `memcpy-1` hang. 4 MB is
 what `mb-qemu.ld` uses.
 
-**QEMU cannot return a guest exit status.** `exit()` prints `*** EXIT n ***`
-and `mb-qemu-run` reads it, then stops QEMU from outside. Nothing is asked of
-the machine model but a UART — which is why this works on stock upstream QEMU,
-where `petalogix-s3adsp1800` has no shutdown device.
+**QEMU cannot return a guest exit status.** The board sets
+`needs_status_wrapper`, so GCC links DejaGnu's `testglue.c`, which wraps
+`exit`/`_exit`/`abort`/`main` and writes `*** EXIT code N` through
+`write(1, ...)`; `check_for_board_status` in DejaGnu's `remote.exp` parses it.
+`mb-qemu-run` only has to stop QEMU once that line appears, because the real
+`exit` spins on bare metal. Nothing is asked of the machine model but a UART —
+which is why this works on stock upstream QEMU, where `petalogix-s3adsp1800`
+has no shutdown device.
+
+This is the standard protocol rather than a marker of our own, but it needs a
+linker that does not mis-place `__wrap_*` symbols while relaxing.
+`build-support.sh` probes for that and adds `--no-relax` when it finds it; the
+fix is `../patches/binutils/0013-*.patch`.
 
 DejaGnu gets `dg-options` and `dg-require-effective-target` right for free,
 which an ad-hoc runner does not; that was another ten false failures and a
