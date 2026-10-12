@@ -84,3 +84,21 @@ default-flags run only uses instructions the sim has. Tests built with
 `-mhard-float`, `-mxl-multiply-high`, `-mxl-pattern-compare`, or RTEMS-style
 multilibs will fail *at the simulator*, not in the compiler — which is where
 the QEMU board remains necessary.
+
+## The blocker: libgloss hands the sim the wrong register
+
+The sim halts on `bri 0` and reports `RETREG`, which `microblaze.h:52` defines
+as `CPU.regs[3]`. libgloss's `_exit` (`crt0.S`) is bare `bri 0`, while newlib
+calls `_exit (code)` with the status in r5. The status never reaches r3.
+
+`exit-status-asis.s` and `exit-status-patched.s` mimic the whole
+`crtinit` → `exit()` → `_exit` sequence and differ only in the one `addik`:
+
+```
+run exit-status-asis.elf    ; echo $?   ->  0     (guest meant 42)
+run exit-status-patched.elf ; echo $?   -> 42
+```
+
+Left alone, a sim board would call every execution test a pass. See
+`../LIBGLOSS-BSP.md` for the reading behind this and the caveat that the
+reproducer mimics newlib rather than linking it.

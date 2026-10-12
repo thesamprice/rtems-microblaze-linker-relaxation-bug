@@ -42,26 +42,38 @@ From `libgloss/configure.ac` upstream:
 
 and `microblaze` is in the subdirectory list beside `arm`, `riscv`, `nios2`.
 `libgloss/microblaze/` contains `crt0.S` through `crt4.S`, `crtinit.S`,
-`sim-crtinit.S`, a `xilinx.ld` linker script, and the usual syscall set —
-`fstat.c`, `getpid.c`, `isatty.c`, `kill.c`, `lseek.c`, `print.c`, and so on.
-Contributed by Xilinx.
+`sim-crtinit.S`, a `xilinx.ld` linker script, `sbrk.c` and `timer.c`.
+Contributed by Xilinx. The syscall stubs it is built from — `fstat.c`,
+`getpid.c`, `isatty.c`, `lseek.c`, `print.c` and the rest — are libgloss's
+**top-level**, target-independent files, not MicroBlaze ones.
 
-That matters: there is a `sim-crtinit.S`, so the BSP anticipates a simulator.
+That matters: there is a `sim-crtinit.S`, and `crt0.S`'s `_exit` is the
+simulator's halt instruction, so the BSP anticipates a simulator.
+
+`LIBGLOSS-BSP.md` reads the BSP in full: what its I/O model is, which
+addresses are parameterisable, and the one bug that stops it reporting exit
+status on the simulator.
 
 ## So why does MicroBlaze get compile-only testing?
 
 Not for want of libgloss. The missing half is the **runner**. Every one of
 those boards gets its execution from a GDB simulator — `setup_sim` in
-`basic-sim.exp` goes looking for `sim/<cpu>/run`. MicroBlaze has no GDB
-simulator, which is exactly what the gcc-patches remark said, and QEMU user
-mode is the wrong tool for a bare-metal target.
+`basic-sim.exp` goes looking for `sim/<cpu>/run`.
 
-That splits cleanly into what is already solved and what is not:
+**The premise that MicroBlaze has no GDB simulator is wrong.** It has one,
+`binutils-gdb/sim/microblaze/`, maintained by the MicroBlaze maintainer, and
+it builds and propagates exit status. `sim-evidence/README.md` records the
+build and the measurements. So this section's original conclusion — that the
+runner is the whole gap — was itself based on the claim it was repeating.
+
+What is actually missing is narrower:
 
 | piece | status |
 |---|---|
 | crt0, syscalls, linker script, libc | **libgloss + newlib already do this** |
-| a way to run the binary and get its exit status | **missing — this is the gap** |
+| a simulator to run the binary | **exists**, unbuilt by default and widely assumed absent |
+| libgloss reporting the exit status to it | **broken** — `_exit` leaves the status in r5, the sim reads r3 |
+| full-ISA execution (hard FP, `mulh*`, `clz`, ...) | the sim lacks these; this is where QEMU earns its place |
 
 ## What this board should be
 
@@ -92,6 +104,10 @@ That is a board file a GCC maintainer would recognise, and it is far more
 likely to be accepted than one carrying its own BSP.
 
 ## What it costs
+
+The libgloss half of this no longer needs a build to investigate: a blobless
+sparse clone of newlib is 7.6 MB over the git protocol, and
+`LIBGLOSS-BSP.md` is the result. What still costs real time is building it.
 
 A combined-tree build of `microblaze-elf`: fetch newlib (~200MB), symlink
 `newlib` and `libgloss` into the gcc source tree, configure
