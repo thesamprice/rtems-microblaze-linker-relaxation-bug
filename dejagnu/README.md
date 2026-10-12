@@ -97,9 +97,25 @@ which is why this works on stock upstream QEMU, where `petalogix-s3adsp1800`
 has no shutdown device.
 
 This is the standard protocol rather than a marker of our own, but it needs a
-linker that does not mis-place `__wrap_*` symbols while relaxing.
-`build-support.sh` probes for that and adds `--no-relax` when it finds it; the
-fix is `../patches/binutils-relax/0001-*.patch`.
+linker that does not mis-place `__wrap_*` symbols while relaxing. Current
+upstream binutils does, so until
+[`../patches/binutils-relax/0001-*.patch`](../patches/binutils-relax/)
+lands, `build-support.sh` probes for the defect and adds `-Wl,--no-relax`.
+
+Two things follow from that, and they are the reason it is a probe rather
+than an unconditional flag:
+
+- **It disappears on its own.** The probe links an eight-instruction case
+  and checks one symbol's address. Against a linker carrying the fix it
+  matches nothing and adds nothing, so a toolchain built after the patch
+  lands gets relaxation back with no edit here. Verified both ways.
+- **While it is on, the suite does not exercise relaxation at all.** GCC's
+  MicroBlaze `LINK_SPEC` passes `-relax` unconditionally, so a default link
+  relaxes and ours does not. That costs little for testing the *compiler* —
+  relaxation is a linker transformation and the object files are identical
+  either way — but it means a torture run cannot catch a relaxation bug
+  while the flag is in force. In this repository, of all places, that is
+  worth stating out loud.
 
 DejaGnu gets `dg-options` and `dg-require-effective-target` right for free,
 which an ad-hoc runner does not; that was another ten false failures and a

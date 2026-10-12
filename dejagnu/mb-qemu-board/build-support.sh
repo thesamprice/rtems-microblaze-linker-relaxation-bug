@@ -83,6 +83,12 @@ PROBE
     cflags=""
   fi
 
+  # TODO: remove this probe once patches/binutils-relax/0001 is in the
+  # toolchains being tested.  It is a crutch, not a feature.  Nothing needs
+  # to be edited when that happens -- the probe stops matching and stops
+  # adding --no-relax by itself -- but the dead code should go, and with it
+  # the note in ../README.md about relaxation not being exercised.
+  #
   # Does this linker adjust a wrapped symbol's value twice when relaxing?
   #
   # DejaGnu's testglue.c defines __wrap_exit and calls exit, which puts the
@@ -136,7 +142,9 @@ WRAP
        && [ $((0x$b - 0x$a)) -ne 12 ]; then
       ldextra="-Wl,--no-relax"
       echo "  note: $CC's linker mis-adjusts wrapped symbols when relaxing;" \
-           "adding --no-relax so DejaGnu's status wrapper works"
+           "adding --no-relax so DejaGnu's status wrapper works."
+      echo "        While that is on, the suite does not exercise relaxation" \
+           "at all -- see ../README.md."
     fi
   fi
 
