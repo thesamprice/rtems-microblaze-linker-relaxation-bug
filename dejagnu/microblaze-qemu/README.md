@@ -100,7 +100,9 @@ three addresses are `DEFINED()`-guarded, so the board overrides them:
 | `_HEAP_SIZE` | `0x0` | `0x400000` |
 
 The vectors stay at 0 in BRAM, which is where the core resets to. Megabytes of
-stack are not generosity: `pr28982b` and `memcpy-1` hang on less.
+stack are not generosity: `memcpy-1` hangs on 256 KB. (`pr28982b` was the other
+test that needed it under the earlier hand-rolled harness; on this board
+DejaGnu reports it UNSUPPORTED, so it is not evidence here.)
 
 ## The relaxation workaround
 
@@ -127,6 +129,29 @@ Until it lands, `setup.sh` probes for the defect and records `--no-relax` in
   little for testing the compiler — relaxation is a linker transformation and
   the object files are identical either way — but a run cannot catch a
   relaxation bug while the flag is in force.
+
+## Measured
+
+gcc trunk 17.0.0, binutils 2.47.50 with `patches/binutils-relax`, unmodified
+newlib and libgloss, stock QEMU. Eight `gcc.c-torture/execute` tests across
+all seven torture levels, trunk's `libgcc.a` as shipped:
+
+| test | execution |
+|---|---|
+| `20010221-1.c`, `loop-2b.c`, `memcpy-1.c` | 8 PASS each |
+| `990208-1.c`, `printf-1.c` | 7 PASS each |
+| `arith-rand-ll.c` | **8 FAIL** |
+| `pr50865.c` | **7 FAIL** |
+| `pr28982b.c` | UNSUPPORTED |
+
+53 compiles, zero excess errors. Both failures are `__moddi3` in trunk's
+libgcc, not the board: `pr50865.c` hangs and `arith-rand-ll.c` aborts, and
+both pass when `moddi3/harness/moddi3-fixed.S` is linked ahead of libgcc. See
+[`../../moddi3/evidence/pr50865-on-mainline.md`](../../moddi3/evidence/pr50865-on-mainline.md).
+
+`pr28982b.c` reporting UNSUPPORTED rather than failing is the point of using
+DejaGnu: it reads the test's `dg-require-effective-target`, which an ad-hoc
+runner does not.
 
 ## What this does not cover
 

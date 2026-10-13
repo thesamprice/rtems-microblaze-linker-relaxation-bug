@@ -50,6 +50,44 @@ identical:
 | trunk's `libgcc.a` | *(nothing; killed on timeout)* |
 | `moddi3-fixed.S` ahead of it | `*** EXIT code 0` |
 
+## arith-rand-ll.c, the other test in that table
+
+Same toolchain, same board:
+
+| `__moddi3` | guest output |
+|---|---|
+| trunk's `libgcc.a` | `*** EXIT code 4242`, then `*** EXIT code 6` |
+| `moddi3-fixed.S` ahead of it | `*** EXIT code 0` |
+
+4242 is `testglue.c`'s code for `abort`. Two markers appear because
+`__wrap_abort` writes one and does not set `done_exit_message`, so the
+`__wrap__exit` it eventually reaches writes a second; `check_for_board_status`
+regsubs greedily and takes the last, reporting 6. Either way it fails, and the
+fix makes it pass.
+
+So both entries in the cover letter's table reproduce on mainline, with the
+same two failure modes it names — `pr50865.c` hangs, `arith-rand-ll.c` aborts.
+
+## The rest of the set, for context
+
+Eight tests, seven torture levels each, trunk's libgcc unmodified:
+
+| test | execution |
+|---|---|
+| `20010221-1.c` | 8 PASS |
+| `990208-1.c` | 7 PASS |
+| `loop-2b.c` | 8 PASS |
+| `memcpy-1.c` | 8 PASS |
+| `printf-1.c` | 7 PASS |
+| `arith-rand-ll.c` | **8 FAIL** |
+| `pr50865.c` | **7 FAIL** |
+| `pr28982b.c` | UNSUPPORTED |
+
+53 compiles, none with excess errors. Every failure is `__moddi3`; nothing
+else in the set fails. `pr28982b.c` being UNSUPPORTED is DejaGnu reading its
+`dg-require-effective-target`, which an ad-hoc runner gets wrong — the earlier
+hand-rolled harness reported it as a failure for want of stack.
+
 ## Why it is worth a line on the list
 
 `pr50865.c` has been in GCC's testsuite since PR middle-end/50865 in 2011. It
