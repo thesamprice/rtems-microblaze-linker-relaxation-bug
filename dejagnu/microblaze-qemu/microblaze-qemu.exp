@@ -45,16 +45,25 @@ if { ![info exists env(MB_TIMEOUT)] } { set ::env(MB_TIMEOUT) 90 }
 # "which" check, which a multi-word "env VAR=... prog" does not survive.  The
 # wrapper reads MB_QEMU and MB_TIMEOUT from the environment instead.
 set_board_info sim "$mb_dir/qemu-run"
-set_board_info sim_time_limit 120
 
-# For the tests themselves this is irrelevant -- gcc_target_compile
-# substitutes GCC_UNDER_TEST -- but it is what build_wrapper compiles
-# DejaGnu's testglue.c with, so it has to work.  find_gcc alone does not when
-# an installed cross compiler is under test: with no gcc build tree to find an
-# xgcc in, it falls back to [transform gcc], which without target_alias is a
-# bare "-gcc".  build_wrapper's target_compile then fails and build_wrapper
-# returns an empty string without saying anything, so no glue is linked, no
-# status line is printed, and every execution test reports 2.
+# Two timeouts, and they have to stay in that order: qemu-run gives up on a
+# guest after MB_TIMEOUT and exits, and sim_time_limit is how long generic
+# sim_load waits for qemu-run itself.  Derive the outer one so they cannot
+# drift -- if sim_time_limit were the smaller, DejaGnu would kill the wrapper
+# and leave a QEMU behind.  No board DejaGnu ships sets sim_time_limit, since
+# a simulator exits by itself; config/sim.exp:76 honours it and defaults to
+# 240.
+set_board_info sim_time_limit [expr {$::env(MB_TIMEOUT) + 30}]
+
+# Every other sim board just says "[find_gcc]".  In the combined tree this is
+# meant to be used in, find_gcc and GCC_UNDER_TEST name the same compiler, so
+# the branch changes nothing.  It is for the other case: pointed at an installed
+# compiler there is no build tree for find_gcc to find an xgcc in, so it falls
+# back to [transform gcc] and yields a bare "-gcc".  That matters more than it
+# looks, because this string is also what build_wrapper compiles DejaGnu's
+# testglue.c with; when it is wrong, build_wrapper fails and returns an empty
+# string in silence, no glue is linked, no status line is printed, and every
+# execution test reports 2.
 if { [info exists ::GCC_UNDER_TEST] } {
     set_board_info compiler "$::GCC_UNDER_TEST"
 } else {
@@ -67,9 +76,8 @@ set_board_info cflags "[libgloss_include_flags] [newlib_include_flags]"
 # which puts everything inside the 128 KiB of BRAM that petalogix-s3adsp1800
 # maps at 0 and leaves malloc failing immediately.  All three are
 # DEFINED()-guarded, so move text into the RAM at 0x90000000 and size the
-# stack and heap for the testsuite; pr28982b and memcpy-1 hang on anything
-# less than megabytes.  The vectors stay at 0 in BRAM, which is where the
-# core resets to.
+# stack and heap for the testsuite; memcpy-1 hangs on 256 KB.  The vectors
+# stay at 0 in BRAM, which is where the core resets to.
 set mb_defsyms "-Wl,--defsym,_TEXT_START_ADDR=0x90000000 \
                 -Wl,--defsym,_STACK_SIZE=0x400000 \
                 -Wl,--defsym,_HEAP_SIZE=0x400000"
