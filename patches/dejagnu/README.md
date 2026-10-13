@@ -23,9 +23,12 @@ four environment variables is too many.
 ## Status
 
 Written against DejaGnu `de0667b` (2026-07-02), which is `origin/master` as
-fetched. Sent 2026-10-12 to Michael Eager, Neal Frager, Jeff Law and the
-author, not to `dejagnu@gnu.org`: it is a work in progress, and Jeff asked
-about trying it before the `__moddi3` fix lands.
+fetched. **Sent 2026-10-12**, message-id
+`<20261013014353.95350-1-thesamprice@gmail.com>`, to Michael Eager, Neal
+Frager, Jeff Law and the author — not to `dejagnu@gnu.org`: it is a work in
+progress, and Jeff may want to try it before the `__moddi3` fix lands.
+`--suppress-cc=all` with all four in `--to`, because `sendemail.suppresscc`
+is `self` here and would otherwise drop the author's own copy.
 
 **Needs `patches/binutils-relax/0001`** or `MB_NO_RELAX=-Wl,--no-relax`.
 Without one of them `testglue.c`'s `__wrap_exit` resolves before its own first
