@@ -1,6 +1,6 @@
-From f6542c3befce5e68677ed5641e5a5fb609f060d0 Mon Sep 17 00:00:00 2001
+From 4196fdead0625fb14112a42970d4e42b170e1448 Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
-Date: Mon, 12 Oct 2026 16:22:33 -0400
+Date: Mon, 12 Oct 2026 21:42:36 -0400
 Subject: [PATCH 0/2] MicroBlaze: two relaxation defects in the symbol table
 
 microblaze_elf_relax_section() has two defects in the code that adjusts

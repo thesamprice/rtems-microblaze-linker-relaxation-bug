@@ -1,0 +1,121 @@
+From f9ef7ba4c87724cfb1caeb42db64d5df0df78ef7 Mon Sep 17 00:00:00 2001
+From: Samuel Price <thesamprice@gmail.com>
+Date: Mon, 12 Oct 2026 21:42:39 -0400
+Subject: [PATCH 0/1] MicroBlaze: a QEMU baseboard, work in progress
+
+This is a work in progress and needs more review than it has had.  I am
+sending it now because Jeff may want to try it before the __moddi3 fix
+lands, and because the one patch is easier to argue about than a
+description of it.  I plan to clean it up once that fix is in.
+
+MicroBlaze gets compile-only testing from GCC, and the reason is mostly
+that there is nowhere to run the binaries.  DejaGnu has no board for it;
+the nearest thing is baseboards/qemu.exp, which names microblaze-* and
+microblazeel-* for QEMU user mode, and whose qemu_load calls "array
+size" on local_exec's list return, so it reports pass unconditionally
+whatever happens.
+
+The patch adds a board for QEMU *system* emulation, which needs a CPU
+and a UART rather than the Linux syscall ABI.  It is the usual *-sim
+shape, and deliberately so: libgloss and newlib already supply the crt0,
+the linker script, the C library and the syscalls, so the board is
+libgloss_include_flags, newlib_include_flags, libgloss_link_flags,
+newlib_link_flags and ldscript "", plus the three things QEMU needs that
+a simulator does not.  Those three are what want reviewing.
+
+What it has been run on -----------------------
+
+A combined tree of gcc trunk 17.0.0, newlib and libgloss from sourceware
+unmodified, and binutils 2.47.50, configured --target=microblaze-elf
+--with-newlib --disable-multilib, with stock qemu-system-microblaze on
+petalogix-s3adsp1800.  Eight gcc.c-torture/execute tests across all
+seven torture levels:
+
+  20010221-1.c, loop-2b.c, memcpy-1.c   8 PASS each
+  990208-1.c, printf-1.c                7 PASS each
+  arith-rand-ll.c                       8 FAIL
+  pr50865.c                             7 FAIL
+  pr28982b.c                            UNSUPPORTED
+
+53 compiles, no excess errors.  Both failures are __moddi3 in trunk's
+libgcc rather than anything in the board: pr50865.c hangs and
+arith-rand-ll.c aborts, and both pass when a fixed __moddi3 is linked
+ahead of libgcc.  pr50865.c has been in GCC's testsuite since 2011, and
+it has been failing on MicroBlaze without anyone being able to see it.
+That is the case for having a board at all, and the __moddi3 fix is on
+gcc-patches.
+
+The table was taken with this board before I adapted it to find the
+runner on PATH and take libxil.a from MB_LIBXIL rather than from beside
+itself; the generated command lines are the same either way.  printf-1.c
+and pr50865.c were re-run on the patch exactly as sent, 7 passes and 7
+failures respectively, which agrees.
+
+Eight tests is not a testsuite.  I picked them to exercise stdio,
+malloc, a large stack frame and long long arithmetic, plus the known
+failure.  A full run is hours and I have not done one.
+
+Three things I would like opinions on
+------------------------------------
+
+1.  Where the runner belongs.  QEMU cannot return a guest exit status
+    and libgloss's _exit is "bri 0", so something has to stop QEMU once
+    the test has reported.  The board sets needs_status_wrapper and
+    reads the status from testglue.c's "*** EXIT code N" line, as
+    arm-sim.exp does, and contrib/microblaze-qemu-run watches for that
+    line and kills QEMU. I put it in contrib because that is where
+    sum2junit.sh lives and because every board DejaGnu ships expects its
+    runner on PATH rather than inside the tree.  The board takes it from
+    PATH under that name or from $SIM, after mmixware-sim.exp.  libexec/
+    or somewhere else may be the better answer.
+
+2.  Whether microblaze-qemu-libxil.c belongs here at all.  GCC's
+    MicroBlaze LIB_SPEC links "-lgloss -lxil -lc -lm", and libgloss and
+    newlib supply three of those.  The fourth is the board's own
+    library, which nothing upstream builds, because in Xilinx's world it
+    comes from the tools' board support package; libgloss's write() and
+    read() are loops over an outbyte() and inbyte() that are declared
+    and never defined.  So some forty lines of UART driver are needed
+    before a MicroBlaze bare-metal link completes, and I have put them
+    beside testglue.c on the grounds that it is the same kind of file.
+    The alternative is that it belongs in libgloss and this patch should
+    wait for that.
+
+3.  The environment variables.  MB_QEMU, MB_TIMEOUT, MB_LIBXIL and
+    MB_NO_RELAX.  The first two match what other boards do with $SIM and
+    friends, but four is more than I would like, and MB_LIBXIL exists
+    only because of item 2.
+
+One thing that is not optional yet ----------------------------------
+
+MB_NO_RELAX=-Wl,--no-relax is needed on current binutils, and the board
+is useless without it.  testglue.c defines __wrap_exit and calls exit,
+so the one hash entry sits in two elf_sym_hashes slots;
+microblaze_elf_relax_section walks that array by index and subtracts the
+relaxation fixup once per slot, so __wrap_exit resolves before its own
+first instruction.  No status line is written and every execution test
+reports 2, which looks like the board's fault.  GCC's LINK_SPEC passes
+-relax unconditionally.
+
+RISC-V had the same defect and fixed it as PR ld/22756; the guard is
+also in elf32-cr16.c, elf32-crx.c, elf32-ft32.c and elfnn-loongarch.c.
+I have a patch for MicroBlaze and will send it to binutils separately.
+Until it lands, --no-relax is the workaround, and while it is in force
+the suite does not exercise relaxation at all.
+
+Samuel Price (1):
+  Add a microblaze-qemu baseboard
+
+ ChangeLog                      |   9 ++
+ Makefile.am                    |   4 +-
+ baseboards/microblaze-qemu.exp | 145 +++++++++++++++++++++++++++++++++
+ contrib/microblaze-qemu-run    |  51 ++++++++++++
+ microblaze-qemu-libxil.c       |  40 +++++++++
+ 5 files changed, 248 insertions(+), 1 deletion(-)
+ create mode 100644 baseboards/microblaze-qemu.exp
+ create mode 100755 contrib/microblaze-qemu-run
+ create mode 100644 microblaze-qemu-libxil.c
+
+-- 
+2.39.5 (Apple Git-154)
+

@@ -10,6 +10,7 @@
 # ready for: git send-email --to=... outbox/<series>/*.patch
 #
 #   BINUTILS_TREE=~/src/binutils-gdb BINUTILS_BASE=origin/master \
+#   DEJAGNU_TREE=~/src/dejagnu DEJAGNU_BASE=origin/master \
 #   GCC_TREE=~/src/gcc GCC_BASE=origin/master \
 #   GLIBC_TREE=~/src/glibc GLIBC_BASE=origin/master \
 #   tools/make-outbox.sh
@@ -34,7 +35,10 @@ series() {
   ( cd "$wt" && git am -q "$@" )
   rm -rf "$OUT/$name"; mkdir -p "$OUT/$name"
   n=$#
-  if [ "$n" -gt 1 ]; then
+  # A cover letter whenever one is given, not only for a multi-patch series:
+  # a single patch can still need one, and the dejagnu series is one patch
+  # whose cover carries the open questions.
+  if [ "$cover" != "-" ]; then
     ( cd "$wt" && git format-patch -q --cover-letter -o "$OUT/$name" "$base" )
     cl=$OUT/$name/0000-cover-letter.patch
     subj=$(sed -n 1p "$cover"); body=$(sed '1,2d' "$cover")
@@ -73,7 +77,7 @@ PY
   echo "$name: $(ls "$OUT/$name" | wc -l | tr -d ' ') files on $(git -C "$tree" rev-parse --short "$base")"
 }
 
-B=${BINUTILS_TREE:-}; G=${GCC_TREE:-}; L=${GLIBC_TREE:-}
+B=${BINUTILS_TREE:-}; G=${GCC_TREE:-}; L=${GLIBC_TREE:-}; J=${DEJAGNU_TREE:-}
 
 # 0004, 0010, 0011 and 0012 landed upstream 2026-09-24 as the v3 series and are
 # no longer generated; see patches/binutils/landed/README.md.
@@ -87,6 +91,10 @@ series binutils        "$B" "${BINUTILS_BASE:-master}" "$P/binutils/0000-cover-l
 # avoided.
 series binutils-relax  "$B" "${BINUTILS_BASE:-master}" "$P/binutils-relax/0000-cover-letter.txt" \
   "$P"/binutils-relax/0001-*.patch "$P"/binutils-relax/0002-*.patch
+# One patch, but it gets a cover letter: it is a work in progress, and the
+# questions in the cover are the point of sending it.
+series dejagnu         "$J" "${DEJAGNU_BASE:-master}" "$P/dejagnu/0000-cover-letter.txt" \
+  "$P"/dejagnu/0001-*.patch
 series gcc-0001        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0001-*.patch
 series gcc-0002        "$G" "${GCC_BASE:-master}"      - "$P"/gcc/0002-*.patch
 series glibc           "$L" "${GLIBC_BASE:-master}"    "$P/glibc/0000-cover-letter.txt" \

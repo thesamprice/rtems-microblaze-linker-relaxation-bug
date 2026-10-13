@@ -58,9 +58,14 @@ for path in paths:
     for b in BANNED:
         if b.lower() in m.lower(): probs.append('phrase: %r' % b)
     if path.endswith('.patch'):
-        # At least one "dir/" header line.  A patch touching one directory
-        # may omit it, but these series touch two or more.
-        if not re.search(r'\n(bfd|gas|ld|binutils|opcodes|include)/\n', m):
+        # A ChangeLog block, if the project keeps its entries in the commit
+        # message.  binutils does and wants a "dir/" header per directory;
+        # dejagnu and glibc keep a ChangeLog file instead, so a patch that
+        # touches one has nothing to check here.
+        body = io.open(path, encoding='utf-8').read() if path.endswith('.patch') else ''
+        keeps_changelog_file = '/ChangeLog b/ChangeLog' in body
+        if not keeps_changelog_file and not re.search(
+                r'\n(bfd|gas|ld|binutils|opcodes|include)/\n', m):
             probs.append('ChangeLog block has no directory header')
         if 'Assisted-by: Claude <noreply@anthropic.com>' not in m:
             probs.append('trailer not the house form')

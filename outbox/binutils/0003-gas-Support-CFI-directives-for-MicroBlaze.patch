@@ -1,4 +1,4 @@
-From 733c869735107a728d277863241efbb8dfca86a4 Mon Sep 17 00:00:00 2001
+From ab10ae633bbb1bdd63b9e3787238ab94ff97f16c Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Wed, 2 Sep 2026 12:43:42 -0400
 Subject: [PATCH 3/5] gas: Support CFI directives for MicroBlaze
