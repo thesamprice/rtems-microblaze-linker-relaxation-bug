@@ -1,5 +1,18 @@
 # Running the GCC testsuite on MicroBlaze under QEMU
 
+> **Read [`microblaze-qemu/`](microblaze-qemu/) first.** That is the board to
+> use and to send anyone: it takes its crt0, linker script, C library and
+> syscalls from libgloss and newlib, the way DejaGnu's other 46 `*-sim` boards
+> do, and adds only a UART driver and a QEMU wrapper. It has been run against
+> a mainline GCC 17 combined tree.
+>
+> `mb-qemu-board/`, described below, came first and carries its own BSP plus a
+> `stub-include/` standing in for a C library. That was scaffolding for a
+> trunk compiler with no libc. It produced real numbers on an RTEMS 12.4.1
+> toolchain, but it is not shareable — the stub headers are a fake libc and
+> the flags it generates carry absolute paths. Keep it only until
+> `microblaze-qemu/` has the same coverage.
+
 A DejaGnu board that gives MicroBlaze **execution** testing, not just
 compilation testing.
 

@@ -94,7 +94,17 @@ if { [file exists "$mb_obj/config.sh"] } {
     set cfg [read $fh]
     close $fh
     if { [regexp {MB_LIBS="([^"]*)"} $cfg -> m] } { set mb_libs $m }
-    if { [regexp {MB_CFLAGS="([^"]*)"} $cfg -> m] } { set_board_info cflags $m }
+    if { [regexp {MB_CFLAGS="([^"]*)"} $cfg -> m] } {
+	set_board_info cflags $m
+	# The same flags have to reach DejaGnu's testglue.c, which is compiled
+	# by build_wrapper (libgloss.exp) rather than by gcc_target_compile, and
+	# so does not see cflags.  libgloss.exp passes wrap_compile_flags, and
+	# gcc's wrapper.exp appends to it rather than replacing it.  Without
+	# this the glue fails on "stdio.h: No such file or directory" in the
+	# freestanding mode, build_wrapper returns empty, and no status marker
+	# is ever printed.
+	set_board_info wrap_compile_flags $m
+    }
     # Set when the toolchain's linker mis-adjusts wrapped symbols while
     # relaxing, which breaks DejaGnu's status wrapper.  See the probe in
     # build-support.sh and ../../patches/binutils-relax/0001-*.patch.

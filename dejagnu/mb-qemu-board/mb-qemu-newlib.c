@@ -32,6 +32,18 @@ typedef unsigned long mb_size_t;
 static void putc_ (char c) { while (UART[2] & 0x8) ; UART[1] = (unsigned) c; }
 static void puts_ (const char *s) { while (*s) putc_ (*s++); }
 
+/* mb-qemu-crt0.S calls __libc_init_array to run the constructors before
+   main.  With a C library that comes from libc; freestanding, it does not
+   exist and the link fails on it, so provide it.  mb-qemu.ld already
+   defines the bounds.  Several execute tests do use constructors, so this
+   walks the array rather than returning immediately.  */
+extern void (*__init_array_start[]) (void);
+extern void (*__init_array_end[]) (void);
+void __libc_init_array (void) {
+  mb_size_t i, n = (mb_size_t) (__init_array_end - __init_array_start);
+  for (i = 0; i < n; i++) __init_array_start[i] ();
+}
+
 /* write(1, ...) is the whole of what DejaGnu's testglue.c needs from us; it
    formats and prints the status marker itself.  No CR translation, matching
    _write_r in the hosted half of this file -- mb-qemu-run strips CRs and

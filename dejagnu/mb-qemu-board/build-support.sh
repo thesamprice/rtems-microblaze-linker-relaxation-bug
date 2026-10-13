@@ -6,6 +6,9 @@
 #   CC=microblaze-elf-gcc ./build-support.sh
 #   CC=./gcc17 MB_LDEXTRA=-L/path/to/libgcc ./build-support.sh
 #
+# For an uninstalled build tree, CC may carry -B options; set MB_NM to the
+# matching nm, since it cannot then be derived from CC.
+#
 # What the runtime has to supply depends on the C library, so this probes
 # rather than assumes:
 #
@@ -134,7 +137,9 @@ WRAP
      && $CC $E $MB_LDEXTRA -nostartfiles -nostdlib -Wl,-relax \
              -Wl,--wrap,w_target -Wl,-e,w_before "$d/w.o" -o "$d/w.elf" \
              >/dev/null 2>&1; then
-    nm=$(echo "$CC" | sed 's/gcc$/nm/')
+    # MB_NM, because CC may carry -B options (an uninstalled build tree) and
+    # so cannot be rewritten into a tool name.
+    nm=${MB_NM:-$(echo "$CC" | sed 's/gcc$/nm/')}
     a=$($nm "$d/w.elf" 2>/dev/null | sed -n 's/^0*\([0-9a-f]*\) T __wrap_w_target$/\1/p')
     b=$($nm "$d/w.elf" 2>/dev/null | sed -n 's/^0*\([0-9a-f]*\) T w_calls$/\1/p')
     # Correct: __wrap_w_target is 12 bytes (3 instructions) before w_calls.

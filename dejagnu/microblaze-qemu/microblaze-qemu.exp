@@ -1,0 +1,116 @@
+# DejaGnu board: MicroBlaze bare metal under QEMU system emulation.
+#
+#   runtest --tool gcc --target_board=microblaze-qemu[/-mlittle-endian] ...
+#
+# Shaped like DejaGnu's own *-sim boards -- riscv-sim.exp, arm-sim.exp and the
+# other 44 -- because everything a bare-metal target needs already comes from
+# libgloss and newlib.  The crt0, the linker script, the C library and the
+# syscall layer are the toolchain's; this file adds only what QEMU needs that
+# a simulator does not.
+#
+# Prerequisites, both produced by setup.sh in this directory:
+#
+#   libxil.a    GCC's MicroBlaze LIB_SPEC links "-lgloss -lxil -lc -lm".
+#               libgloss provides -lgloss and newlib -lc and -lm; -lxil is the
+#               board's own library, which upstream builds nothing for, and
+#               libgloss's write() and read() are loops over an outbyte() and
+#               inbyte() that are declared and never defined.  libxil.c
+#               supplies them for the UART.
+#   config.sh   records whether this toolchain's linker needs --no-relax.
+#
+# Set MB_QEMU to qemu-system-microblaze or -microblazeel.  Stock upstream
+# QEMU: no fork, no patches, and nothing is asked of the machine model but a
+# UART.
+
+load_generic_config "sim"
+load_base_board_description "basic-sim"
+process_multilib_options ""
+
+# setup_sim is deliberately not called.  It would look for a gdb simulator in
+# the build tree.  MicroBlaze has one and it works, but it implements 107
+# instructions, so it cannot cover hard float, mulh*, pcmp* or lwx/swx -- and
+# lwx/swx are emitted at the default -mcpu.  Full ISA coverage is this board's
+# purpose.  See ../sim-evidence/.
+
+set mb_dir [file dirname [file normalize [info script]]]
+
+if { [info exists env(MB_QEMU)] } {
+    set ::env(MB_QEMU) $env(MB_QEMU)
+} else {
+    set ::env(MB_QEMU) "qemu-system-microblaze"
+}
+if { ![info exists env(MB_TIMEOUT)] } { set ::env(MB_TIMEOUT) 90 }
+
+# A bare path, not a command line: DejaGnu runs the sim string through its
+# "which" check, which a multi-word "env VAR=... prog" does not survive.  The
+# wrapper reads MB_QEMU and MB_TIMEOUT from the environment instead.
+set_board_info sim "$mb_dir/qemu-run"
+set_board_info sim_time_limit 120
+
+# For the tests themselves this is irrelevant -- gcc_target_compile
+# substitutes GCC_UNDER_TEST -- but it is what build_wrapper compiles
+# DejaGnu's testglue.c with, so it has to work.  find_gcc alone does not when
+# an installed cross compiler is under test: with no gcc build tree to find an
+# xgcc in, it falls back to [transform gcc], which without target_alias is a
+# bare "-gcc".  build_wrapper's target_compile then fails and build_wrapper
+# returns an empty string without saying anything, so no glue is linked, no
+# status line is printed, and every execution test reports 2.
+if { [info exists ::GCC_UNDER_TEST] } {
+    set_board_info compiler "$::GCC_UNDER_TEST"
+} else {
+    set_board_info compiler "[find_gcc]"
+}
+
+set_board_info cflags "[libgloss_include_flags] [newlib_include_flags]"
+
+# xilinx.ld's defaults are text at 0x50, a 1 KiB stack and no heap at all,
+# which puts everything inside the 128 KiB of BRAM that petalogix-s3adsp1800
+# maps at 0 and leaves malloc failing immediately.  All three are
+# DEFINED()-guarded, so move text into the RAM at 0x90000000 and size the
+# stack and heap for the testsuite; pr28982b and memcpy-1 hang on anything
+# less than megabytes.  The vectors stay at 0 in BRAM, which is where the
+# core resets to.
+set mb_defsyms "-Wl,--defsym,_TEXT_START_ADDR=0x90000000 \
+                -Wl,--defsym,_STACK_SIZE=0x400000 \
+                -Wl,--defsym,_HEAP_SIZE=0x400000"
+
+# Written by setup.sh.  MB_NO_RELAX is set when this toolchain's linker
+# mis-adjusts __wrap_* symbols while relaxing, which breaks the status
+# wrapper below; it is empty once the linker carries the fix.  See
+# ../../patches/binutils-relax/ and the note in ../README.md about what the
+# flag costs while it is in force.
+set mb_no_relax ""
+if { [file exists "$mb_dir/config.sh"] } {
+    set fh [open "$mb_dir/config.sh" r]
+    set cfg [read $fh]
+    close $fh
+    if { [regexp {MB_NO_RELAX="([^"]*)"} $cfg -> m] } { set mb_no_relax $m }
+}
+
+set_board_info ldflags \
+    "[libgloss_link_flags] [newlib_link_flags] -L$mb_dir $mb_defsyms $mb_no_relax"
+
+# libgloss supplies the linker script, through LINK_SPEC's
+# "%{!T*: -dT xilinx.ld%s}" (gcc/config/microblaze/microblaze.h:113).
+set_board_info ldscript ""
+
+# QEMU cannot hand a guest exit status back, so the status comes out through
+# DejaGnu's own mechanism: this makes GCC link testglue.c, which wraps
+# exit/_exit/abort/main and writes "*** EXIT code N" through write(1, ...),
+# and check_for_board_status in remote.exp parses it.  qemu-run only has to
+# stop QEMU once that line appears, because libgloss's _exit is "bri 0" and
+# spins forever on hardware.
+#
+# 1, not 0: remote.exp tests this with `ne ""` and targetdb.exp hands back the
+# stored string, so a literal 0 reads as "set" and makes a missing marker mean
+# status 2.  mn10300-sim.exp uses "" when it wants this off.
+set_board_info needs_status_wrapper 1
+
+# Bare metal: no OS services.  Saying so gets tests marked UNSUPPORTED rather
+# than failed.
+set_board_info noargs 1
+set_board_info gdb,nosignals 1
+set_board_info gdb,noinferiorio 1
+set_board_info gdb,no_hardware_watchpoints 1
+set_board_info gcc,stack_size 16384
+set_board_info gcc,timeout 600

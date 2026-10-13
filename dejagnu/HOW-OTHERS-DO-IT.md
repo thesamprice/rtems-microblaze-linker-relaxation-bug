@@ -4,6 +4,21 @@ Written after building a board from scratch and then looking at how the
 established targets actually do it. Short version: **this board reinvented
 most of what libgloss already provides, and libgloss supports MicroBlaze.**
 
+## Boards live in DejaGnu, not in GCC
+
+Worth settling before deciding what to send anyone. GCC's tree ships **no
+board file for any target**: `gcc/testsuite/config/` contains exactly one
+file, `default.exp`, and a search of the whole tree for `*-sim.exp` or a
+`baseboards` directory finds nothing. All 62 board files are DejaGnu's, 46 of
+them `*-sim`.
+
+So there is no GCC patch to write here. The artefact is a DejaGnu baseboard
+plus a toolchain recipe. MicroBlaze is absent from those 46, which is the
+gap. `baseboards/qemu.exp` does name `microblaze-*` and `microblazeel-*`,
+mapping them to `qemu-microblaze` (QEMU **user** mode), but that board
+reports `pass` for everything — its `qemu_load` calls `array size` on
+`local_exec`'s list return, which is always 0.
+
 ## The standard recipe
 
 Every `*-sim` board DejaGnu ships is the same four lines. `arm-sim.exp`,

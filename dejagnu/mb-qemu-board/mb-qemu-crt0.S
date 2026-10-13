@@ -1,6 +1,14 @@
 /* Bare-metal startup for qemu-system-microblaze[el], machine
    petalogix-s3adsp1800.  Clears .bss, sets up the stack and small-data
    anchors, runs the init array, calls main and exits with its value.  */
+
+/* An executable stack is not required.  Without this the linker warns
+   "missing .note.GNU-stack section implies executable stack" for every test,
+   which DejaGnu counts as excess errors and reports as a failure.  gcc emits
+   it for compiled objects; a hand-written .S has to say so itself.  */
+	.section .note.GNU-stack, "", %progbits
+	.previous
+
 	.section .vectors, "ax"
 	.globl _start
 _start:
