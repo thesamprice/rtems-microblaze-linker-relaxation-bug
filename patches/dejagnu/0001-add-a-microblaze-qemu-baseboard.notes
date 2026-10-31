@@ -1,0 +1,43 @@
+Hi Michael,
+
+v2 is rebased on current top-of-tree (04e4201).  The only conflict was
+the ChangeLog context; the board, the runner and the UART file are
+unchanged from v1.
+
+On "make check": that error means runtest can't find the board file.
+baseboards/microblaze-qemu.exp only exists in a DejaGnu tree with the
+patch applied, and make check is using your installed DejaGnu.  Either
+point runtest at the patched tree:
+
+  echo 'lappend boards_dir "/path/to/dejagnu/baseboards"' > ~/mb-site.exp
+  export DEJAGNU=~/mb-site.exp
+
+or install the patched DejaGnu and put its runtest first on PATH.
+
+But I should have said this in the first mail: the board is for the GCC
+testsuite, and it does nothing for binutils.  I've now run binutils
+master's make check with and without it, and every result is the same
+in gas, binutils and ld.  gas never runs target code.  ld does have run
+tests, but it decides whether it can execute anything by running a test
+program, and it reads the result from the program's exit status.  QEMU
+can't hand that back.  The board reads it instead from a line printed
+by DejaGnu's testglue.c, which GCC's testsuite links in and ld's
+doesn't.  So ld's check fails and its run tests come out UNSUPPORTED.
+For binutils, the gdb simulator (--enable-sim, microblaze-elf-run) is
+the better route.
+
+For GCC, from a combined gcc/newlib/libgloss build:
+
+  export MB_QEMU=/path/to/qemu-system-microblaze
+  export PATH=/path/to/dejagnu/contrib:$PATH     # microblaze-qemu-run
+  export MB_LIBXIL=/dir/with/libxil.a
+  export MB_NO_RELAX=-Wl,--no-relax              # until the __wrap_ relax fix lands
+  make check-gcc RUNTESTFLAGS="--target_board=microblaze-qemu execute.exp=pr50865.c"
+
+libxil.a is built from microblaze-qemu-libxil.c in the patched tree:
+
+  microblaze-elf-gcc -O2 -ffreestanding -c microblaze-qemu-libxil.c -o libxil.o
+  microblaze-elf-ar rc libxil.a libxil.o
+
+Sam
+

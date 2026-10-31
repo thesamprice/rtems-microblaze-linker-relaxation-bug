@@ -1,4 +1,4 @@
-From 8615352ee2a19772b587394c48bcd4489649141e Mon Sep 17 00:00:00 2001
+From dd71703bd319cd874a60db1b70a70d755d29956e Mon Sep 17 00:00:00 2001
 From: Samuel Price <thesamprice@gmail.com>
 Date: Mon, 12 Oct 2026 21:35:00 -0400
 Subject: [PATCH] Add a microblaze-qemu baseboard
@@ -57,7 +57,7 @@ Assisted-by: Claude <noreply@anthropic.com>
  create mode 100644 microblaze-qemu-libxil.c
 
 diff --git a/ChangeLog b/ChangeLog
-index b862dac..9868bdf 100644
+index 17a2832..ab0d20a 100644
 --- a/ChangeLog
 +++ b/ChangeLog
 @@ -1,3 +1,12 @@
@@ -70,9 +70,9 @@ index b862dac..9868bdf 100644
 +	(baseboard_DATA): Add baseboards/microblaze-qemu.exp.
 +	(CONTRIB): Add contrib/microblaze-qemu-run.
 +
- 2026-07-02  Jacob Bachmeyer  <jcb@gnu.org>
+ 2026-10-17  Jacob Bachmeyer  <jcb@gnu.org>
  
- 	* baseboards/riscv-sim.exp, config/adb.exp: Update license notice
+ 	* doc/dejagnu.texi (remote_load procedure): Document.
 diff --git a/Makefile.am b/Makefile.am
 index 9493cc6..b3cf485 100644
 --- a/Makefile.am

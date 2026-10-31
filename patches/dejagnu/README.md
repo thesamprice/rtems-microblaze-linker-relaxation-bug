@@ -22,13 +22,21 @@ four environment variables is too many.
 
 ## Status
 
-Written against DejaGnu `de0667b` (2026-07-02), which is `origin/master` as
-fetched. **Sent 2026-10-12**, message-id
+v1 was written against DejaGnu `de0667b` (2026-07-02); the patch here is
+v2, against `04e4201`. **v1 was sent 2026-10-12**, message-id
 `<20261013014353.95350-1-thesamprice@gmail.com>`, to Michael Eager, Neal
 Frager, Jeff Law and the author — not to `dejagnu@gnu.org`: it is a work in
 progress, and Jeff may want to try it before the `__moddi3` fix lands.
 `--suppress-cc=all` with all four in `--to`, because `sendemail.suppresscc`
 is `self` here and would otherwise drop the author's own copy.
+
+**v2 sent 2026-10-31**, message-id
+`<20261031040016.82868-1-thesamprice@gmail.com>`, in reply to v1, to Michael
+Eager with Neal Frager and the author in Cc. It is v1 rebased on DejaGnu
+`04e4201`; only the ChangeLog context changed. The `.notes` file is the
+reply to Michael's question about `make check` in binutils: the board does
+nothing there, because ld's testsuite never links `testglue.c`, so its
+execution probe gets no status line and every run test is UNSUPPORTED.
 
 **Needs `patches/binutils-relax/0001`** or `MB_NO_RELAX=-Wl,--no-relax`.
 Without one of them `testglue.c`'s `__wrap_exit` resolves before its own first
