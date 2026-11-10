@@ -1,0 +1,141 @@
+sha	type	bucket	code_changed	body_words	subject
+15419a00a293	bugfix	s	16	18	libstdc++: Fix OpenBSD ctype_base masks
+01365811a7ee	test	xs	0	56	testsuite: Fix vec_extractm testcase for power10 BE[127148]
+aa9661990889	refactor	m	59	12	Improve infer::clear performance.
+e08a7f620c03	refactor	m	87	79	Remove HAVE_GNU_AS
+0a3124969d7c	bugfix	s	18	21	fortran: Fix FINDLOC with DIM and MASK [PR127845]
+70add872be78	feature	s	33	24	cobol: Improve "sameness" test when deciding whether a CDF token was used.
+4d22d3ead95e	other	m	63	157	ranger: use the index range for loads from constant aggregates
+51c8f3368607	refactor	xs	1	103	libstdc++: Remove unused variable
+d471b9060100	bugfix	xs	6	119	fortran: Use polymorphic assignment to copy a class value to a temporary [PR128349]
+7593996706d0	refactor	m	58	85	AVR: target/127071 - Don't copy multilibs with t-copy-libgcc
+f566fd3c966d	bugfix	xs	9	56	fortran: Make IS_CONTIGUOUS true for assumed-rank scalars [PR126895]
+8858cb3a6af5	refactor	l	522	6	libbacktrace: handle MOREDATA correctly without debug info
+8df013222dff	mechanical	s	18	0	AVR: Fix typos in comments.
+210be97619bb	mechanical	l	413	29	Revert "x86: Rewrite ix86_find_max_used_stack_alignment"
+1beab80079e2	refactor	m	72	28	RISC-V: Remove obsolete CACHE_ALIGNED_STD fusion
+c483e3d468cc	other	l	560	0	Update gcc zh_CN.po
+7f83719c13e9	bugfix	xs	3	77	phiopt: Factor loads, reject if the pointer types are not compatiable [PR126571]
+495c38ed4c31	other	s	24	192	[RISC-V] Reorder sequence for (plus (reg) (const_int)) for nontrivial constants
+baf658d80576	docs	s	45	27	i386: Avoid XCHGB %rH, %rL in bswaphi2 on non-pentium4 targets [PR126433]
+e8621d3bdaf0	bugfix	s	31	196	match-sat-alu.pd: Check operand types of signed SAT_ADD [PR127916]
+9b1c9b6436aa	other	m	122	58	Verify BB SLP scheduling
+dde7adea08d7	bugfix	l	539	39	PR modula2/127794: New LongStorage module to allow large dynamic memory alloc
+081959973e38	bugfix	m	127	330	PR tree-optimization/57371: Improved comparison of integers to FP constants.
+ea1a75bfd580	feature	m	55	678	[RISC-V] Improve ADD synthesis
+d794365c8f0d	bugfix	xs	3	164	ipa-icf: compare the field, not just the offset, under OEP_ADDRESS_OF [PR119006]
+363e9b31c4d6	test	xs	0	32	testsuite: Fix up gfni-bitreverse-scalar.c test
+6ef27c311e31	other	s	17	99	RISC-V: Adjust VLS subreg handling.
+19024b653d74	bugfix	xs	1	39	[AutoFDO] Avoid inserting null PHI profile matches
+7cb210417d24	other	m	86	8	aarch64: Document `DEF_*` macros
+c4b00249c26e	bugfix	xs	6	160	cobol: Make pointer to stash location file-static. [PR126391]
+0bf6e399dbc8	other	xs	4	13	Check for undefined in operator_lshift::op1_range.
+a793e66d706e	bugfix	s	11	32	tree-optimization/127958 - avoid building invalid BIT_FIELD_REF
+470f86dd50a8	bugfix	xs	2	0	fix: Check if loop_vinfo is null before dereferencing.
+82bccaca9284	test	xs	0	0	SH: Add reduced test case from PR55212 c#464 / att. 62360
+8640e4b2efcd	refactor	s	18	14	match: Combine two patterns into for.
+85a3d553207a	test	xs	0	27	testsuite: Fix two pastos
+67dfeda64835	bugfix	s	16	126	match.pd: avoid a reduction simplification cycle [PR127039]
+e63a873f1df7	bugfix	xs	6	60	i386: Fix Win64 __int128 return handling [PR78799]
+35dec12b401e	bugfix	xs	5	25	fortran: [PR126777] Fix ICE for IMAGE_INDEX with a TEAM argument
+9c6ee7525126	other	xs	10	9	openmp: Pretty-print OMP_ITERATOR_BLOCK
+bec1b0a2f0c6	bugfix	s	46	66	D: Correct vector compares for targets with mask types different from data size.
+17f674dbbced	mechanical	m	269	116	config: sync with binutils-gdb
+eb25d3e4806a	feature	s	20	14	cobol: Handle -Wno options and -fPIC better in gcobc emulation script.
+789de024dc88	refactor	s	18	160	genattrtab: remove insn entries in constant time
+1d10857be3c8	mechanical	xs	2	11	asan: Fix comment typo
+7b891aa8e49a	feature	s	14	25	gccrs: add break with label and loop lint
+73ae58ac01fc	test	xs	0	76	testsuite: powerpc64: Fix gcc.dg/asm-hard-reg-5.c
+f92e603f2292	test	xs	0	43	testsuite: Fix unstable duplicate test names in pr111527.exp [PR111527]
+fa95a83e1aca	test	xs	0	2	gccrs: Add test-case to show ice fixed
+cd962857ea3d	bugfix	s	25	13	avoid SLP_TREE_REPRESENTATIVE for permutes
+04ea07624858	refactor	xs	8	12	gccrs: Move derive_coerce_pointee to rfl features
+61c13bdd4433	other	s	35	14	aarch64: Use shifts in `aarch64_type_qualifiers` enum
+56fcf06ffbdf	bugfix	s	16	243	isel: Fix up optimize_atomic_bit_test_and [PR127965]
+1b839ec55be7	bugfix	xs	5	0	gccrs: Small fixes for #[repr(transparent)]
+bcf14085d827	bugfix	m	105	97	libgfortran: [PR118935] Fix data race on the unit stream pointer
+e4543a6ecc97	feature	l	329	87	rs6000: Add new builtin __builtin_ppc_atomic_cas_local
+11264d324611	other	s	16	62	Show details of attr->allocated with -fdump-fortran-original.
+5be7b70e769e	docs	s	12	108	i386: Enable 512-bit byte dot-product only under AVX512BW [PR126098]
+93d5e1be87ca	docs	m	54	262	aarch64: Avoid extra move for two-element vector lane copies [PR123951]
+d15703b27aa4	refactor	m	58	175	[PATCH v5] RISC-V: Add small loop unrolling support via -munroll-only-small-loops
+2b308b5eb032	test	xs	0	7	RISC-V: Remove xfail of the vfwadd.wv reg overlap test case
+13efaa5e7dcc	other	m	287	321	genoutput: write each output template out once
+8d16b075796e	test	xs	0	50	testsuite: require cortex-a53 in reg_equal_test.c test
+621661f7d2e9	bugfix	m	101	112	c++: fix unevaluated operand context for typeid [PR125886]
+96a93d365915	feature	l	559	0	cobol: Add official COBOL word lists to parser.
+cfd84583a556	bugfix	s	14	37	phiopt: Fix up factoring out loads for REF_REVERSE_STORAGE_ORDER [PR126729]
+b3ddd92a2eee	test	xs	0	36	Fix sloppy PR126415 test case.
+4aab703df1b7	refactor	m	286	82	maintainer_utils: Move DCO entries outside of roles.
+dc65d88cdf15	bugfix	m	215	285	libstdc++: Continue with regex DFS traversals without next frames [PR126274]
+9d59dcff40a4	bugfix	s	20	112	match.pd: Simplify (~A & 1) == (~B & 1) at -O1 [PR112533]
+69d23b51534b	refactor	m	57	65	build: Remove --with-gnu-ld
+b51998e2208b	bugfix	m	86	64	tree-optimization/128008 - missing PTA constraints for parameter field
+50f704f19e98	docs	m	268	23	s390: Update z17 pipeline description
+e8add4e4e24a	feature	s	38	22	AVR: Add new option -moptimize for avr-specific passes.
+2c2066d4df27	bugfix	m	120	30	fortran: array descriptor: Add accessors for the type field [PR122521]
+5d2205b80170	bugfix	xs	7	71	fixincl.c: Fix my previous patch for (const) char *
+69d8bd0b3f5c	mechanical	l	329	4	Revert "rs6000: Add new builtin __builtin_ppc_atomic_cas_local"
+668d34fc82d0	docs	xs	4	1	MAINTAINERS: Update my email address
+0bc2e8c5101a	bugfix	xs	8	5	Fortran: Correct error in accessing CLASS declared type [PR84622]
+368ef32ae788	docs	s	17	66	x86-64: Add *fix_trunc<mode>si_sse_2_zext
+9d3338579f64	bugfix	s	27	196	lto, mingw: Do not export symbols from some frontends [PR115300]
+a56ac87c5e53	refactor	s	21	27	Inline ssa_name_pt_solution
+3f2b3eced0f8	refactor	s	42	70	i386: Prefer shorter fold-left reduction chains
+35874595799c	refactor	s	12	47	ifcvt: decode the multiple-sets condition once
+f02d2107413c	test	xs	0	0	xtensa: testsuite: enable zero-scratch-regs tests
+150eb4c6e2b9	mechanical	m	160	67	OpenMP, Fortran: Fix indentation in resolve_omp_clauses_aff_dep_map_cache
+528ade2725ca	feature	xs	7	22	gccrs: Handle FUNCTION segments in new_type_param
+b95850f0c0df	docs	xs	2	108	RISC-V: Fix reg overlap for vs1 of the widening float reduction
+5ce9793d5130	feature	m	55	20	gccrs: intrinsics: Add float_to_int_unchecked
+3e2b0fcab755	bugfix	s	16	44	tree-optimization: Fold constant conditional selects [PR124663]
+8af16e478ed0	other	s	42	35	libgomp: Revise libgomp/Fortran support conditionals: 'FC=no' case
+5d54e3a08878	test	xs	0	7	gcc.dg/20021029-1.c: accept rdata entries for readonly data
+e78da8455a1e	bugfix	xs	2	85	c++: Fix up assert in build_vec_init [PR126752]
+177b84bd12e0	other	m	66	185	gcov: Split atomic bitwise-or for some targets
+2362a9253239	bugfix	xs	5	33	tree-optimization/127978 - OMP simdclone call codegen issue
+f296bb38423f	docs	xs	4	42	i386: Fix some minor issues with BT patterns
+07e78425476e	feature	m	69	11	AVR: Add __negdi2_r10 to libgcc.
+a2f3fb27c419	other	xs	10	67	gccrs: attr: Register needs_allocator
+a8072f31bc90	bugfix	m	110	53	tree-optimization: fold memset with length in [0, 1] to conditional store [PR102202]
+d458a4daa68c	other	xs	6	5	Dump SLP subgraph entries upon costing
+6db085c8b79f	bugfix	xs	2	153	[PATCH 2/2] jump: Ignore debug insns before BARRIER [PR127809]
+6ba996c6580c	mechanical	xs	6	29	Fix typo in comment of invert_mod2n
+d5059b35e03e	bugfix	xs	3	66	match.pd: Guard x+x -> x*2 simplification [PR126257]
+b04da4146334	bugfix	m	102	103	[frange] Add set_pairs to install a set of sub-ranges.
+206056398d94	bugfix	m	52	0	a68: several fixes in ga68.vw
+a3a3e4fa672a	refactor	s	18	33	Remove shift vectorization check from vect_build_slp_tree_1
+6551d044cdfd	bugfix	s	16	29	fortran: array descriptor: Move absent descriptor initialization [PR122521]
+7c317ad17a2c	test	xs	0	65	testsuite: Tweak gcc.target/aarch64/neon/discarded_result.c
+8a1346f379a1	docs	l	333	31	x86-64: Add missing SSE and AVX zero-extend patterns
+adb4f4a064c0	bugfix	s	15	85	libstdc++: Fix build failure in tzdb.cc
+b74e013cc139	refactor	s	21	21	[PATCH] clean: Remove dead code.
+cf43f83b4195	feature	m	123	184	Support load/store vector with right length.
+c638dae26f31	bugfix	s	32	73	libstdc++: Update underlying gamma_distribution in param() [PR123409]
+4e0964279b73	refactor	l	535	114	vect: Introduce LOOP_VINFO_IV_INCREMENT
+c44d96272181	docs	l	566	102	[PATCH] RISC-V: Rewrite vector FMA patterns using fma rtxes [PR126932].
+b70bb7f63b69	docs	s	35	16	SH: Fix PR 124778
+5f9900ec00fc	feature	m	72	0	Use rtx_insn * for locals set from insn returns
+a87ea5b3cfc0	test	xs	0	17	RISC-V: Add test cases for vwmaccu.vx undef reg overlap
+414d7946327e	feature	xs	9	0	gccrs: add unused braces lint
+5adfaf6a4f94	refactor	s	24	2	gccrs: Add missing maybe fold reference to constexpr from cp/constcexpr.cc
+73ffdaa29d58	test	xs	0	18	RISC-V: Add test cases for vzext.vf8 reg overlap
+d6bac80f3ddd	other	xs	4	33	maintainer_utils: more array size verification.
+6fc5746a5e80	bugfix	s	29	50	libstdc++: make trees hetero equal_range O(lg n) [PR118851]
+d5cdcaaf9a88	refactor	xs	6	34	gcc, analyzer: drop std::move calls that have no effect
+44cc8e5718ef	bugfix	s	29	121	i386: Fix __get_cpuid() and __get_cpuid_count() for Centaur/Zhaoxin CPUID range
+4ff8e6ba9f4e	other	l	8181	20	aarch64: Port NEON lane get/set intrinsics to pragma-based framework
+85c39785487e	docs	s	12	67	LoongArch: fix miscompile of both_non_zero{,_subreg} when operands[0] == operands[2] [PR 127153]
+a43cd560e438	bugfix	s	12	91	libstdc++: Make make_decimalN inline instead of static [PR122071]
+1295b3996229	feature	xs	6	16	gccrs: add unused visibilities lint
+4d9a71ceec40	bugfix	xs	3	0	fortran: Fix editorial error and new test case
+79c77e164203	refactor	xs	7	56	match.pd: Fold SAD_EXPR with identical inputs
+b2a197968117	docs	xs	2	61	[PATCH] RISC-V: Improve slliw shifted bitfield split constraints
+035e2f6217cf	bugfix	xs	8	144	[PATCH] vect: Pass 1s, not an all-ones mask, to an unmasked inbranch clone [PR127784]
+81763ec0f016	test	xs	0	10	testsuite: Add yet another testcase for float range inverse ops [PR126547]
+e4b1c9c5d94f	mechanical	s	31	32	gccrs: Do not export indentation levels within metadata
+2f72dcc5e6cf	bugfix	l	366	143	analyzer: add dynamic_cast support [PR110578]
+7c19a52852b7	bugfix	xs	3	83	Fix m68k bootstrap due to -Wempty-body warning
+37c33c6a1c86	other	s	28	26	Ada: Small tweak to Establish_Transient_Scope.Find_Transient_Context
+e0e794b089a1	feature	s	26	26	[PATCH] RISC-V: Implement reassociation width hook
+8ed21dfa6f62	test	xs	0	76	testsuite: Fix g++.dg/gomp/deprecate-1.C on hppa targets (v2)

@@ -1,8 +1,19 @@
 # Writing commit messages and comments for these patches
 
-Derived from what has actually been accepted, not from taste. The sample is
-`a639e0adaf2` (this repo's `landed/0001`, reviewed by Alan Modra and merged),
-the upstream commits around it, and `bfd/` history generally.
+Derived from what has actually been accepted, not from taste. The first
+sample was `a639e0adaf2` (this repo's `landed/0001`, reviewed by Alan Modra
+and merged), the upstream commits around it, and `bfd/` history generally.
+The length, testing and history rules below come from a larger study of
+4000 recent commits per project, 257 read in full, and the official
+rules: [`style/`](style/README.md).  Project-specific guides are
+[`style/GCC.md`](style/GCC.md) and [`style/BINUTILS.md`](style/BINUTILS.md).
+
+**Before anything else, the LLM policies.** binutils does not accept
+legally significant LLM-generated content, testsuites included
+(`binutils/MAINTAINERS`, 2025-10-13).  GCC declines it except for test
+cases, and requires `Assisted-by:` (gcc.gnu.org/ai-policy.html,
+2026-07-29).  An AI-written commit message is accepted; AI-written code
+is the problem.  See [`style/SOURCES.md`](style/SOURCES.md) section 4.
 
 Read this before writing a patch, and audit against it before sending. The
 rules in [`../CLAUDE.md`](../CLAUDE.md) about keeping comments true still
@@ -44,7 +55,33 @@ Order the paragraphs so a reviewer can stop early:
 4. **Why this fix and not another.** Cite precedent as `file:line` and
    `commit`, and say where a cited idiom came from.
 5. **What the test does**, and what it shows with and without the change.
-6. **Test results**, from a run.
+6. **Test results**, from a run.  For GCC, one line naming the triplets
+   and scope ("Bootstrapped and regtested on x86_64-pc-linux-gnu.").  For
+   binutils, usually nothing in the commit: about 2% of commits state
+   results, and an added test is the evidence.  In a series, put
+   suite-wide numbers in the cover letter once, not in every patch.
+
+### Length
+
+Size the explanation to how hard the change is to understand, not to the
+diff.  Across 257 upstream commits read in full, length tracks judged
+complexity (Spearman 0.58 GCC, 0.64 binutils) and barely tracks lines
+changed (0.18, 0.08).  Upstream medians: about 15 words for an obvious
+change, 35 for a simple one, 85 for a subtle one, 130 for a hard one.
+The p90 at the hardest level is under 300 words, and a message over that
+is longer than nearly anything upstream.
+
+Stop when a reviewer has what they need: steps 1-4 above, often in two
+paragraphs.  Verification stories, audits of neighbouring code, and
+background shared by a series go in the cover letter or a `.notes` file,
+which reviewers see and `git am` drops.  Reviewers have never asked this
+repo, or anyone in the 25 archived comments collected, for a shorter
+message; they ask for the why.  Cutting is for the reader of `git log`,
+so never cut the why.
+
+Cite earlier commits only for a regression ("came in with 2d1777b530d,
+first released in 2.42") or a dependency.  "Since the port was added"
+helps nobody.
 
 ### Say it plainly
 
@@ -119,6 +156,11 @@ Signed-off-by: Sam Price <thesamprice@gmail.com>
 Assisted-by: Claude <noreply@anthropic.com>
 ```
 
+- **GCC: put `Assisted-by:` above the ChangeLog block,** in the free text.
+  GCC's push hook (`contrib/gcc-changelog/git_commit.py`) does not know the
+  tag; after the ChangeLog block it fails with "line should start with a
+  tab".  This repo's gcc patches all failed that way until moved
+  (2026-11-08).  `Signed-off-by:` may stay at the end.
 - `Assisted-by:`, **never** `Co-Authored-By:` — see `../CLAUDE.md`. The form
   used throughout this repo is `Assisted-by: Claude <noreply@anthropic.com>`;
   17 of the patches here use exactly that, and variants that name a model
@@ -154,6 +196,12 @@ generated `[PATCH 0/N]`.
 - Testing paragraph last, with numbers from a run.
 
 ## Before sending
+
+- `tools/review-commit-msg.py patches/<series>` (add `--project gcc` or
+  `binutils` if it guesses wrong): required rules, length against upstream,
+  repeated paragraphs, mailing-list residue, LLM-policy flags.
+- For GCC, also `contrib/gcc-changelog/git_check_commit.py -v BASE..HEAD`
+  in a gcc tree with the series committed.  It is what the push hook runs.
 
 - `contrib/check_GNU_style.py` on each patch.
 - `git diff --check` for whitespace.

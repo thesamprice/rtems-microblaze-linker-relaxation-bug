@@ -40,11 +40,11 @@ for path in paths:
     probs = []
     # subject length
     if path.endswith('.patch'):
-        subj = m.split('\n', 1)[0].replace('Subject: [PATCH] ', '')
+        subj = re.sub(r'^Subject: (\[[^\]]*\] )?', '', m.split('\n', 1)[0])
         if len(subj) > 55: probs.append('subject %d chars (>55)' % len(subj))
         if subj.endswith('.'): probs.append('subject ends with a full stop')
     # line width
-    wide = [l for l in m.split('\n') if len(l) > 72 and not l.startswith('\t')
+    wide = [l for l in m.split('\n') if len(l) > 72 and not l.startswith(('\t', 'Subject:'))
             and 'http' not in l and not l.lstrip().startswith('diff ')]
     if wide: probs.append('%d line(s) over 72 cols: %r' % (len(wide), wide[0][:50]))
     # em-dash punctuation
@@ -65,7 +65,7 @@ for path in paths:
         body = io.open(path, encoding='utf-8').read() if path.endswith('.patch') else ''
         keeps_changelog_file = '/ChangeLog b/ChangeLog' in body
         if not keeps_changelog_file and not re.search(
-                r'\n(bfd|gas|ld|binutils|opcodes|include)/\n', m):
+                r'\n(bfd|gas|ld|binutils|opcodes|include|gcc|libgcc|gcc/testsuite)/\n', m):
             probs.append('ChangeLog block has no directory header')
         if 'Assisted-by: Claude <noreply@anthropic.com>' not in m:
             probs.append('trailer not the house form')

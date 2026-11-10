@@ -1,0 +1,118 @@
+sha	type	bucket	code_changed	body_words	subject
+95d6c06bd61a	other	xs	10	138	Linker created dynobj for all elf targets
+541d3b645853	other	s	25	22	gas: Skip SFrame FDE if .cfi_window_save
+9ea5e5f010c0	docs	m	62	35	s390: Enhance opcode table headings
+af4eb9e20a6b	other	xs	9	72	gas: scfi: make scfi_state_restore_reg function more precise
+afc1f137e183	test	xs	0	10	ld-elf/pr25207.d: Pass --no-rosegment to ld
+d350b1501777	refactor	s	49	16	aarch64: refactoring _bfd_aarch64_elf_link_setup_gnu_properties (part 4)
+674628ae3a1d	bugfix	xs	4	0	PR 33360, Correct strings -Ue output
+b16f10037c48	feature	s	29	17	RISC-V: Add Sspmp extension support
+b54fe0658c84	refactor	l	353	39	x86: fold left-over non-legacy GFNI templates
+4bc3f403c566	other	m	57	132	Solaris .strtab and .shstrtab flags
+0326df1b9b1f	mechanical	xs	2	72	[pre-commit] Add codespell-clean gdb subdirs
+b05d1d896058	bugfix	xs	2	17	vms-alpha: integer overflow
+6cbaeac8401c	bugfix	m	84	35	PR ld/24600: LD: Add options to control mapless archive acceptance
+5b57b7393a1e	other	s	19	86	make ld -u symbols load --as-needed shared libraries
+ca8c70d033dd	docs	s	11	0	Remove steps for adding .dirstamp when creating pre-release tarball
+b49b0bfe1215	refactor	m	112	93	bfd/ELF: fold BFD_RELOC_<arch>_PCREL*
+11c285244982	feature	m	174	61	x86: widen @got{,pcrel} support to PUSH and APX IMUL
+aa4fbe885956	bugfix	xs	6	129	s390: Do not generate incomplete opcode table
+3f61a38b5e81	refactor	l	339	85	RISC-V: Move all global static target stuff into private data for disassembler.
+6ccf16c19d31	other	xs	7	67	x86/Intel: SHLD/SHRD have dual meaning
+946b753836b6	refactor	m	74	52	aarch64: refactoring _bfd_aarch64_elf_link_setup_gnu_properties (part 1)
+ea1a0737c769	bugfix	xs	8	0	elf: Don't read beyond .eh_frame section size
+27d21139e356	other	xs	4	13	gprof support for split debuginfo, tweak 2
+d88b58231ebf	bugfix	s	44	82	Don't create got in bfin_relocate_section
+f7b0dfe03050	feature	xs	2	6	Use stat_alloc in plugin
+e3e55b9c5d80	test	xs	0	16	gas: add new COFF-specific subdir in testsuite
+90a0b08bd064	docs	xs	2	20	readelf: Fix typo in --version-info documentation
+3f89802f207a	bugfix	s	13	79	bfd: correct dir separator conversion for Win32
+a121bf759aef	mechanical	xs	2	3	pre-commit: Update flake8: 7.3.0 -> 7.4.0
+1a5ff476f78f	refactor	xs	10	33	bfd/rl78: remove unused bfd_elf32_rl78_set_target_flags
+8bdf820be61c	mechanical	s	33	41	[gdb] Increase clean range in check-whitespace-pre-commit.py
+ebf22fc26326	other	s	28	19	H8: Set H8/300H as the default architecture for the H8 family.
+ab1830f63310	bugfix	s	27	291	PR 24576: duplicate-script check on hosts without inodes
+50efe229ddf5	other	l	450	28	bfd/ELF: mark internal functions hidden
+66b81b40dcf1	feature	s	35	67	RISC-V: Add extension XTheadVdot for T-Head VECTOR vendor extension [1]
+ebec91612c2a	test	xs	0	3	Re: ld/ELF: Fix small issue with orphan sections and NOLOAD output section
+8dc535c59fdb	other	xs	4	0	asan: unknown write in z80_elf_16_be_reloc
+98b1464bdf63	mechanical	xs	4	85	bfd: fix unnecessary bfd.info regen
+004d34806331	feature	l	649	5	gprofng: add hardware counters for Neoverse-N1 and Ampere-1 processors
+493993718e6e	refactor	xs	4	0	aarch64: remove annoying white spaces in bfd/elfnn-aarch64.c
+eac88f329849	feature	m	108	2	Add support for Windows network paths to the UNC support in _bfd_real_open().
+eb7892c4019b	bugfix	s	16	55	LTO: Properly check wrapper symbol
+cca46dea4d09	mechanical	l	593	29	Revert "x86: Restore APX shift-double instructions with omitted shift count"
+1b28f5f09596	refactor	m	75	45	aarch64: Remove unused feature bits
+65cd0d66a647	bugfix	s	17	72	Fix discarded-qualifiers problems in ldlang.c
+0cdae10e5786	other	m	69	117	memory mayhem in _bfd_elf_link_read_relocs
+5ad7fd27ba37	bugfix	s	21	135	aarch64: Don't relax relocations to static function symbols
+1785837a2570	bugfix	xs	4	102	ld: fix PR/32297
+d54eea875046	other	xs	2	42	libctf: create: check the right root-visible flag when adding enumerands
+d62f64e17b33	feature	l	448	83	gdb/MicroBlaze: Add support for native linux gdb
+b70b08de3ca1	bugfix	xs	2	120	bfd: fix destination pointer advancement in rx_get_section_contents
+082ba41d9f85	refactor	s	28	24	aarch64: Sort aarch64-sys-regs.def
+0924a1ca2e1e	bugfix	m	103	261	ld: bfd: sframe: fix incorrect r_offset in RELA entries
+6197c6f3a6f9	test	xs	0	30	xfail undefweak-1 test for alpha
+0bdfbd3710f4	refactor	s	16	20	bfd: move merge_info from ELF to general link hash table
+63f5af1fe20b	test	xs	0	53	gas/testsuite: Fix multibyte3 test cases on Windows
+a868854dcfeb	mechanical	l	560	9	aarch64: Clean up whitespace in aarch64-tbl.h
+4553b29a0eca	docs	l	805	38	[SFrame-V3] sframe: doc: specification changes for SFrame version 3
+25e0a58fcec7	feature	s	26	68	Add back non-solaris ELF targets to solaris config
+c5590002d8ee	refactor	xs	2	0	i386-dis.c: Remove trailing spaces
+7b12694de97f	test	xs	0	171	LD/testsuite: Fix archive verification for Alpha/VMS
+ca5915512b4b	test	xs	0	31	LoongArch: Fix ld FAIL test cases
+c22e3e25de0a	other	s	29	16	autoupdate: replace obsolete macros AC_HELP_STRING
+b8fab5284ea5	test	xs	0	19	aarch64: Add tests for fcvt, fcvtzs and fcvtzu
+79b836ef6b01	bugfix	l	2665	0	Updated Russian translation for the bfd/ sub-directory
+17cae6980b15	other	m	76	21	LoongArch: Make protected function symbols local for -shared
+5942dd991311	refactor	m	210	38	Merge init_private_section_data with copy_private_section_data
+45f3ea0bbb5e	mechanical	m	71	4	Revert "binutils: Require GNU tail for 'objdump -Wi' test"
+b3679b82926d	bugfix	xs	10	0	bfd: fix 2 more -Wdiscarded-qualifiers errors
+4aaf663ded55	bugfix	xs	5	33	windres: buffer overflow
+5bd7ac079aee	feature	m	61	34	gas: sframe: handle .cfi_same_value
+76d630291d12	refactor	m	213	5	gas more enum casts
+cc26d6caf1e3	test	xs	0	32	ld/testsuite: replace aarch64 uses of load_lib
+35cb98f1ce2a	other	s	16	10	Delete rx and rl78 md_end
+429b58ab66c3	mechanical	xs	2	4	C30: use is_whitespace()
+aaa064b75c14	feature	xs	1	14	aarch64: add Debug Feature Register 2 (ID_AA64DFR2_EL1)
+645c27b9076a	feature	xs	6	46	s390: gas: Support access register names in CFI directives
+a35d8973e545	docs	l	506	5	Rename gp-* man pages to gprofng-* man pages
+d8a29310d29b	refactor	xs	4	13	dwarf: constify read_leb128()'s first parameter
+6b043335282f	test	xs	0	10	tidy hppa64 XPASSes
+7f3665aa4b69	other	s	29	34	Arm: use BFD_RELOC_32_PLT_PCREL in favor of custom type
+2c4129c4cc3e	docs	s	18	0	sframe: doc: minor fixups in language for clarity
+28489a70d466	feature	xs	10	7	LoongArch: Add elfNN_loongarch_mkobject to initialize LoongArch tdata
+2a81e7ff9e49	mechanical	m	70	83	gas MMIX: Use more of is_... framework like is_whitespace and is_end_of_stmt
+77ec362369e1	bugfix	xs	1	0	csky disassembler leak
+31d589588ea4	refactor	xs	1	268	ELF/BFD: Factor in inter-section padding for DYNAMIC segment
+c13ab038dcfe	docs	m	240	16	AVR: PR13129 - Overhaul c-avr.texi and document gs().
+3c33c8c7c703	refactor	s	44	120	LD/PE: Remove remains of MIPS target support
+57a3845126b3	other	l	449	8	dlltool.c formatting
+f9e021fdec1d	docs	xs	2	0	MAINTAINERS: Update my e-mail address.
+83c22eb44e4b	test	xs	0	0	aarch64: improve test coverage for combination of BTI options
+78437d947e5e	bugfix	l	3959	0	Updated Ukranian translation for the binutils sub-directory
+84baa5fe9375	other	xs	2	23	MIPS/opcodes: Update INSN_CHIP_MASK for INSN_ALLEGREX
+a042adc98554	bugfix	s	34	0	Fix clang compile time warning about optarg parameter shadowing optarg global variable.
+fb2d8601c637	test	xs	0	32	libsframe: testsuite: reduce usage of magic numbers from encode-1.c
+893eb49c9b12	refactor	s	39	47	readelf: endless loop on attrv2
+4a9843c301e5	refactor	s	27	26	gas: drop unnecessary use of tc_comment_chars
+40a04cee22b2	other	m	144	0	Synchronize the dwarf2.h and dwarf2.def files with their gcc counterparts, bringing the definitions of DW_AT_language_name and DW_AT_language_version.  Add code to binutils/dwarf.c to display these attributes.
+49da9e9d9e6d	other	xs	10	37	gas: Skip SFrame FDE if .cfi_val_offset specifies non-default offset
+6ab3f09a682a	feature	s	50	201	gas: elf: binutils: add new section type SHT_GNU_SFRAME
+01469ac03e06	test	xs	0	62	arm: fix testsuite fallout on arm-elf and arm-nto from FPA removal
+18bc39c83338	other	m	94	17	elf: Cache ".interp" section pointer in elf_link_hash_table
+abb27dd124fd	other	xs	4	14	Disable gprofng build for *musl*
+9e99dbc1f19f	bugfix	m	72	0	PR33919 Out-of-bounds read in XCOFF relocation processing
+4df44a4aead6	other	s	30	24	gas alpha sign extension macros
+f6b0f53a3682	bugfix	xs	2	26	PR 33455 SEGV in vfinfo at ldmisc.c:527
+90803ffdcc4d	bugfix	s	24	14	gprofng: Fix cross-compilation binary name.
+e6357caf7579	other	s	18	14	ld: put wild matching_sections on an obstack
+af373d1a1a02	other	xs	1	23	tc-i386.c s_insn and input_line_pointer
+44fab92685fd	bugfix	xs	2	24	ld: Don't treated the fatal error as warning
+9a3781f12032	feature	m	221	61	contrib: Add autoregen.py
+4b8269718f60	docs	xs	1	28	MAINTAINERS: Add Maciej W. Rozycki as a global maintainer
+f96763060e67	mechanical	s	12	30	CRx: use is_whitespace()
+24e3920d1d84	other	m	189	15	x86: Report invalid TLS relocation name
+648ad82c558c	other	s	46	14	gas: ginsn: minor improvements in ginsn_dst_print and ginsn_src_print
+d89ecf33ab6d	feature	l	489	55	LoongArch: Add DT_RELR support
+99c3fe52d237	bugfix	m	160	72	gprofng: fix infinite recursion on calloc with multi-threaded applications

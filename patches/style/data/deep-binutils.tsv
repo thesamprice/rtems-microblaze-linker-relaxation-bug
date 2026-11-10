@@ -1,0 +1,118 @@
+sha	corrected_type	subsystem	semantic_complexity	states_problem	states_why_this_fix	states_testing	has_example_or_reproducer	length_fit	has_changelog_block	structure	notes
+95d6c06bd61a	refactor	bfd/elf (+ld testsuite)	4	n	n	n	n	fit	y	what-changed; testsuite-churn explanation; CL	explains frv/x86 test churn mechanism well; never says why a linker-created dynobj is wanted
+541d3b645853	bugfix	gas/sframe	2	y	y	n	y	fit	y	problem; fix; quoted warning; CL; SoB	quotes the new warning text
+9ea5e5f010c0	docs	opcodes/s390	1	n	y	n	n	fit	y	what+why (consistency); while-at-it; CL; SoB	comment/heading cleanup in opcode table
+af4eb9e20a6b	bugfix	gas/scfi	4	y	y	n(test in later commit)	n	fit	y	context; prior behaviour; bulleted failure scenario; fix; test pointer; CL	states that the testcase lands in a subsequent commit
+afc1f137e183	test	ld/testsuite	1	y	y	n	n	fit	y	one-sentence why; PR; CL; SoB	config-dependent test fix (--enable-rosegment)
+d350b1501777	refactor	bfd/elfxx-aarch64	2	n	n	n	n	fit	n	single what-sentence	part 4 of series; motivation lives in part 1
+674628ae3a1d	bugfix	binutils/strings	2	n	n	n	n	too_short	n	subject only; SoB	bit-shift fix for 4-byte UTF-8 escapes; nothing says what output was wrong
+b16f10037c48	feature	bfd+gas/riscv	1	n	n	n	n	fit	y	what; spec link; per-dir ChangeLog: blocks	ISA-extension boilerplate; spec reference is the useful part
+b54fe0658c84	refactor	opcodes/i386	2	y	y	n	n	fit	n	why-not-earlier; while-there	two sentences; enough for a table fold
+4bc3f403c566	bugfix	bfd/elf	4	y	y	n	n	fit	y	background; cites prior commit and its limit; new approach; PR; CL	cites 84865015459b and explains why its scheme was insufficient
+0326df1b9b1f	mechanical	build/pre-commit	1	y	y	y(pre-commit run output)	y	too_long	n	why; Found using: command+output; Verified using:; Approved-By; link	gdb-style ... quoting; command output duplicates the one-line diff
+b05d1d896058	bugfix	bfd/vms-alpha	1	y	y	n	n	fit	y	two-sentence cause+fix; CL	typical fuzzer fix
+6cbaeac8401c	feature	ld+bfd/archive	3	n	n	n(mentions tests added)	n	too_short	n	what (options added); docs/tests added	motivation only via PR ld/24600 in subject
+5b57b7393a1e	feature	ld	3	n	y	n	n	fit	y	behaviour change; why testcase reordered; PR; CL	explains test change carefully; user motivation left to PR 32816
+ca8c70d033dd	docs	binutils/release-doc	1	n	n	n	n	too_short	n	subject only	removes a FIXME block; no reason why steps no longer needed
+b49b0bfe1215	refactor	bfd/reloc (multi-target)	3	y	y	n	n	fit	n	rationale; exceptions; per-target notes	names targets that are exceptions
+11c285244982	feature	gas/config/tc-i386 + bfd/elf x86	3	y	y	n	n	fit	n	rationale; limitation	explains why pre-APX IMUL cannot be relaxed
+aa4fbe885956	bugfix	build/opcodes (s390)	2	y	y	y(manual: injected bad line)	y	fit	y	problem; consequence; fix; Tested by; CL; SoB	good build-fix model: says how failure was provoked
+3f61a38b5e81	bugfix	opcodes/riscv	3	y	y	n	n	fit	y	report origin; rationale; long CL	thread-safety; prose hard to parse
+6ccf16c19d31	bugfix	gas/config/tc-i386	4	y	y	n	y	fit	n	rationale; approach; quoted asm example of residual ambiguity	admits remaining anomaly with example
+946b753836b6	refactor	bfd/elfxx-aarch64	2	y	y	n	n	fit	n	problem (encapsulation); change	series part 1
+ea1a0737c769	bugfix	bfd/elf-eh-frame	2	n	n	n	n	too_short	y	PR + CL only; SoB	over-read in .eh_frame parse; no symptom/trigger stated
+27d21139e356	bugfix	gprof	2	n	y	n	n	too_short	n	reverts X but keeps Y; list link; SoB	"tweak 2" subject; reason for revert only via link
+d88b58231ebf	bugfix	bfd/elf32-bfin	3	y	y	n	n	fit	y	history (commit+list URL, quoted reason); why it is wrong now; CL	archaeology of original rationale
+f7b0dfe03050	bugfix	ld/plugin	1	y	y	n	n	fit	y	one sentence; CL	leak-checker silence
+e3e55b9c5d80	test	gas/testsuite	1	n	y	n	n	fit	n	subject continued with ...	Beulich "..." continuation style
+90a0b08bd064	docs	binutils/doc	1	y	y	n	n	fit	n	one sentence	typo fix
+3f89802f207a	bugfix	bfd/bfdio (win32)	3	y	y	n	n	fit	n	problem+fix; while-looking second bug	two bugs explained compactly
+a121bf759aef	mechanical	build/pre-commit	1	n	n	y(command run)	n	fit	n	how generated	"Ran pre-commit.py --autoupdate"
+1a5ff476f78f	refactor	bfd/elf32-rl78	1	y	y	n	y	fit	n	quoted compiler error; history (commit+date); fix	good: error text + archaeology in 4 lines
+8bdf820be61c	mechanical	build/pre-commit (gdb script)	2	n	y	n	n	fit	n	quoted regexp; change; Approved-By	gdb-owned file; outside core binutils
+ebf22fc26326	feature	bfd+gas+ld/h8300	2	n	y	n	n	too_short	y	one-line reason; CL; SoB	default-arch change; user impact only in NEWS; subject ends with period
+ab1830f63310	bugfix	ld/ldfile	4	y	y	y(PR testcases still pass)	y	fit	n	symptom+error; two-commit history; root cause; fix; test claim; SoB	long but each paragraph carries load; first-time contributor
+50efe229ddf5	optimization	bfd/elf	2	n	y	n	n	fit	n	benefit with number	"almost 200 symbols"
+66b81b40dcf1	feature	opcodes+gas/riscv	1	n	y	n	n	fit	y	vendor context; what; refs; CL	vendor-extension boilerplate; Co-Authored-By
+ebec91612c2a	test	ld/testsuite	1	n	n	n	n	too_short	y	"Re:" subject; one line; CL	follow-up fix titled after original; no reason for un-xfail
+8dc535c59fdb	bugfix	bfd/elf32-z80	1	y(subject)	n	n	n	fit	y	subject + CL only	Modra fuzzer idiom "asan: <symptom> in <func>"
+98b1464bdf63	bugfix	build/bfd doc	3	y	y	n	n	fit	n	context; regression cause (commit+title); consequence; fix; Fixes:+SoB	kernel-style Fixes: trailer
+004d34806331	feature	gprofng	1	n	n	n	n	fit	y	dated GNU ChangeLog only	old-style "gprofng/ChangeLog" + date line
+493993718e6e	mechanical	bfd/elfnn-aarch64	1	n	n	n	n	fit	n	subject only	whitespace
+eac88f329849	feature	bfd/bfdio (win32)	3	n	n	n	n	too_short	n	subject + "PR 31527"	108-line path-handling change, no prose; subject ends with period
+eb7892c4019b	bugfix	ld/plugin + bfd/linker	3	n	y	n	n	fit	y	what; Note on why lookup insufficient; per-dir CL with PR; SoB	symptom only via PR ld/31956
+cca46dea4d09	mechanical	gas+opcodes/i386 (revert)	2	n	y	n	n	fit	y	revert line; reason (GCC commit); CL	cites GCC commit as justification
+1b28f5f09596	refactor	gas/config/tc-aarch64 + include	2	y	y	n	n	fit	n	history; consequence	refers to "system register regating patch" without hash
+65cd0d66a647	bugfix	ld/ldlang (build)	2	n	y	n	n	fit	n	what; why copy unnecessary; 2x SoB	warning class only in subject
+0cdae10e5786	bugfix	bfd/elflink	4	y	y	y(extended testcase)	y	fit	y	regression commit; missing test; reproducer recipe; cause; second issue; fix+test; CL	exemplary
+5ad7fd27ba37	bugfix	gas/config/tc-aarch64	3	y	y	n(explains ld test diff)	n	fit	n	ABI rule; fix; known limitation/future work; test fallout	states what was deliberately not done
+1785837a2570	bugfix	bfd/elfxx-x86 (sframe)	2	y	y	y(no test yet; follows)	n	fit	y	cause; impact (glibc); test plan; PR title; Committed by; CL	subject "ld: fix PR/32297" says nothing
+d54eea875046	bugfix	libctf	2	y	y	n	n	fit	y	explanation; fix; CL	
+d62f64e17b33	feature	gdb + bfd/elf32-microblaze	3	n	n	y(manual qemu session)	n	fit	n	what+provenance; manual test; SoB chain	bfd core-note part not mentioned in subject/body
+b70b08de3ca1	bugfix	bfd/elf32-rx	2	y	y	y(inspection+standalone tests; why no in-tree test)	n	fit	y	mechanism; consequence; fix; audit; test rationale; CL; SoB	verbose for 1-line fix but every sentence informative
+082ba41d9f85	mechanical	opcodes/aarch64	1	n	y	n	n	fit	n	one sentence	
+0924a1ca2e1e	bugfix	bfd/elf-sframe + ld	4	y	y	y(new test via CL)	n	too_long	y	PR title; cause; fix; long layout digression; state enum; CL	could be half length
+6197c6f3a6f9	test	ld/testsuite	1	y	y	n	n	fit	y	why; rejected alternatives; CL	records why simpler fixes fail on hppa/bfin
+0bdfbd3710f4	refactor	bfd/linker	2	n	y	n	n	fit	n	preparation rationale	
+63f5af1fe20b	test	gas/testsuite	2	n	n	n	n	too_short	n	discusses tests NOT changed; SoB	never says what failed on Windows
+a868854dcfeb	mechanical	opcodes/aarch64	1	n	y	n	n	fit	n	one sentence	
+4553b29a0eca	docs	sframe/doc	3	n	y	n	n	fit	y	summary; bulleted key changes; long CL	spec rev summary
+25e0a58fcec7	bugfix	build/bfd config.bfd + ld	2	y	y	n	n	fit	y	history (PR workaround); design choice; PR; CL	explains choice of targ_extra_emuls
+c5590002d8ee	mechanical	opcodes/i386-dis	1	n	n	n	n	fit	y	CL only; SoB	
+7b12694de97f	test	ld/testsuite	3	y	y	y(removed FAIL list)	y	fit	n	history (2 commits w/ titles); root cause; fix; FAIL list; refactor note	Rozycki: lists target-prefixed FAIL lines removed
+ca5915512b4b	test	ld/testsuite/loongarch	2	n	y	n	n	too_short	n	approach; won't-fix note	which tests failed and how not stated
+c22e3e25de0a	mechanical	build/autoconf	1	n	y	n	n	fit	n	dashed list + doc link	
+b8fab5284ea5	test	gas/testsuite/aarch64	1	n	y	n	n	fit	n	placement rationale	
+79b836ef6b01	mechanical	bfd/po	1	n	n	n	n	fit	n	subject only	translation import
+17cae6980b15	feature	bfd/elfnn-loongarch	4	n	y(points to code comment)	n	n	too_short	n	claim; pointer to comment; SoB	semantic change of protected symbols; rationale delegated to code comment
+5942dd991311	refactor	bfd/targets (28 files)	3	n	y	n	n	fit	n	what+how	
+45f3ea0bbb5e	mechanical	build/binutils (revert)	2	n	n	n	n	too_short	n	revert boilerplate only	no reason for revert
+b3679b82926d	bugfix	bfd (build)	1	n	n	n	n	too_short	n	subject; Change-Id	gerrit Change-Id leaked; no compiler named
+4aaf663ded55	bugfix	binutils/windres	2	y	y	n	n	fit	n	cause; fix	
+5bd7ac079aee	bugfix	gas/sframe	3	y	y	n	n	fit	y	"Fix PR gas/NNNN - title"; semantics; CL	
+76d630291d12	refactor	gas (multi)	1	n	n	n	n	fit	n	one line	series continuation
+cc26d6caf1e3	test	ld/testsuite	2	y	y	n	n	fit	n	failure + environment versions; fix	names expect/dejagnu versions
+35cb98f1ce2a	refactor	gas/config rx rl78	1	n	y	n	n	fit	y	one-line why; CL	
+429b58ab66c3	mechanical	gas/config/tic30	1	n	n	n	n	fit	n	one line	series
+aaa064b75c14	feature	opcodes/aarch64	1	n	n	y("Regression tested on aarch64-none-elf")	n	fit	n	tests added; tested on	
+645c27b9076a	feature	gas/config/tc-s390	1	n	y	n	n	fit	y	what; ABI mapping+link; CL; SoB	
+a35d8973e545	docs	gprofng/doc	1	n	n	n	n	too_short	y	dated GNU ChangeLog only	rename of man pages with no reason
+d8a29310d29b	refactor	binutils/dwarf	1	n	y	n	n	fit	n	one sentence	
+6b043335282f	test	ld/testsuite	1	y	n	n	n	fit	n	one sentence	
+7f3665aa4b69	refactor	bfd+gas/arm	2	n	y	n	n	fit	n	why; side finding	
+2c4129c4cc3e	docs	sframe/doc	1	n	n	n	n	fit	y	CL only	
+28489a70d466	feature	bfd/elfnn-loongarch	2	n	n	n	n	too_short	n	body repeats subject	why tdata init needed unstated
+2a81e7ff9e49	refactor	gas/config/tc-mmix	2	n	y	n	n	fit	n	what; side fixes; "Beware" behaviour change	flags user-visible input-language change
+77ec362369e1	bugfix	opcodes/csky-dis	1	n	n	n	n	fit	y	subject + CL	trivial leak
+31d589588ea4	bugfix	bfd/elf (MIPS-exposed)	4	y	y	y(new test)	y	too_long	n	context; mechanism; consequence; full readelf dump; fix	readelf key-to-flags etc. could be trimmed
+c13ab038dcfe	docs	gas/doc/avr	1	n	n	n	n	fit	y	one sentence; PR; CL	"PR13129 -" subject form; period
+3c33c8c7c703	refactor	ld/PE + bfd	3	y	y	y(new tests, XFAIL)	n	fit	n	history (2 commits+list); what removed/kept; tests	
+57a3845126b3	mechanical	binutils/dlltool	1	n	n	n	n	fit	n	one line	
+f9e021fdec1d	docs	MAINTAINERS	1	n	n	n	n	fit	n	subject only	also edits binutils/ChangeLog file
+83c22eb44e4b	test	ld/testsuite/aarch64	2	n	n	n	n	too_short	n	subject only	281 lines of tests, no description
+78437d947e5e	mechanical	binutils/po	1	n	n	n	n	fit	n	subject only	translation import
+84baa5fe9375	bugfix	include/opcode/mips	1	y	y	n	n	fit	n	history (commit+title); fix	
+a042adc98554	bugfix	ld/emultempl (build)	1	y(subject)	n	n	n	fit	n	subject only (91 chars, period)	subject used as body
+fb2d8601c637	test	libsframe/testsuite	1	n	y	n	n	fit	y	history; why; CL	
+893eb49c9b12	bugfix	binutils/readelf	2	y	y	n	n	fit	y	trigger; symptom; second issue; CL	
+4a9843c301e5	refactor	gas/config (multi)	1	n	y	n	n	fit	n	why; side cleanup	
+40a04cee22b2	feature	include + binutils/dwarf	2	n	n	n	n	too_short	n	subject is a 2-sentence paragraph, no body	208-char subject
+49da9e9d9e6d	bugfix	gas/sframe	2	y	y	n	y	fit	y	rule shown; fix; CL; SoB	
+6ab3f09a682a	feature	gas+bfd+binutils (sframe)	3	y	y	n	n	fit	y	status quo; ELF principle; discussion link; change; limitations; CL	incompatible change also in NEWS
+01469ac03e06	test	gas/testsuite/arm	2	y	y	n	n	fit	n	cause; approach	
+18bc39c83338	refactor	bfd/elf (41 files)	2	n	y	n	n	fit	y	one-line why; 50-line CL; SoB	CL dwarfs the prose
+abb27dd124fd	other	build/gprofng	1	n	y	n	n	fit	y	one line; dated CL with PRs	disables build on musl
+9e99dbc1f19f	bugfix	bfd/coff-rs6000	3	y(subject)	n	n	n	too_short	y	subject + CL	"PR33919" no space; mechanism unexplained
+4df44a4aead6	refactor	gas/config/tc-alpha	2	n	y	n	n	fit	n	one sentence why	
+f6b0f53a3682	bugfix	bfd/coffcode	2	y	y	n	n	fit	y	cause; CL	subject = bugzilla title
+90803ffdcc4d	bugfix	build/gprofng	2	y	n	n	n	fit	y	history (commit); dated CL	terse broken English; period
+e6357caf7579	optimization	ld/ldlang	2	n	y	n	n	fit	y	subject continued into body; CL	
+af373d1a1a02	bugfix	gas/config/tc-i386	2	y	y	n	n	fit	y	quoted misleading comment; consequence; CL	
+44fab92685fd	bugfix	ld/ldmisc	1	n	n	n	n	too_short	y	restates diff; CL; SoB	user-visible effect not stated
+9a3781f12032	feature	build/contrib	2	n	y	n	n	fit	y	provenance; scope; dated CL	
+4b8269718f60	docs	MAINTAINERS	1	n	y	n	n	fit	n	personal note	
+f96763060e67	bugfix	gas/config/tc-crx	1	n	y	n	n	fit	n	user-visible rationale	
+24e3920d1d84	bugfix	gas/config/tc-i386	2	n	n	n	n	too_short	y	one line; PR; CL; SoB	no before/after message
+648ad82c558c	refactor	gas/ginsn	1	n	y	n	n	fit	y	why; CL	
+d89ecf33ab6d	feature	bfd/elfnn-loongarch	4	n	y	n	n	fit	n	model commit; target differences; relaxation complication; SoB	"logic same as <commit>" is efficient
+99c3fe52d237	bugfix	gprofng/libcollector	3	y	y	n	y	fit	y	mechanism; platform trigger; approach w/ snippet; dated CL	
